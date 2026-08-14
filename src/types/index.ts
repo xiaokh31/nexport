@@ -1,5 +1,7 @@
 // 通用类型定义
 
+import type { DimensionUnit, ServiceType, WeightUnit } from "@/config/quote";
+
 // 导航链接
 export interface NavItem {
   title: string;
@@ -44,17 +46,27 @@ export interface Stat {
 
 // 询价表单
 export interface QuoteFormData {
+  submissionKey: string;
   name: string;
   email: string;
   phone: string;
   company?: string;
-  serviceType: string;
+  serviceType: ServiceType;
   origin?: string;
   destination?: string;
   cargoType?: string;
-  weight?: string;
-  dimensions?: string;
+  pieceCount?: number;
+  cartonCount?: number;
+  palletCount?: number;
+  weightValue?: string;
+  weightUnit?: WeightUnit;
+  length?: string;
+  width?: string;
+  height?: string;
+  dimensionUnit?: DimensionUnit;
+  requestedDate?: string;
   message: string;
+  captchaToken?: string;
 }
 
 // 新闻/文章

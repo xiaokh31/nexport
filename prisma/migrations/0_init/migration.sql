@@ -5,7 +5,13 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'STAFF', 'WAREHOUSE', 'FINANCE', 'CUSTOMER', 'PARTNER');
 
 -- CreateEnum
-CREATE TYPE "ServiceType" AS ENUM ('FBA', 'DROPSHIPPING', 'RETURNS', 'OTHER');
+CREATE TYPE "ServiceType" AS ENUM ('FBA_LAST_MILE', 'TRUCK_FREIGHT', 'CROSS_BORDER', 'AMAZON_FBA', 'EXPRESS', 'WAREHOUSE', 'DROPSHIPPING', 'RETURNS', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "WeightUnit" AS ENUM ('KG', 'LB');
+
+-- CreateEnum
+CREATE TYPE "DimensionUnit" AS ENUM ('CM', 'IN');
 
 -- CreateEnum
 CREATE TYPE "QuoteStatus" AS ENUM ('PENDING', 'PROCESSING', 'QUOTED', 'ACCEPTED', 'REJECTED', 'CLOSED');
@@ -79,6 +85,9 @@ CREATE TABLE "VerificationToken" (
 -- CreateTable
 CREATE TABLE "Quote" (
     "id" TEXT NOT NULL,
+    "reference" TEXT NOT NULL,
+    "submissionKey" UUID NOT NULL,
+    "submissionFingerprint" CHAR(64) NOT NULL,
     "userId" TEXT,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -88,17 +97,44 @@ CREATE TABLE "Quote" (
     "origin" TEXT,
     "destination" TEXT,
     "cargoType" TEXT,
-    "weight" TEXT,
-    "dimensions" TEXT,
+    "pieceCount" INTEGER,
+    "cartonCount" INTEGER,
+    "palletCount" INTEGER,
+    "weightValue" DECIMAL(14,3),
+    "weightUnit" "WeightUnit",
+    "length" DECIMAL(12,3),
+    "width" DECIMAL(12,3),
+    "height" DECIMAL(12,3),
+    "dimensionUnit" "DimensionUnit",
+    "requestedDate" DATE,
     "message" TEXT NOT NULL,
     "status" "QuoteStatus" NOT NULL DEFAULT 'PENDING',
-    "quotedPrice" TEXT,
-    "quoteNote" TEXT,
+    "amount" DECIMAL(14,2),
+    "currency" CHAR(3),
+    "customerNote" TEXT,
+    "internalNote" TEXT,
     "quotedAt" TIMESTAMP(3),
+    "deletedAt" TIMESTAMP(3),
+    "deletedById" TEXT,
+    "deleteReason" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Quote_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QuoteEvent" (
+    "id" TEXT NOT NULL,
+    "quoteId" TEXT NOT NULL,
+    "actorId" TEXT,
+    "fromStatus" "QuoteStatus" NOT NULL,
+    "toStatus" "QuoteStatus" NOT NULL,
+    "reason" TEXT,
+    "requestKey" UUID NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QuoteEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -194,6 +230,24 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Quote_reference_key" ON "Quote"("reference");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Quote_submissionKey_key" ON "Quote"("submissionKey");
+
+-- CreateIndex
+CREATE INDEX "Quote_userId_createdAt_idx" ON "Quote"("userId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Quote_status_createdAt_idx" ON "Quote"("status", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QuoteEvent_requestKey_key" ON "QuoteEvent"("requestKey");
+
+-- CreateIndex
+CREATE INDEX "QuoteEvent_quoteId_createdAt_idx" ON "QuoteEvent"("quoteId", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Article_slug_key" ON "Article"("slug");
 
 -- CreateIndex
@@ -240,6 +294,15 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Quote" ADD CONSTRAINT "Quote_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Quote" ADD CONSTRAINT "Quote_deletedById_fkey" FOREIGN KEY ("deletedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuoteEvent" ADD CONSTRAINT "QuoteEvent_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "Quote"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuoteEvent" ADD CONSTRAINT "QuoteEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

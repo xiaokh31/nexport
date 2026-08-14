@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,22 +24,21 @@ import {
 import { quoteFormSchema, QuoteFormValues } from "@/lib/validations";
 import { Loader2, CheckCircle } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
-import { solutionConfigs } from "@/config/site-config";
+import { getServiceTypeOptions } from "@/config/site-config";
+import { isServiceType } from "@/config/quote";
 
 export function QuoteForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [successReference, setSuccessReference] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { t } = useLocale();
 
-  // 使用 solutionConfigs 生成服务类型选项，支持 i18n
-  const serviceOptions = solutionConfigs.map(({ key }) => ({
-    value: key.toUpperCase(),
-    label: (t.solutions?.[key] as { title: string } | undefined)?.title || key,
-  }));
+  const serviceOptions = getServiceTypeOptions(t);
 
   const form = useForm<QuoteFormValues>({
     resolver: zodResolver(quoteFormSchema),
     defaultValues: {
+      submissionKey: crypto.randomUUID(),
       name: "",
       email: "",
       phone: "",
@@ -49,14 +47,30 @@ export function QuoteForm() {
       origin: "",
       destination: "",
       cargoType: "",
-      weight: "",
-      dimensions: "",
+      pieceCount: undefined,
+      cartonCount: undefined,
+      palletCount: undefined,
+      weightValue: undefined,
+      weightUnit: undefined,
+      length: undefined,
+      width: undefined,
+      height: undefined,
+      dimensionUnit: undefined,
+      requestedDate: undefined,
       message: "",
     },
   });
 
+  useEffect(() => {
+    const requestedService = new URLSearchParams(window.location.search).get("service");
+    if (isServiceType(requestedService)) {
+      form.setValue("serviceType", requestedService);
+    }
+  }, [form]);
+
   async function onSubmit(data: QuoteFormValues) {
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await fetch("/api/quote", {
         method: "POST",
@@ -64,20 +78,24 @@ export function QuoteForm() {
         body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        setIsSuccess(true);
+        setSuccessReference(result.data.reference);
         form.reset();
+        form.setValue("submissionKey", crypto.randomUUID());
       } else {
-        throw new Error(t.form.submitFailed);
+        throw new Error(result.error?.message || t.form.submitFailed);
       }
     } catch (error) {
       console.error("Error submitting quote:", error);
+      setSubmitError(error instanceof Error ? error.message : t.form.submitFailed);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  if (isSuccess) {
+  if (successReference) {
     return (
       <div className="text-center py-12">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -85,7 +103,10 @@ export function QuoteForm() {
         <p className="text-muted-foreground mb-6">
           {t.form.thankYou}
         </p>
-        <Button onClick={() => setIsSuccess(false)}>{t.form.continueQuote}</Button>
+        <p className="font-mono font-semibold mb-6">
+          {t.form.reference}: {successReference}
+        </p>
+        <Button onClick={() => setSuccessReference(null)}>{t.form.continueQuote}</Button>
       </div>
     );
   }
@@ -93,6 +114,7 @@ export function QuoteForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <input type="hidden" {...form.register("submissionKey")} />
         <div className="grid sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -159,7 +181,7 @@ export function QuoteForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t.contact.form.service} {t.form.required}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t.form.selectServiceType} />
@@ -208,15 +230,36 @@ export function QuoteForm() {
           />
         </div>
 
+        <FormField
+          control={form.control}
+          name="cargoType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.form.cargoType}</FormLabel>
+              <FormControl>
+                <Input placeholder={t.form.cargoTypePlaceholder} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="grid sm:grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="cargoType"
+            name="pieceCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t.form.cargoType}</FormLabel>
+                <FormLabel>{t.form.pieceCount}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t.form.cargoTypePlaceholder} {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1_000_000}
+                    step={1}
+                    value={field.value ?? ""}
+                    onChange={(event) => field.onChange(event.target.value === "" ? undefined : event.target.valueAsNumber)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -225,12 +268,19 @@ export function QuoteForm() {
 
           <FormField
             control={form.control}
-            name="weight"
+            name="cartonCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t.form.weight}</FormLabel>
+                <FormLabel>{t.form.cartonCount}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t.form.weightPlaceholder} {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1_000_000}
+                    step={1}
+                    value={field.value ?? ""}
+                    onChange={(event) => field.onChange(event.target.value === "" ? undefined : event.target.valueAsNumber)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -239,18 +289,125 @@ export function QuoteForm() {
 
           <FormField
             control={form.control}
-            name="dimensions"
+            name="palletCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t.form.dimensions}</FormLabel>
+                <FormLabel>{t.form.palletCount}</FormLabel>
                 <FormControl>
-                  <Input placeholder={t.form.dimensionsPlaceholder} {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1_000_000}
+                    step={1}
+                    value={field.value ?? ""}
+                    onChange={(event) => field.onChange(event.target.value === "" ? undefined : event.target.valueAsNumber)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="weightValue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.form.weightValue}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    placeholder={t.form.weightValuePlaceholder}
+                    value={field.value ?? ""}
+                    onChange={(event) => field.onChange(event.target.value || undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="weightUnit"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.form.weightUnit}</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder={t.form.selectUnit} /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="KG">KG</SelectItem>
+                    <SelectItem value="LB">LB</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid sm:grid-cols-4 gap-4">
+          {(["length", "width", "height"] as const).map((name) => (
+            <FormField
+              key={name}
+              control={form.control}
+              name={name}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.form[name]}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      value={field.value ?? ""}
+                      onChange={(event) => field.onChange(event.target.value || undefined)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
+          <FormField
+            control={form.control}
+            name="dimensionUnit"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t.form.dimensionUnit}</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder={t.form.selectUnit} /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="CM">CM</SelectItem>
+                    <SelectItem value="IN">IN</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="requestedDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t.form.requestedDate}</FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  value={field.value ?? ""}
+                  onChange={(event) => field.onChange(event.target.value || undefined)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -269,6 +426,12 @@ export function QuoteForm() {
             </FormItem>
           )}
         />
+
+        {submitError && (
+          <p role="alert" aria-live="polite" className="text-sm text-destructive">
+            {submitError}
+          </p>
+        )}
 
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? (

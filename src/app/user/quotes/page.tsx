@@ -24,9 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import { Eye, FileText, Loader2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
+import { getServiceTypeLabel } from "@/config/site-config";
 
 interface Quote {
   id: string;
+  reference: string;
   name: string;
   email: string;
   phone: string;
@@ -35,12 +37,21 @@ interface Quote {
   origin?: string;
   destination?: string;
   cargoType?: string;
-  weight?: string;
-  dimensions?: string;
+  pieceCount?: number;
+  cartonCount?: number;
+  palletCount?: number;
+  weightValue?: string;
+  weightUnit?: string;
+  length?: string;
+  width?: string;
+  height?: string;
+  dimensionUnit?: string;
+  requestedDate?: string;
   message: string;
   status: string;
-  quotedPrice?: string;
-  quoteNote?: string;
+  amount?: string;
+  currency?: string;
+  customerNote?: string;
   quotedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -64,14 +75,6 @@ export default function QuotesPage() {
     ACCEPTED: { label: t.admin.accepted, variant: "default" },
     REJECTED: { label: t.admin.rejected, variant: "destructive" },
     CLOSED: { label: t.admin.closed, variant: "outline" },
-  };
-
-  // 服务类型映射 - 使用翻译
-  const serviceTypeMap: Record<string, string> = {
-    FBA: t.form.fbaService,
-    DROPSHIPPING: t.form.dropshippingService,
-    RETURNS: t.form.returnsService,
-    OTHER: t.form.otherService,
   };
 
   useEffect(() => {
@@ -152,8 +155,8 @@ export default function QuotesPage() {
                   const status = statusMap[quote.status] || statusMap.PENDING;
                   return (
                     <TableRow key={quote.id}>
-                      <TableCell className="font-medium">{quote.id.slice(0, 12)}...</TableCell>
-                      <TableCell>{serviceTypeMap[quote.serviceType] || quote.serviceType}</TableCell>
+                      <TableCell className="font-mono text-xs">{quote.reference}</TableCell>
+                      <TableCell>{getServiceTypeLabel(quote.serviceType, t)}</TableCell>
                       <TableCell>{quote.origin || "-"}</TableCell>
                       <TableCell>{quote.destination || "-"}</TableCell>
                       <TableCell>
@@ -186,7 +189,7 @@ export default function QuotesPage() {
           <DialogHeader>
             <DialogTitle>询价详情</DialogTitle>
             <DialogDescription>
-              ID: {selectedQuote?.id}
+              {selectedQuote?.reference}
             </DialogDescription>
           </DialogHeader>
           {selectedQuote && (
@@ -210,7 +213,7 @@ export default function QuotesPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">服务类型</Label>
-                  <p className="font-medium">{serviceTypeMap[selectedQuote.serviceType]}</p>
+                  <p className="font-medium">{getServiceTypeLabel(selectedQuote.serviceType, t)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">状态</Label>
@@ -236,16 +239,26 @@ export default function QuotesPage() {
                     <p className="font-medium">{selectedQuote.cargoType}</p>
                   </div>
                 )}
-                {selectedQuote.weight && (
+                {selectedQuote.weightValue && selectedQuote.weightUnit && (
                   <div>
                     <Label className="text-muted-foreground">重量</Label>
-                    <p className="font-medium">{selectedQuote.weight}</p>
+                    <p className="font-medium">{selectedQuote.weightValue} {selectedQuote.weightUnit}</p>
                   </div>
                 )}
-                {selectedQuote.dimensions && (
+                {selectedQuote.length && selectedQuote.width && selectedQuote.height && selectedQuote.dimensionUnit && (
                   <div>
                     <Label className="text-muted-foreground">尺寸</Label>
-                    <p className="font-medium">{selectedQuote.dimensions}</p>
+                    <p className="font-medium">
+                      {selectedQuote.length} × {selectedQuote.width} × {selectedQuote.height} {selectedQuote.dimensionUnit}
+                    </p>
+                  </div>
+                )}
+                {(selectedQuote.pieceCount !== null || selectedQuote.cartonCount !== null || selectedQuote.palletCount !== null) && (
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">数量</Label>
+                    <p className="font-medium">
+                      件 {selectedQuote.pieceCount ?? "-"} / 箱 {selectedQuote.cartonCount ?? "-"} / 托 {selectedQuote.palletCount ?? "-"}
+                    </p>
                   </div>
                 )}
               </div>
@@ -255,13 +268,15 @@ export default function QuotesPage() {
               </div>
               
               {/* 报价信息 */}
-              {(selectedQuote.quotedPrice || selectedQuote.status === 'QUOTED') && (
+              {(selectedQuote.amount || selectedQuote.status === "QUOTED") && (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <h4 className="font-semibold text-green-700 mb-2">报价信息</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">报价金额</Label>
-                      <p className="font-bold text-green-600 text-lg">{selectedQuote.quotedPrice || '待报价'}</p>
+                      <p className="font-bold text-green-600 text-lg">
+                        {selectedQuote.amount && selectedQuote.currency ? `${selectedQuote.amount} ${selectedQuote.currency}` : "待报价"}
+                      </p>
                     </div>
                     {selectedQuote.quotedAt && (
                       <div>
@@ -270,10 +285,10 @@ export default function QuotesPage() {
                       </div>
                     )}
                   </div>
-                  {selectedQuote.quoteNote && (
+                  {selectedQuote.customerNote && (
                     <div className="mt-2">
                       <Label className="text-muted-foreground">报价备注</Label>
-                      <p className="font-medium whitespace-pre-wrap">{selectedQuote.quoteNote}</p>
+                      <p className="font-medium whitespace-pre-wrap">{selectedQuote.customerNote}</p>
                     </div>
                   )}
                 </div>

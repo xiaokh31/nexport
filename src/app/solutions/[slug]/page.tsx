@@ -159,7 +159,7 @@ export default function SolutionDetailPage({ params }: PageProps) {
                   </p>
                   <div className="space-y-4">
                     <Button asChild className="w-full">
-                      <Link href="/contact">
+                      <Link href={`/contact?service=${config.serviceType}`}>
                         {t.common?.getQuote || "获取报价"}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>

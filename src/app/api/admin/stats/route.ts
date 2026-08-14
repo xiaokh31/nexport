@@ -60,9 +60,9 @@ export async function GET(request: NextRequest) {
       prisma.user.count(),
       prisma.user.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
       prisma.user.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
-      prisma.quote.count(),
-      prisma.quote.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
-      prisma.quote.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
+      prisma.quote.count({ where: { deletedAt: null } }),
+      prisma.quote.count({ where: { deletedAt: null, createdAt: { gte: today, lt: tomorrow } } }),
+      prisma.quote.count({ where: { deletedAt: null, createdAt: { gte: yesterday, lt: today } } }),
       prisma.article.count({ where: { status: 'PUBLISHED' } }),
       prisma.article.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
       prisma.article.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
       prisma.notification.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
       prisma.notification.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
       prisma.quote.findMany({
+        where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, MessageSquare, Users, TrendingUp, Loader2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
+import { getServiceTypeLabel } from "@/config/site-config";
 
 interface Stats {
   users: { total: number; today: number; change: string };
@@ -34,13 +35,6 @@ export default function AdminPage() {
   const [recentArticles, setRecentArticles] = useState<RecentArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const serviceTypeMap: Record<string, string> = {
-    FBA: t.form?.fbaService || "FBA尾程提拆派服务",
-    DROPSHIPPING: t.form?.dropshippingService || "本地仓库一件代发",
-    RETURNS: t.form?.returnsService || "退货换标",
-    OTHER: t.form?.otherService || "其他",
-  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -180,7 +174,7 @@ export default function AdminPage() {
                     <div>
                       <p className="font-medium">{quote.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {serviceTypeMap[quote.serviceType] || quote.serviceType}
+                        {getServiceTypeLabel(quote.serviceType, t)}
                       </p>
                     </div>
                     <span className="text-sm text-muted-foreground">

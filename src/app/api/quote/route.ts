@@ -1,90 +1,209 @@
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { quoteFormSchema } from "@/lib/validations";
+import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
+import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { serverEnv } from "@/config/env/server";
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    
-    // 验证表单数据
-    const validatedData = quoteFormSchema.parse(body);
-    
-    // 检查用户是否登录，如果登录则关联userId
-    const session = await getServerSession(authOptions);
-    let userId: string | null = null;
-    
-    if (session?.user?.id) {
-      userId = session.user.id;
-    } else if (validatedData.email) {
-      // 如果用户未登录，尝试通过邮箱查找对应的用户ID
-      const existingUser = await prisma.user.findUnique({
-        where: { email: validatedData.email },
-        select: { id: true },
-      });
-      if (existingUser) {
-        userId = existingUser.id;
-      }
+const REFERENCE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+function nullableText(value: string | undefined) {
+  const normalized = value?.normalize("NFC").trim();
+  return normalized || null;
+}
+
+function createReference(now = new Date()) {
+  const date = now.toISOString().slice(0, 10).replaceAll("-", "");
+  const bytes = randomBytes(5);
+  let buffer = 0;
+  let bufferedBits = 0;
+  let suffix = "";
+
+  for (const byte of bytes) {
+    buffer = (buffer << 8) | byte;
+    bufferedBits += 8;
+    while (bufferedBits >= 5) {
+      bufferedBits -= 5;
+      suffix += REFERENCE_ALPHABET[(buffer >> bufferedBits) & 31];
+      buffer &= (1 << bufferedBits) - 1;
     }
-    
-    // 保存到数据库
-    const quote = await prisma.quote.create({
-      data: {
-        userId,
-        name: validatedData.name,
-        email: validatedData.email,
-        phone: validatedData.phone,
-        company: validatedData.company || null,
-        serviceType: validatedData.serviceType as "FBA" | "DROPSHIPPING" | "RETURNS" | "OTHER",
-        origin: validatedData.origin || null,
-        destination: validatedData.destination || null,
-        cargoType: validatedData.cargoType || null,
-        weight: validatedData.weight || null,
-        dimensions: validatedData.dimensions || null,
-        message: validatedData.message,
-      },
+  }
+
+  return `Q-${date}-${suffix}`;
+}
+
+function createSubmissionFingerprint(data: QuoteFormValues, subject: string) {
+  const canonicalPayload = {
+    version: 1,
+    subject,
+    name: data.name.normalize("NFC").trim(),
+    email: data.email.normalize("NFC").trim().toLowerCase(),
+    phone: data.phone.normalize("NFC").trim(),
+    company: nullableText(data.company),
+    serviceType: data.serviceType,
+    origin: nullableText(data.origin),
+    destination: nullableText(data.destination),
+    cargoType: nullableText(data.cargoType),
+    pieceCount: data.pieceCount ?? null,
+    cartonCount: data.cartonCount ?? null,
+    palletCount: data.palletCount ?? null,
+    weightValue: data.weightValue ?? null,
+    weightUnit: data.weightUnit ?? null,
+    length: data.length ?? null,
+    width: data.width ?? null,
+    height: data.height ?? null,
+    dimensionUnit: data.dimensionUnit ?? null,
+    requestedDate: data.requestedDate ?? null,
+    message: data.message.normalize("NFC").trim(),
+  };
+
+  return createHash("sha256").update(JSON.stringify(canonicalPayload)).digest("hex");
+}
+
+function successResponse(reference: string, status: string, httpStatus: number) {
+  return NextResponse.json(
+    { success: true, data: { reference, status } },
+    { status: httpStatus },
+  );
+}
+
+function errorResponse(
+  requestId: string,
+  status: number,
+  code: string,
+  message: string,
+  fieldErrors?: Record<string, string[] | undefined>,
+) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { code, message, ...(fieldErrors ? { fieldErrors } : {}) },
+      requestId,
+    },
+    { status },
+  );
+}
+
+export async function POST(request: Request) {
+  const requestId = randomUUID();
+
+  try {
+    const validatedData = quoteFormSchema.parse(await request.json());
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || null;
+    const subject = userId ? `user:${userId}` : `anonymous:${validatedData.email}`;
+    const submissionFingerprint = createSubmissionFingerprint(validatedData, subject);
+
+    const existingQuote = await prisma.quote.findUnique({
+      where: { submissionKey: validatedData.submissionKey },
+      select: { reference: true, status: true, submissionFingerprint: true },
     });
 
-    // 发送邮件通知
+    if (existingQuote) {
+      if (existingQuote.submissionFingerprint !== submissionFingerprint) {
+        return errorResponse(requestId, 409, "SUBMISSION_KEY_CONFLICT", "该提交标识已用于不同的询价内容");
+      }
+      return successResponse(existingQuote.reference, existingQuote.status, 200);
+    }
+
+    let quote: { reference: string; status: string } | null = null;
+
+    for (let attempt = 0; attempt < 5 && !quote; attempt += 1) {
+      try {
+        quote = await prisma.quote.create({
+          data: {
+            reference: createReference(),
+            submissionKey: validatedData.submissionKey,
+            submissionFingerprint,
+            userId,
+            name: validatedData.name,
+            email: validatedData.email,
+            phone: validatedData.phone,
+            company: nullableText(validatedData.company),
+            serviceType: validatedData.serviceType,
+            origin: nullableText(validatedData.origin),
+            destination: nullableText(validatedData.destination),
+            cargoType: nullableText(validatedData.cargoType),
+            pieceCount: validatedData.pieceCount ?? null,
+            cartonCount: validatedData.cartonCount ?? null,
+            palletCount: validatedData.palletCount ?? null,
+            weightValue: validatedData.weightValue ?? null,
+            weightUnit: validatedData.weightUnit ?? null,
+            length: validatedData.length ?? null,
+            width: validatedData.width ?? null,
+            height: validatedData.height ?? null,
+            dimensionUnit: validatedData.dimensionUnit ?? null,
+            requestedDate: validatedData.requestedDate
+              ? new Date(`${validatedData.requestedDate}T00:00:00.000Z`)
+              : null,
+            message: validatedData.message,
+          },
+          select: { reference: true, status: true },
+        });
+      } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+          throw error;
+        }
+
+        const concurrentQuote = await prisma.quote.findUnique({
+          where: { submissionKey: validatedData.submissionKey },
+          select: { reference: true, status: true, submissionFingerprint: true },
+        });
+
+        if (concurrentQuote) {
+          if (concurrentQuote.submissionFingerprint !== submissionFingerprint) {
+            return errorResponse(requestId, 409, "SUBMISSION_KEY_CONFLICT", "该提交标识已用于不同的询价内容");
+          }
+          return successResponse(concurrentQuote.reference, concurrentQuote.status, 200);
+        }
+      }
+    }
+
+    if (!quote) {
+      return errorResponse(requestId, 503, "REFERENCE_UNAVAILABLE", "暂时无法生成询价编号，请重试");
+    }
+
     if (serverEnv.emailTo) {
-      const { sendEmail, emailTemplates } = await import('@/lib/email');
-      const emailData = {
+      const { sendEmail, emailTemplates } = await import("@/lib/email");
+      const template = emailTemplates.quoteNotification({
         name: validatedData.name,
         email: validatedData.email,
         phone: validatedData.phone,
         company: validatedData.company,
         serviceType: validatedData.serviceType,
         message: validatedData.message,
-      };
-      
-      const template = emailTemplates.quoteNotification(emailData);
-      
+      });
+
       const emailResult = await sendEmail({
         to: serverEnv.emailTo,
         subject: template.subject,
         html: template.html,
       });
-      
-      if (emailResult.success) {
-        console.log('Quote notification email sent successfully');
-      } else {
-        console.error('Failed to send quote notification email:', emailResult.error);
+
+      if (!emailResult.success) {
+        console.error("Failed to send quote notification email:", emailResult.error);
       }
     }
 
-    console.log("Quote request saved:", quote.id);
-
-    return NextResponse.json(
-      { success: true, message: "询价请求已提交", quoteId: quote.id },
-      { status: 200 }
-    );
+    return successResponse(quote.reference, quote.status, 201);
   } catch (error) {
-    console.error("Error processing quote:", error);
-    return NextResponse.json(
-      { success: false, error: "提交失败，请稍后重试" },
-      { status: 500 }
-    );
+    if (error instanceof SyntaxError) {
+      return errorResponse(requestId, 400, "INVALID_JSON", "请求内容不是有效的JSON");
+    }
+    if (error instanceof ZodError) {
+      return errorResponse(
+        requestId,
+        400,
+        "VALIDATION_ERROR",
+        "询价数据校验失败",
+        error.flatten().fieldErrors,
+      );
+    }
+
+    console.error("Error processing quote:", { requestId, error });
+    return errorResponse(requestId, 500, "INTERNAL_ERROR", "提交失败，请稍后重试");
   }
 }

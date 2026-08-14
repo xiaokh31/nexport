@@ -32,9 +32,11 @@ import {
 } from "@/components/ui/dialog";
 import { Search, Eye, CheckCircle, XCircle, Loader2, Send } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
+import { getServiceTypeLabel } from "@/config/site-config";
 
 interface Quote {
   id: string;
+  reference: string;
   name: string;
   email: string;
   phone: string;
@@ -43,12 +45,22 @@ interface Quote {
   origin?: string;
   destination?: string;
   cargoType?: string;
-  weight?: string;
-  dimensions?: string;
+  pieceCount?: number;
+  cartonCount?: number;
+  palletCount?: number;
+  weightValue?: string;
+  weightUnit?: string;
+  length?: string;
+  width?: string;
+  height?: string;
+  dimensionUnit?: string;
+  requestedDate?: string;
   message: string;
   status: string;
-  quotedPrice?: string;
-  quoteNote?: string;
+  amount?: string;
+  currency?: string;
+  customerNote?: string;
+  internalNote?: string;
   quotedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -65,8 +77,9 @@ export default function QuotesManagePage() {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showQuoteDialog, setShowQuoteDialog] = useState(false);
-  const [quotePrice, setQuotePrice] = useState("");
-  const [quoteNote, setQuoteNote] = useState("");
+  const [quoteAmount, setQuoteAmount] = useState("");
+  const [quoteCurrency, setQuoteCurrency] = useState("");
+  const [customerNote, setCustomerNote] = useState("");
   const [updating, setUpdating] = useState(false);
   const { t } = useLocale();
 
@@ -77,13 +90,6 @@ export default function QuotesManagePage() {
     ACCEPTED: { label: t.admin?.accepted || "已接受", variant: "default" },
     REJECTED: { label: t.admin?.rejected || "已拒绝", variant: "destructive" },
     CLOSED: { label: t.admin?.closed || "已关闭", variant: "outline" },
-  };
-
-  const serviceTypeMap: Record<string, string> = {
-    FBA: t.form?.fbaService || "FBA尾程提拆派服务",
-    DROPSHIPPING: t.form?.dropshippingService || "本地仓库一件代发",
-    RETURNS: t.form?.returnsService || "退货换标",
-    OTHER: t.form?.otherService || "其他",
   };
 
   // 获取询价列表
@@ -105,7 +111,7 @@ export default function QuotesManagePage() {
           setTotal(data.total);
         } else {
           const errorData = await response.json();
-          setError(errorData.error || "获取询价列表失败");
+          setError(errorData.error?.message || (typeof errorData.error === "string" ? errorData.error : "获取询价列表失败"));
         }
       } catch (err) {
         setError("获取询价列表失败");
@@ -119,24 +125,37 @@ export default function QuotesManagePage() {
 
   // 更新询价状态
   const updateQuoteStatus = async (id: string, status: string) => {
+    const currentQuote = quotes.find((quote) => quote.id === id);
+    if (!currentQuote) return;
+
+    const reasonRequired =
+      (status === "CLOSED" && ["PENDING", "PROCESSING", "QUOTED"].includes(currentQuote.status)) ||
+      (currentQuote.status === "PROCESSING" && status === "PENDING") ||
+      (currentQuote.status === "QUOTED" && status === "PROCESSING") ||
+      (["ACCEPTED", "REJECTED"].includes(currentQuote.status) && status === "QUOTED");
+    const reason = reasonRequired ? window.prompt("请输入状态变更原因（10至500字符）") : undefined;
+    if (reasonRequired && (!reason || reason.trim().length < 10)) {
+      alert("状态变更原因至少需要10个字符");
+      return;
+    }
+
     setUpdating(true);
     try {
       const response = await fetch("/api/admin/quotes", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ id, status, reason, requestKey: crypto.randomUUID() }),
       });
 
       if (response.ok) {
-        setQuotes(quotes.map(quote => 
-          quote.id === id ? { ...quote, status } : quote
-        ));
+        const data = await response.json();
+        setQuotes(quotes.map(quote => quote.id === id ? data.quote : quote));
         if (selectedQuote?.id === id) {
-          setSelectedQuote({ ...selectedQuote, status });
+          setSelectedQuote(data.quote);
         }
       } else {
         const errorData = await response.json();
-        alert(errorData.error || "更新状态失败");
+        alert(errorData.error?.message || (typeof errorData.error === "string" ? errorData.error : "更新状态失败"));
       }
     } catch (err) {
       alert("更新状态失败");
@@ -154,44 +173,44 @@ export default function QuotesManagePage() {
   // 打开报价对话框
   const openQuoteDialog = (quote: Quote) => {
     setSelectedQuote(quote);
-    // Pre-populate existing quote data for editing
-    setQuotePrice(quote.quotedPrice || '');
-    setQuoteNote(quote.quoteNote || '');
+    setQuoteAmount(quote.amount || "");
+    setQuoteCurrency(quote.currency || "");
+    setCustomerNote(quote.customerNote || "");
     setShowQuoteDialog(true);
   };
 
   // 提交报价
   const submitQuote = async () => {
-    if (!selectedQuote || !quotePrice) {
-      alert("请输入报价金额");
+    if (!selectedQuote || !quoteAmount || !/^[A-Z]{3}$/.test(quoteCurrency)) {
+      alert("请输入有效的报价金额和三字母币种");
       return;
     }
 
     setUpdating(true);
     try {
-      // If already quoted, just update. Otherwise set to QUOTED
-      const isUpdating = selectedQuote.status === 'QUOTED';
       const response = await fetch("/api/admin/quotes", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          id: selectedQuote.id, 
-          status: isUpdating ? selectedQuote.status : "QUOTED",
-          quotedPrice: quotePrice,
-          quoteNote: quoteNote,
+          id: selectedQuote.id,
+          status: "QUOTED",
+          amount: quoteAmount,
+          currency: quoteCurrency,
+          customerNote,
+          requestKey: crypto.randomUUID(),
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setQuotes(quotes.map(quote => 
+        setQuotes(quotes.map(quote =>
           quote.id === selectedQuote.id ? data.quote : quote
         ));
         setShowQuoteDialog(false);
-        alert(isUpdating ? 'Quote updated!' : 'Quote submitted!');
+        alert("Quote submitted!");
       } else {
         const errorData = await response.json();
-        alert(errorData.error || "提交报价失败");
+        alert(errorData.error?.message || (typeof errorData.error === "string" ? errorData.error : "提交报价失败"));
       }
     } catch (err) {
       alert("提交报价失败");
@@ -262,7 +281,7 @@ export default function QuotesManagePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
+                    <TableHead>编号</TableHead>
                     <TableHead>客户</TableHead>
                     <TableHead>联系方式</TableHead>
                     <TableHead>服务类型</TableHead>
@@ -277,7 +296,7 @@ export default function QuotesManagePage() {
                       const status = statusMap[quote.status];
                       return (
                         <TableRow key={quote.id}>
-                          <TableCell className="font-medium">{quote.id.slice(0, 8)}...</TableCell>
+                          <TableCell className="font-mono text-xs">{quote.reference}</TableCell>
                           <TableCell>{quote.name}</TableCell>
                           <TableCell>
                             <div className="text-sm">
@@ -285,7 +304,7 @@ export default function QuotesManagePage() {
                               <div className="text-muted-foreground">{quote.phone}</div>
                             </div>
                           </TableCell>
-                          <TableCell>{serviceTypeMap[quote.serviceType] || quote.serviceType}</TableCell>
+                          <TableCell>{getServiceTypeLabel(quote.serviceType, t)}</TableCell>
                           <TableCell>
                             <Badge variant={status.variant}>{status.label}</Badge>
                           </TableCell>
@@ -301,36 +320,31 @@ export default function QuotesManagePage() {
                                 <Eye className="h-4 w-4" />
                               </Button>
                               {quote.status === "PENDING" && (
-                                <Button 
+                                <Button
                                   variant="ghost" 
                                   size="icon" 
                                   className="text-blue-500"
-                                  onClick={() => openQuoteDialog(quote)}
-                                  title="提交报价"
+                                  onClick={() => updateQuoteStatus(quote.id, "PROCESSING")}
+                                  title="开始处理"
                                 >
                                   <Send className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="text-green-500"
-                                onClick={() => updateQuoteStatus(quote.id, 'ACCEPTED')}
-                                title="接受"
-                                disabled={quote.status === "ACCEPTED"}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="text-red-500"
-                                onClick={() => updateQuoteStatus(quote.id, 'REJECTED')}
-                                title="拒绝"
-                                disabled={quote.status === "REJECTED"}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
+                              {quote.status === "PROCESSING" && (
+                                <Button variant="ghost" size="icon" className="text-blue-500" onClick={() => openQuoteDialog(quote)} title="提交报价">
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {quote.status === "QUOTED" && (
+                                <>
+                                  <Button variant="ghost" size="icon" className="text-green-500" onClick={() => updateQuoteStatus(quote.id, "ACCEPTED")} title="接受">
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => updateQuoteStatus(quote.id, "REJECTED")} title="拒绝">
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -383,7 +397,7 @@ export default function QuotesManagePage() {
           <DialogHeader>
             <DialogTitle>询价详情</DialogTitle>
             <DialogDescription>
-              ID: {selectedQuote?.id}
+              {selectedQuote?.reference}
             </DialogDescription>
           </DialogHeader>
           {selectedQuote && (
@@ -407,7 +421,7 @@ export default function QuotesManagePage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">服务类型</Label>
-                  <p className="font-medium">{serviceTypeMap[selectedQuote.serviceType]}</p>
+                  <p className="font-medium">{getServiceTypeLabel(selectedQuote.serviceType, t)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">状态</Label>
@@ -433,16 +447,26 @@ export default function QuotesManagePage() {
                     <p className="font-medium">{selectedQuote.cargoType}</p>
                   </div>
                 )}
-                {selectedQuote.weight && (
+                {selectedQuote.weightValue && selectedQuote.weightUnit && (
                   <div>
                     <Label className="text-muted-foreground">重量</Label>
-                    <p className="font-medium">{selectedQuote.weight}</p>
+                    <p className="font-medium">{selectedQuote.weightValue} {selectedQuote.weightUnit}</p>
                   </div>
                 )}
-                {selectedQuote.dimensions && (
+                {selectedQuote.length && selectedQuote.width && selectedQuote.height && selectedQuote.dimensionUnit && (
                   <div>
                     <Label className="text-muted-foreground">尺寸</Label>
-                    <p className="font-medium">{selectedQuote.dimensions}</p>
+                    <p className="font-medium">
+                      {selectedQuote.length} × {selectedQuote.width} × {selectedQuote.height} {selectedQuote.dimensionUnit}
+                    </p>
+                  </div>
+                )}
+                {(selectedQuote.pieceCount !== null || selectedQuote.cartonCount !== null || selectedQuote.palletCount !== null) && (
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">数量</Label>
+                    <p className="font-medium">
+                      件 {selectedQuote.pieceCount ?? "-"} / 箱 {selectedQuote.cartonCount ?? "-"} / 托 {selectedQuote.palletCount ?? "-"}
+                    </p>
                   </div>
                 )}
               </div>
@@ -452,13 +476,15 @@ export default function QuotesManagePage() {
               </div>
               
               {/* 报价信息 */}
-              {(selectedQuote.quotedPrice || selectedQuote.status === 'QUOTED') && (
+              {(selectedQuote.amount || selectedQuote.status === "QUOTED") && (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <h4 className="font-semibold text-green-700 mb-2">报价信息</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">报价金额</Label>
-                      <p className="font-bold text-green-600 text-lg">{selectedQuote.quotedPrice || '-'}</p>
+                      <p className="font-bold text-green-600 text-lg">
+                        {selectedQuote.amount && selectedQuote.currency ? `${selectedQuote.amount} ${selectedQuote.currency}` : "-"}
+                      </p>
                     </div>
                     {selectedQuote.quotedAt && (
                       <div>
@@ -467,12 +493,18 @@ export default function QuotesManagePage() {
                       </div>
                     )}
                   </div>
-                  {selectedQuote.quoteNote && (
+                  {selectedQuote.customerNote && (
                     <div className="mt-2">
-                      <Label className="text-muted-foreground">报价备注</Label>
-                      <p className="font-medium whitespace-pre-wrap">{selectedQuote.quoteNote}</p>
+                      <Label className="text-muted-foreground">客户可见备注</Label>
+                      <p className="font-medium whitespace-pre-wrap">{selectedQuote.customerNote}</p>
                     </div>
                   )}
+                </div>
+              )}
+              {selectedQuote.internalNote && (
+                <div>
+                  <Label className="text-muted-foreground">内部备注</Label>
+                  <p className="font-medium whitespace-pre-wrap">{selectedQuote.internalNote}</p>
                 </div>
               )}
               
@@ -483,7 +515,7 @@ export default function QuotesManagePage() {
             </div>
           )}
           <DialogFooter>
-            {selectedQuote?.status === 'QUOTED' && (
+            {selectedQuote?.status === "PROCESSING" && (
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -491,7 +523,7 @@ export default function QuotesManagePage() {
                   setTimeout(() => openQuoteDialog(selectedQuote), 100);
                 }}
               >
-                Edit Quote
+                提交报价
               </Button>
             )}
             <Select 
@@ -530,20 +562,19 @@ export default function QuotesManagePage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="price">报价金额 *</Label>
-              <Input
-                id="price"
-                placeholder="例如: $500 USD"
-                value={quotePrice}
-                onChange={(e) => setQuotePrice(e.target.value)}
-              />
+              <Input id="price" type="number" min="0.01" step="0.01" placeholder="例如：500.00" value={quoteAmount} onChange={(e) => setQuoteAmount(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="note">备注说明</Label>
+              <Label htmlFor="currency">币种 *</Label>
+              <Input id="currency" maxLength={3} placeholder="例如：USD" value={quoteCurrency} onChange={(e) => setQuoteCurrency(e.target.value.toUpperCase())} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">客户可见备注</Label>
               <Textarea
                 id="note"
                 placeholder="添加报价说明..."
-                value={quoteNote}
-                onChange={(e) => setQuoteNote(e.target.value)}
+                value={customerNote}
+                onChange={(e) => setCustomerNote(e.target.value)}
                 rows={4}
               />
             </div>
@@ -552,7 +583,7 @@ export default function QuotesManagePage() {
             <Button variant="outline" onClick={() => setShowQuoteDialog(false)}>
               取消
             </Button>
-            <Button onClick={submitQuote} disabled={updating || !quotePrice}>
+            <Button onClick={submitQuote} disabled={updating || !quoteAmount || !quoteCurrency}>
               {updating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

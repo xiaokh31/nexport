@@ -3,6 +3,7 @@
 // ==========================================
 
 import { publicEnv } from "@/config/env/public";
+import type { ServiceType } from "@/config/quote";
 
 // 站点联系信息
 export const siteLinks = {
@@ -41,18 +42,46 @@ export const partnerLinks = [
 // 解决方案配置 (统一配置，避免重复定义)
 // ==========================================
 export const solutionConfigs = [
-  { key: "fbaLastMile", icon: "Package", slug: "fba-last-mile", image: "/images/services/Express Delivery.jpg" },
-  { key: "truckFreight", icon: "Truck", slug: "truck-freight", image: "/images/services/Truck Delivery.jpg" },
-  { key: "crossBorder", icon: "Globe", slug: "cross-border", image: "/images/services/Cross-border Logistics.jpg" },
-  { key: "amazonFba", icon: "ShoppingCart", slug: "amazon-fba", image: "/images/services/Amazon FBA.jpg" },
-  { key: "express", icon: "Zap", slug: "express", image: "/images/services/Express-Service.jpg" },
-  { key: "warehouse", icon: "Warehouse", slug: "warehouse", image: "/images/services/Warehouse.jpg" },
-  { key: "dropshipping", icon: "Ship", slug: "dropshipping", image: "/images/services/Dropshipping.jpg" },
-  { key: "returns", icon: "RefreshCw", slug: "returns", image: "/images/services/Returns.jpg" },
-] as const;
+  { key: "fbaLastMile", serviceType: "FBA_LAST_MILE", icon: "Package", slug: "fba-last-mile", image: "/images/services/Express Delivery.jpg" },
+  { key: "truckFreight", serviceType: "TRUCK_FREIGHT", icon: "Truck", slug: "truck-freight", image: "/images/services/Truck Delivery.jpg" },
+  { key: "crossBorder", serviceType: "CROSS_BORDER", icon: "Globe", slug: "cross-border", image: "/images/services/Cross-border Logistics.jpg" },
+  { key: "amazonFba", serviceType: "AMAZON_FBA", icon: "ShoppingCart", slug: "amazon-fba", image: "/images/services/Amazon FBA.jpg" },
+  { key: "express", serviceType: "EXPRESS", icon: "Zap", slug: "express", image: "/images/services/Express-Service.jpg" },
+  { key: "warehouse", serviceType: "WAREHOUSE", icon: "Warehouse", slug: "warehouse", image: "/images/services/Warehouse.jpg" },
+  { key: "dropshipping", serviceType: "DROPSHIPPING", icon: "Ship", slug: "dropshipping", image: "/images/services/Dropshipping.jpg" },
+  { key: "returns", serviceType: "RETURNS", icon: "RefreshCw", slug: "returns", image: "/images/services/Returns.jpg" },
+] as const satisfies ReadonlyArray<{
+  key: string;
+  serviceType: Exclude<ServiceType, "OTHER">;
+  icon: string;
+  slug: string;
+  image: string;
+}>;
 
 export type SolutionKey = typeof solutionConfigs[number]["key"];
 export type SolutionSlug = typeof solutionConfigs[number]["slug"];
+
+type ServiceTypeDictionary = {
+  solutions?: Partial<Record<SolutionKey, { title?: string }>>;
+  form?: { otherService?: string };
+};
+
+export function getServiceTypeOptions(t: ServiceTypeDictionary) {
+  return [
+    ...solutionConfigs.map(({ key, serviceType }) => ({
+      value: serviceType,
+      label: t.solutions?.[key]?.title || key,
+    })),
+    {
+      value: "OTHER" as const,
+      label: t.form?.otherService || "Other",
+    },
+  ];
+}
+
+export function getServiceTypeLabel(serviceType: string, t: ServiceTypeDictionary) {
+  return getServiceTypeOptions(t).find((option) => option.value === serviceType)?.label || serviceType;
+}
 
 // ==========================================
 // 动态配置函数 (依赖翻译)
@@ -91,11 +120,12 @@ export function getSiteConfig(t: any) {
 
 // 获取解决方案列表配置（带翻译）
 export function getSolutionsConfig(t: any) {
-  return solutionConfigs.map(({ key, icon, slug, image }) => {
+  return solutionConfigs.map(({ key, serviceType, icon, slug, image }) => {
     const solutionData = t.solutions?.[key] as { title: string; description: string; features?: string[] } | undefined;
     return {
       id: key,
       key,
+      serviceType,
       title: solutionData?.title || key,
       description: solutionData?.description || "",
       features: solutionData?.features || [],
