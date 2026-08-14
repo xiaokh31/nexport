@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { getGoogleOAuthConfig, serverEnv } from "@/config/env/server";
+import { authenticateCredentials } from "@/lib/auth/credentials";
 
 const googleOAuthConfig = getGoogleOAuthConfig();
 
@@ -85,7 +86,6 @@ export const authOptions: NextAuthOptions = {
           GoogleProvider({
             clientId: googleOAuthConfig.clientId,
             clientSecret: googleOAuthConfig.clientSecret,
-            allowDangerousEmailAccountLinking: true, // 允许链接已存在的邮箱账户
           }),
         ]
       : []),
@@ -96,43 +96,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("请输入邮箱和密码");
-        }
-
-        // 从数据库查询用户
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        return authenticateCredentials(credentials, {
+          findUserByEmail: (email) => prisma.user.findUnique({ where: { email } }),
+          verifyPassword: (password, passwordHash) => bcrypt.compare(password, passwordHash),
         });
-
-        if (!user || !user.password) {
-          // 开发模式：如果数据库中没有用户，允许使用演示账号
-          if (credentials.email === "demo@example.com" && credentials.password === "demo123") {
-            return {
-              id: "demo-user",
-              email: credentials.email,
-              name: "Demo User",
-              role: "CUSTOMER",
-            };
-          }
-          throw new Error("用户不存在");
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("密码错误");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
       },
     }),
   ],
@@ -156,7 +123,7 @@ export const authOptions: NextAuthOptions = {
           });
           if (dbUser) {
             token.role = dbUser.role;
-            token.canManageArticles = (dbUser as any).canManageArticles || false;
+            token.canManageArticles = dbUser.canManageArticles;
           }
         } catch (error) {
           console.error('Error fetching user role:', error);
@@ -186,11 +153,9 @@ export const authOptions: NextAuthOptions = {
           let loginMethod = '邮箱密码登录';
           if (account?.provider === 'google') {
             loginMethod = 'Google 登录';
-          } else if (account?.provider === 'github') {
-            loginMethod = 'GitHub 登录';
           }
-          
-          await (prisma as any).loginHistory.create({
+
+          await prisma.loginHistory.create({
             data: {
               userId: user.id,
               ip: ip,

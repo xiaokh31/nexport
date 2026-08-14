@@ -101,6 +101,8 @@ export function createTestProcessEnvironment(environment = process.env) {
     PLAYWRIGHT_BASE_URL: playwrightBaseUrl,
     NEXTAUTH_SECRET:
       environment.NEXTAUTH_SECRET || "nexport-test-only-nextauth-secret",
+    GOOGLE_CLIENT_ID: "",
+    GOOGLE_CLIENT_SECRET: "",
   };
 }
 

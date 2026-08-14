@@ -24,12 +24,17 @@ const optionalCount = z.number().int().min(0).max(1_000_000).optional();
 const optionalWeightValue = normalizedPositiveDecimal(11, 3, "重量必须是大于0且最多3位小数的数值").optional();
 const optionalDimensionValue = normalizedPositiveDecimal(9, 3, "尺寸必须是大于0且最多3位小数的数值").optional();
 const optionalAmount = normalizedPositiveDecimal(12, 2, "报价金额必须是大于0且最多2位小数的数值").nullable().optional();
+const normalizedEmailSchema = z.string()
+  .trim()
+  .toLowerCase()
+  .email("请输入有效的邮箱地址")
+  .max(254, "邮箱不能超过254个字符");
 
 // 询价表单验证
 export const quoteFormSchema = z.object({
   submissionKey: z.string().uuid("提交标识必须是有效的UUID"),
   name: z.string().trim().min(2, "姓名至少2个字符").max(100, "姓名不能超过100个字符"),
-  email: z.string().trim().toLowerCase().email("请输入有效的邮箱地址").max(254, "邮箱不能超过254个字符"),
+  email: normalizedEmailSchema,
   phone: z.string().trim().min(7, "请输入有效的电话号码").max(32, "电话号码不能超过32个字符"),
   company: optionalText(160, "公司名称不能超过160个字符"),
   serviceType: z.enum(SERVICE_TYPES, {
@@ -129,7 +134,7 @@ export const quoteSoftDeleteSchema = z.object({
 
 // 登录表单验证
 export const loginFormSchema = z.object({
-  email: z.string().email("请输入有效的邮箱地址"),
+  email: normalizedEmailSchema,
   password: z.string().min(6, "密码至少6个字符"),
 });
 
@@ -138,7 +143,7 @@ export type LoginFormValues = z.infer<typeof loginFormSchema>;
 // 注册表单验证
 export const registerFormSchema = z.object({
   name: z.string().min(2, "姓名至少2个字符"),
-  email: z.string().email("请输入有效的邮箱地址"),
+  email: normalizedEmailSchema,
   password: z.string().min(6, "密码至少6个字符"),
   confirmPassword: z.string().min(6, "密码至少6个字符"),
   company: z.string().optional(),

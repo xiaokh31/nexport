@@ -10,9 +10,6 @@ export async function POST(request: Request) {
     // 验证表单数据
     const validatedData = registerFormSchema.parse(body);
     
-    // Hash password
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-
     // 检查邮箱是否已存在
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email },
@@ -24,8 +21,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+
     // 创建用户
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name: validatedData.name,
         email: validatedData.email,
@@ -34,8 +34,6 @@ export async function POST(request: Request) {
         phone: validatedData.phone || null,
       },
     });
-
-    console.log("User registered:", user.email);
 
     return NextResponse.json(
       {

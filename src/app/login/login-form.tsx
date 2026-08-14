@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +27,23 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [googleLoginEnabled, setGoogleLoginEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    void getProviders()
+      .then((providers) => {
+        if (active) setGoogleLoginEnabled(Boolean(providers?.google));
+      })
+      .catch(() => {
+        if (active) setGoogleLoginEnabled(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Check if external reCAPTCHA is configured
   const recaptchaSiteKey = publicEnv.recaptchaSiteKey;
@@ -61,7 +78,7 @@ export function LoginForm() {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       setError(t.auth.loginFailed);
     } finally {
       setIsLoading(false);
@@ -151,24 +168,28 @@ export function LoginForm() {
           </p>
         )}
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">{t.auth.or}</span>
-          </div>
-        </div>
+        {googleLoginEnabled && (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">{t.auth.or}</span>
+              </div>
+            </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-          disabled={isLoading}
-        >
-          {t.auth.googleLogin}
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              disabled={isLoading}
+            >
+              {t.auth.googleLogin}
+            </Button>
+          </>
+        )}
       </form>
     </Form>
   );
