@@ -8,6 +8,10 @@ export interface Article {
   excerpt: string;
   content: string;
   coverImage?: string;
+  coverImageAlt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  authorId?: string;
   author: string;
   category: string;
   tags: string[];
@@ -29,6 +33,10 @@ export interface CreateArticleInput {
   excerpt: string;
   content: string;
   coverImage?: string;
+  coverImageAlt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  authorId?: string;
   author: string;
   category: string;
   tags?: string[];
@@ -43,6 +51,10 @@ export interface UpdateArticleInput {
   excerpt?: string;
   content?: string;
   coverImage?: string;
+  coverImageAlt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  authorId?: string;
   author?: string;
   category?: string;
   tags?: string[];

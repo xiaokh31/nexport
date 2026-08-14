@@ -43,8 +43,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [quoteUpdates, setQuoteUpdates] = useState(true);
-  const [newsUpdates, setNewsUpdates] = useState(false);
+  const [quoteEmailUpdates, setQuoteEmailUpdates] = useState(true);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [loginHistory, setLoginHistory] = useState<LoginHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -57,8 +56,7 @@ export default function SettingsPage() {
         if (response.ok) {
           const data = await response.json();
           setEmailNotifications(data.settings.emailNotifications);
-          setQuoteUpdates(data.settings.quoteUpdates);
-          setNewsUpdates(data.settings.newsUpdates);
+          setQuoteEmailUpdates(data.settings.quoteEmailUpdates);
           // 读取用户语言偏好并同步到界面
           if (data.settings.locale && locales.includes(data.settings.locale)) {
             setUserLocale(data.settings.locale);
@@ -96,15 +94,13 @@ export default function SettingsPage() {
         setTimeout(() => setSaved(false), 2000);
       } else {
         if (setting === "emailNotifications") setEmailNotifications(!value);
-        if (setting === "quoteUpdates") setQuoteUpdates(!value);
-        if (setting === "newsUpdates") setNewsUpdates(!value);
+        if (setting === "quoteEmailUpdates") setQuoteEmailUpdates(!value);
         alert("Save failed");
       }
     } catch (err) {
       console.error("Settings error:", err);
       if (setting === "emailNotifications") setEmailNotifications(!value);
-      if (setting === "quoteUpdates") setQuoteUpdates(!value);
-      if (setting === "newsUpdates") setNewsUpdates(!value);
+      if (setting === "quoteEmailUpdates") setQuoteEmailUpdates(!value);
       alert("Save failed");
     } finally {
       setSaving(false);
@@ -211,38 +207,18 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="quote-updates">{t.user.quoteUpdates}</Label>
+              <Label htmlFor="quote-email-updates">{t.user.quoteEmailUpdates}</Label>
               <p className="text-sm text-muted-foreground">
-                {t.user.quoteUpdatesHint}
+                {t.user.quoteEmailUpdatesHint}
               </p>
             </div>
             <Switch
-              id="quote-updates"
-              checked={quoteUpdates}
+              id="quote-email-updates"
+              checked={quoteEmailUpdates}
               disabled={saving}
               onCheckedChange={(value) => {
-                setQuoteUpdates(value);
-                saveNotificationSettings("quoteUpdates", value);
-              }}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="news-updates">{t.user.newsUpdates}</Label>
-              <p className="text-sm text-muted-foreground">
-                {t.user.newsUpdatesHint}
-              </p>
-            </div>
-            <Switch
-              id="news-updates"
-              checked={newsUpdates}
-              disabled={saving}
-              onCheckedChange={(value) => {
-                setNewsUpdates(value);
-                saveNotificationSettings("newsUpdates", value);
+                setQuoteEmailUpdates(value);
+                saveNotificationSettings("quoteEmailUpdates", value);
               }}
             />
           </div>

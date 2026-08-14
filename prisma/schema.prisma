@@ -24,8 +24,7 @@ model User {
   company       String?
   // 通知设置
   emailNotifications Boolean @default(true)
-  quoteUpdates       Boolean @default(true)
-  newsUpdates        Boolean @default(false)
+  quoteEmailUpdates  Boolean @default(true)
   // 员工特殊权限
   canManageArticles  Boolean @default(false)  // 员工管理文章权限
   createdAt     DateTime  @default(now())
@@ -36,7 +35,10 @@ model User {
   quotes        Quote[]
   deletedQuotes Quote[]      @relation("QuoteDeletedBy")
   quoteEvents   QuoteEvent[] @relation("QuoteEventActor")
+  articles      Article[]    @relation("ArticleAuthor")
   notifications Notification[]
+  broadcastsCreated  NotificationBroadcast[] @relation("NotificationBroadcastActor")
+  broadcastsTargeted NotificationBroadcast[] @relation("NotificationBroadcastTarget")
   loginHistory  LoginHistory[]
   // 用户语言偏好
   locale        String @default("en") //'zh' | 'en' | 'fr'
@@ -183,23 +185,28 @@ enum QuoteStatus {
 // ==================== 新闻/文章系统 ====================
 
 model Article {
-  id          String        @id @default(cuid())
-  title       String
-  slug        String        @unique
-  excerpt     String        @db.Text
-  content     String        @db.Text
-  coverImage  String?
-  author      String
-  category    String
-  tags        String[]
-  status      ArticleStatus @default(DRAFT)
-  publishedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  title          String
+  slug           String        @unique
+  excerpt        String        @db.Text
+  content        String        @db.Text
+  coverImage     String?
+  coverImageAlt  String?
+  seoTitle       String?
+  seoDescription String?       @db.Text
+  authorId       String?
+  author         String        // 作者展示名快照
+  category       String
+  tags           String[]
+  status         ArticleStatus @default(DRAFT)
+  publishedAt    DateTime?     // 首次发布时间，归档或重发时不重置
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  @@index([slug])
+  authorUser User? @relation("ArticleAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
   @@index([category])
-  @@index([status])
+  @@index([status, publishedAt])
 }
 
 enum ArticleStatus {
@@ -221,21 +228,77 @@ model Setting {
 // ==================== 消息通知系统 ====================
 
 model Notification {
-  id        String             @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
+  eventKey  String?
   type      NotificationType
   title     String
-  content   String             @db.Text
-  link      String?            // 点击跳转链接
-  isRead    Boolean            @default(false)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  content   String           @db.Text
+  link      String?          // 点击跳转链接
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@unique([userId, eventKey])
+  @@index([userId, isRead, createdAt])
   @@index([isRead])
   @@index([type])
+}
+
+model EmailOutbox {
+  id                String            @id @default(cuid())
+  idempotencyKey    String            @unique @db.VarChar(256)
+  eventKey          String
+  recipient         String
+  payload           Json
+  status            EmailOutboxStatus @default(PENDING)
+  attemptCount      Int               @default(0)
+  nextAttemptAt     DateTime          @default(now())
+  lockedAt          DateTime?
+  firstAttemptAt    DateTime?
+  sentAt            DateTime?
+  providerMessageId String?
+  lastError         String?           @db.Text
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([lockedAt])
+  @@index([eventKey])
+}
+
+enum EmailOutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  MANUAL_REVIEW
+}
+
+model NotificationBroadcast {
+  id                 String                     @id @default(cuid())
+  requestKey         String                     @unique @db.Uuid
+  payloadFingerprint String                     @db.Char(64)
+  actorId            String?
+  targetScope        NotificationBroadcastScope
+  targetUserId       String?
+  type               NotificationType
+  title              String
+  content            String                     @db.Text
+  link               String?
+  createdAt          DateTime                   @default(now())
+
+  actor      User? @relation("NotificationBroadcastActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetUser User? @relation("NotificationBroadcastTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+enum NotificationBroadcastScope {
+  ALL_USERS
+  USER
 }
 
 enum NotificationType {
@@ -261,8 +324,21 @@ model LoginHistory {
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  action      String   @db.VarChar(64)
+  keyHash     String   @db.Char(64)
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([action, keyHash, windowStart])
+  @@index([expiresAt])
 }
 
 // ==================== 页面内容管理 ====================
@@ -281,7 +357,6 @@ model Page {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  @@index([slug])
   @@index([status])
 }
 

@@ -280,6 +280,7 @@ export async function PATCH(request: NextRequest) {
             await tx.notification.create({
               data: {
                 userId: updated.userId,
+                eventKey: `quote-event/${event.id}`,
                 type: "QUOTE",
                 title: notification.title,
                 content: notification.content,

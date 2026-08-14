@@ -23,6 +23,12 @@ CREATE TYPE "ArticleStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 CREATE TYPE "NotificationType" AS ENUM ('SYSTEM', 'QUOTE', 'ORDER', 'PROMOTION', 'NEWS', 'ALERT');
 
 -- CreateEnum
+CREATE TYPE "EmailOutboxStatus" AS ENUM ('PENDING', 'PROCESSING', 'SENT', 'FAILED', 'MANUAL_REVIEW');
+
+-- CreateEnum
+CREATE TYPE "NotificationBroadcastScope" AS ENUM ('ALL_USERS', 'USER');
+
+-- CreateEnum
 CREATE TYPE "PageStatus" AS ENUM ('DRAFT', 'PUBLISHED');
 
 -- CreateTable
@@ -37,8 +43,7 @@ CREATE TABLE "User" (
     "phone" TEXT,
     "company" TEXT,
     "emailNotifications" BOOLEAN NOT NULL DEFAULT true,
-    "quoteUpdates" BOOLEAN NOT NULL DEFAULT true,
-    "newsUpdates" BOOLEAN NOT NULL DEFAULT false,
+    "quoteEmailUpdates" BOOLEAN NOT NULL DEFAULT true,
     "canManageArticles" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -145,6 +150,10 @@ CREATE TABLE "Article" (
     "excerpt" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "coverImage" TEXT,
+    "coverImageAlt" TEXT,
+    "seoTitle" TEXT,
+    "seoDescription" TEXT,
+    "authorId" TEXT,
     "author" TEXT NOT NULL,
     "category" TEXT NOT NULL,
     "tags" TEXT[],
@@ -171,6 +180,7 @@ CREATE TABLE "Setting" (
 CREATE TABLE "Notification" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "eventKey" TEXT,
     "type" "NotificationType" NOT NULL,
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
@@ -180,6 +190,44 @@ CREATE TABLE "Notification" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailOutbox" (
+    "id" TEXT NOT NULL,
+    "idempotencyKey" VARCHAR(256) NOT NULL,
+    "eventKey" TEXT NOT NULL,
+    "recipient" TEXT NOT NULL,
+    "payload" JSONB NOT NULL,
+    "status" "EmailOutboxStatus" NOT NULL DEFAULT 'PENDING',
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "nextAttemptAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lockedAt" TIMESTAMP(3),
+    "firstAttemptAt" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
+    "providerMessageId" TEXT,
+    "lastError" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailOutbox_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "NotificationBroadcast" (
+    "id" TEXT NOT NULL,
+    "requestKey" UUID NOT NULL,
+    "payloadFingerprint" CHAR(64) NOT NULL,
+    "actorId" TEXT,
+    "targetScope" "NotificationBroadcastScope" NOT NULL,
+    "targetUserId" TEXT,
+    "type" "NotificationType" NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "link" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "NotificationBroadcast_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -194,6 +242,20 @@ CREATE TABLE "LoginHistory" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "LoginHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RateLimitBucket" (
+    "id" TEXT NOT NULL,
+    "action" VARCHAR(64) NOT NULL,
+    "keyHash" CHAR(64) NOT NULL,
+    "windowStart" TIMESTAMP(3) NOT NULL,
+    "count" INTEGER NOT NULL DEFAULT 0,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RateLimitBucket_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -251,19 +313,19 @@ CREATE INDEX "QuoteEvent_quoteId_createdAt_idx" ON "QuoteEvent"("quoteId", "crea
 CREATE UNIQUE INDEX "Article_slug_key" ON "Article"("slug");
 
 -- CreateIndex
-CREATE INDEX "Article_slug_idx" ON "Article"("slug");
-
--- CreateIndex
 CREATE INDEX "Article_category_idx" ON "Article"("category");
 
 -- CreateIndex
-CREATE INDEX "Article_status_idx" ON "Article"("status");
+CREATE INDEX "Article_status_publishedAt_idx" ON "Article"("status", "publishedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Setting_key_key" ON "Setting"("key");
 
 -- CreateIndex
-CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
+CREATE UNIQUE INDEX "Notification_userId_eventKey_key" ON "Notification"("userId", "eventKey");
+
+-- CreateIndex
+CREATE INDEX "Notification_userId_isRead_createdAt_idx" ON "Notification"("userId", "isRead", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "Notification_isRead_idx" ON "Notification"("isRead");
@@ -272,16 +334,34 @@ CREATE INDEX "Notification_isRead_idx" ON "Notification"("isRead");
 CREATE INDEX "Notification_type_idx" ON "Notification"("type");
 
 -- CreateIndex
-CREATE INDEX "LoginHistory_userId_idx" ON "LoginHistory"("userId");
+CREATE UNIQUE INDEX "EmailOutbox_idempotencyKey_key" ON "EmailOutbox"("idempotencyKey");
 
 -- CreateIndex
-CREATE INDEX "LoginHistory_createdAt_idx" ON "LoginHistory"("createdAt");
+CREATE INDEX "EmailOutbox_status_nextAttemptAt_idx" ON "EmailOutbox"("status", "nextAttemptAt");
+
+-- CreateIndex
+CREATE INDEX "EmailOutbox_lockedAt_idx" ON "EmailOutbox"("lockedAt");
+
+-- CreateIndex
+CREATE INDEX "EmailOutbox_eventKey_idx" ON "EmailOutbox"("eventKey");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "NotificationBroadcast_requestKey_key" ON "NotificationBroadcast"("requestKey");
+
+-- CreateIndex
+CREATE INDEX "NotificationBroadcast_createdAt_idx" ON "NotificationBroadcast"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "LoginHistory_userId_createdAt_idx" ON "LoginHistory"("userId", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RateLimitBucket_action_keyHash_windowStart_key" ON "RateLimitBucket"("action", "keyHash", "windowStart");
+
+-- CreateIndex
+CREATE INDEX "RateLimitBucket_expiresAt_idx" ON "RateLimitBucket"("expiresAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Page_slug_key" ON "Page"("slug");
-
--- CreateIndex
-CREATE INDEX "Page_slug_idx" ON "Page"("slug");
 
 -- CreateIndex
 CREATE INDEX "Page_status_idx" ON "Page"("status");
@@ -305,7 +385,16 @@ ALTER TABLE "QuoteEvent" ADD CONSTRAINT "QuoteEvent_quoteId_fkey" FOREIGN KEY ("
 ALTER TABLE "QuoteEvent" ADD CONSTRAINT "QuoteEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Article" ADD CONSTRAINT "Article_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NotificationBroadcast" ADD CONSTRAINT "NotificationBroadcast_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NotificationBroadcast" ADD CONSTRAINT "NotificationBroadcast_targetUserId_fkey" FOREIGN KEY ("targetUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "LoginHistory" ADD CONSTRAINT "LoginHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

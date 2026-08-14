@@ -11,6 +11,10 @@ function transformArticle(article: {
   excerpt: string;
   content: string;
   coverImage: string | null;
+  coverImageAlt: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  authorId: string | null;
   author: string;
   category: string;
   tags: string[];
@@ -26,6 +30,10 @@ function transformArticle(article: {
     excerpt: article.excerpt,
     content: article.content,
     coverImage: article.coverImage || undefined,
+    coverImageAlt: article.coverImageAlt || undefined,
+    seoTitle: article.seoTitle || undefined,
+    seoDescription: article.seoDescription || undefined,
+    authorId: article.authorId || undefined,
     author: article.author,
     category: article.category,
     tags: article.tags,
@@ -105,6 +113,7 @@ export async function searchArticles(searchTerm: string): Promise<CMSArticle[]> 
 
 // 创建文章
 export async function createArticle(input: CreateArticleInput): Promise<CMSArticle> {
+  const status = input.status || 'DRAFT';
   const article = await prisma.article.create({
     data: {
       title: input.title,
@@ -112,11 +121,15 @@ export async function createArticle(input: CreateArticleInput): Promise<CMSArtic
       excerpt: input.excerpt,
       content: input.content,
       coverImage: input.coverImage || null,
+      coverImageAlt: input.coverImageAlt || null,
+      seoTitle: input.seoTitle || null,
+      seoDescription: input.seoDescription || null,
+      authorId: input.authorId || null,
       author: input.author,
       category: input.category,
       tags: input.tags || [],
-      status: input.status || 'DRAFT',
-      publishedAt: input.publishedAt || null,
+      status,
+      publishedAt: status === 'PUBLISHED' ? input.publishedAt || new Date() : null,
     },
   });
   
@@ -125,19 +138,29 @@ export async function createArticle(input: CreateArticleInput): Promise<CMSArtic
 
 // 更新文章
 export async function updateArticle(id: string, input: UpdateArticleInput): Promise<CMSArticle> {
+  const current = await prisma.article.findUniqueOrThrow({
+    where: { id },
+    select: { publishedAt: true },
+  });
+  const isFirstPublication = input.status === 'PUBLISHED' && !current.publishedAt;
+
   const article = await prisma.article.update({
     where: { id },
     data: {
       ...(input.title && { title: input.title }),
-      ...(input.slug && { slug: input.slug }),
+      ...(input.slug && !current.publishedAt && { slug: input.slug }),
       ...(input.excerpt && { excerpt: input.excerpt }),
       ...(input.content && { content: input.content }),
       ...(input.coverImage !== undefined && { coverImage: input.coverImage || null }),
+      ...(input.coverImageAlt !== undefined && { coverImageAlt: input.coverImageAlt || null }),
+      ...(input.seoTitle !== undefined && { seoTitle: input.seoTitle || null }),
+      ...(input.seoDescription !== undefined && { seoDescription: input.seoDescription || null }),
+      ...(input.authorId !== undefined && { authorId: input.authorId || null }),
       ...(input.author && { author: input.author }),
       ...(input.category && { category: input.category }),
       ...(input.tags && { tags: input.tags }),
       ...(input.status && { status: input.status }),
-      ...(input.publishedAt !== undefined && { publishedAt: input.publishedAt || null }),
+      ...(isFirstPublication && { publishedAt: input.publishedAt || new Date() }),
     },
   });
   

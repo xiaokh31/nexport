@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { locales } from '@/i18n';
+import { locales, type Locale } from '@/i18n';
+import { Prisma } from '@prisma/client';
 
 interface UserSettings {
   emailNotifications?: boolean;
-  quoteUpdates?: boolean;
-  newsUpdates?: boolean;
+  quoteEmailUpdates?: boolean;
   locale?: string;
 }
 
@@ -26,6 +26,11 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
+      select: {
+        emailNotifications: true,
+        quoteEmailUpdates: true,
+        locale: true,
+      },
     });
 
     if (!user) {
@@ -37,10 +42,9 @@ export async function GET() {
 
     return NextResponse.json({
       settings: {
-        emailNotifications: (user as any).emailNotifications ?? true,
-        quoteUpdates: (user as any).quoteUpdates ?? true,
-        newsUpdates: (user as any).newsUpdates ?? false,
-        locale: (user as any).locale ?? 'en',
+        emailNotifications: user.emailNotifications,
+        quoteEmailUpdates: user.quoteEmailUpdates,
+        locale: user.locale,
       },
     });
   } catch (error) {
@@ -64,8 +68,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { emailNotifications, quoteUpdates, newsUpdates, locale } = body;
+    const body = await request.json() as UserSettings;
+    const { emailNotifications, quoteEmailUpdates, locale } = body;
 
     // 验证输入
     if (typeof emailNotifications !== 'boolean' && emailNotifications !== undefined) {
@@ -74,20 +78,14 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (typeof quoteUpdates !== 'boolean' && quoteUpdates !== undefined) {
+    if (typeof quoteEmailUpdates !== 'boolean' && quoteEmailUpdates !== undefined) {
       return NextResponse.json(
         { error: '报价更新设置必须为布尔值' },
         { status: 400 }
       );
     }
-    if (typeof newsUpdates !== 'boolean' && newsUpdates !== undefined) {
-      return NextResponse.json(
-        { error: '新闻更新设置必须为布尔值' },
-        { status: 400 }
-      );
-    }
     // 验证locale
-    if (locale !== undefined && !locales.includes(locale)) {
+    if (locale !== undefined && !locales.includes(locale as Locale)) {
       return NextResponse.json(
         { error: '无效的语言设置' },
         { status: 400 }
@@ -95,16 +93,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 构建更新数据
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     
     if (emailNotifications !== undefined) {
       updateData.emailNotifications = emailNotifications;
     }
-    if (quoteUpdates !== undefined) {
-      updateData.quoteUpdates = quoteUpdates;
-    }
-    if (newsUpdates !== undefined) {
-      updateData.newsUpdates = newsUpdates;
+    if (quoteEmailUpdates !== undefined) {
+      updateData.quoteEmailUpdates = quoteEmailUpdates;
     }
     if (locale !== undefined) {
       updateData.locale = locale;
@@ -119,15 +114,19 @@ export async function PATCH(request: NextRequest) {
     const user = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
+      select: {
+        emailNotifications: true,
+        quoteEmailUpdates: true,
+        locale: true,
+      },
     });
 
     return NextResponse.json({
       success: true,
       settings: {
-        emailNotifications: (user as any).emailNotifications ?? true,
-        quoteUpdates: (user as any).quoteUpdates ?? true,
-        newsUpdates: (user as any).newsUpdates ?? false,
-        locale: (user as any).locale ?? 'en',
+        emailNotifications: user.emailNotifications,
+        quoteEmailUpdates: user.quoteEmailUpdates,
+        locale: user.locale,
       },
     });
   } catch (error) {
