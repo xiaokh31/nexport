@@ -13,7 +13,6 @@ import {
   Home,
   Bell,
   FileText,
-  ScanLine,
   LucideIcon,
   Menu,
   X
@@ -78,12 +77,6 @@ export function AdminSidebar() {
       href: "/admin/pages",
       icon: FileText,
       module: 'pages',
-    },
-    {
-      title: t.admin?.skuScan?.title || "扫码对账",
-      href: "/admin/sku-scan",
-      icon: ScanLine,
-      module: 'skuScan',
     },
     {
       title: t.admin?.settings || "系统设置",

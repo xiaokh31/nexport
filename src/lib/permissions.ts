@@ -12,15 +12,14 @@ export type AdminModule =
   | 'users'         // 用户管理
   | 'messages'      // 消息管理
   | 'pages'         // 页面管理
-  | 'skuScan'       // 扫码对账
   | 'settings';     // 系统设置
 
 // 定义各角色可访问的管理模块
 export const rolePermissions: Record<UserRole, AdminModule[]> = {
-  ADMIN: ['overview', 'articles', 'quotes', 'users', 'messages', 'pages', 'skuScan', 'settings'],
-  STAFF: ['messages', 'skuScan'],  // 员工默认只能访问消息管理和扫码对账
-  WAREHOUSE: ['messages', 'skuScan'],  // 仓库管理员可以使用扫码对账
-  FINANCE: ['messages', 'skuScan'],  // 财务可以使用扫码对账
+  ADMIN: ['overview', 'articles', 'quotes', 'users', 'messages', 'pages', 'settings'],
+  STAFF: ['messages'],
+  WAREHOUSE: ['messages'],
+  FINANCE: ['messages'],
   CUSTOMER: [],
   PARTNER: [],
 };
@@ -83,7 +82,6 @@ export const modulePathMap: Record<AdminModule, string> = {
   users: '/admin/users',
   messages: '/admin/messages',
   pages: '/admin/pages',
-  skuScan: '/admin/sku-scan',
   settings: '/admin/settings',
 };
 

@@ -22,12 +22,6 @@ CREATE TYPE "NotificationType" AS ENUM ('SYSTEM', 'QUOTE', 'ORDER', 'PROMOTION',
 -- CreateEnum
 CREATE TYPE "PageStatus" AS ENUM ('DRAFT', 'PUBLISHED');
 
--- CreateEnum
-CREATE TYPE "ScanStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'ARCHIVED');
-
--- CreateEnum
-CREATE TYPE "ScanMode" AS ENUM ('MANUAL', 'EXCEL');
-
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -205,37 +199,6 @@ CREATE TABLE "Page" (
     CONSTRAINT "Page_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "ScanContainer" (
-    "id" TEXT NOT NULL,
-    "containerNo" TEXT NOT NULL,
-    "description" TEXT,
-    "dockNo" TEXT,
-    "status" "ScanStatus" NOT NULL DEFAULT 'ACTIVE',
-    "mode" "ScanMode" NOT NULL DEFAULT 'MANUAL',
-    "excelData" JSONB,
-    "createdBy" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "ScanContainer_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "SkuScan" (
-    "id" TEXT NOT NULL,
-    "containerId" TEXT NOT NULL,
-    "sku" TEXT NOT NULL,
-    "rawCode" TEXT NOT NULL,
-    "qty" INTEGER NOT NULL DEFAULT 1,
-    "palletNo" TEXT,
-    "boxNo" TEXT,
-    "operator" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "SkuScan_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -290,30 +253,6 @@ CREATE INDEX "Page_slug_idx" ON "Page"("slug");
 -- CreateIndex
 CREATE INDEX "Page_status_idx" ON "Page"("status");
 
--- CreateIndex
-CREATE UNIQUE INDEX "ScanContainer_containerNo_key" ON "ScanContainer"("containerNo");
-
--- CreateIndex
-CREATE INDEX "ScanContainer_containerNo_idx" ON "ScanContainer"("containerNo");
-
--- CreateIndex
-CREATE INDEX "ScanContainer_status_idx" ON "ScanContainer"("status");
-
--- CreateIndex
-CREATE INDEX "ScanContainer_createdAt_idx" ON "ScanContainer"("createdAt");
-
--- CreateIndex
-CREATE INDEX "SkuScan_containerId_idx" ON "SkuScan"("containerId");
-
--- CreateIndex
-CREATE INDEX "SkuScan_sku_idx" ON "SkuScan"("sku");
-
--- CreateIndex
-CREATE INDEX "SkuScan_operator_idx" ON "SkuScan"("operator");
-
--- CreateIndex
-CREATE INDEX "SkuScan_createdAt_idx" ON "SkuScan"("createdAt");
-
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -331,6 +270,3 @@ ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "LoginHistory" ADD CONSTRAINT "LoginHistory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "SkuScan" ADD CONSTRAINT "SkuScan_containerId_fkey" FOREIGN KEY ("containerId") REFERENCES "ScanContainer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
