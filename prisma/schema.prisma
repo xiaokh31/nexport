@@ -1,0 +1,318 @@
+// Prisma schema for the company website
+// 全栈物流系统数据库模型
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户认证 ====================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(CUSTOMER)
+  phone         String?
+  company       String?
+  // 通知设置
+  emailNotifications Boolean @default(true)
+  quoteUpdates       Boolean @default(true)
+  newsUpdates        Boolean @default(false)
+  // 两步验证
+  twoFactorEnabled   Boolean @default(false)
+  twoFactorSecret    String?
+  // 员工特殊权限
+  canManageArticles  Boolean @default(false)  // 员工管理文章权限
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  quotes        Quote[]
+  contacts      Contact[]
+  notifications Notification[]
+  loginHistory  LoginHistory[]
+  // 用户语言偏好
+  locale        String @default("en") //'zh' | 'en' | 'fr'
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  ADMIN           // 系统管理员
+  STAFF           // 员工
+  WAREHOUSE       // 仓库管理员
+  FINANCE         // 财务
+  CUSTOMER        // 客户
+  PARTNER         // 合作伙伴
+}
+
+// ==================== 询价系统 ====================
+
+model Quote {
+  id          String      @id @default(cuid())
+  userId      String?
+  name        String
+  email       String
+  phone       String
+  company     String?
+  serviceType ServiceType
+  origin      String?
+  destination String?
+  cargoType   String?
+  weight      String?
+  dimensions  String?
+  message     String      @db.Text
+  status      QuoteStatus @default(PENDING)
+  quotedPrice String?     // 报价金额
+  quoteNote   String?     @db.Text // 报价备注
+  quotedAt    DateTime?   // 报价时间
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User?       @relation(fields: [userId], references: [id])
+}
+
+enum ServiceType {
+  FBA           // FBA尾程
+  DROPSHIPPING  // 一件代发
+  RETURNS       // 退货换标
+  OTHER         // 其他
+}
+
+enum QuoteStatus {
+  PENDING       // 待处理
+  PROCESSING    // 处理中
+  QUOTED        // 已报价
+  ACCEPTED      // 已接受
+  REJECTED      // 已拒绝
+  CLOSED        // 已关闭
+}
+
+// ==================== 联系表单 ====================
+
+model Contact {
+  id        String        @id @default(cuid())
+  userId    String?
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String        @db.Text
+  status    ContactStatus @default(UNREAD)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user      User?         @relation(fields: [userId], references: [id])
+}
+
+enum ContactStatus {
+  UNREAD    // 未读
+  READ      // 已读
+  REPLIED   // 已回复
+  ARCHIVED  // 已归档
+}
+
+// ==================== 新闻/文章系统 ====================
+
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  excerpt     String        @db.Text
+  content     String        @db.Text
+  coverImage  String?
+  author      String
+  category    String
+  tags        String[]
+  status      ArticleStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([status])
+}
+
+enum ArticleStatus {
+  DRAFT       // 草稿
+  PUBLISHED   // 已发布
+  ARCHIVED    // 已归档
+}
+
+// ==================== 系统配置 ====================
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== 消息通知系统 ====================
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  content   String             @db.Text
+  link      String?            // 点击跳转链接
+  isRead    Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+}
+
+enum NotificationType {
+  SYSTEM        // 系统通知
+  QUOTE         // 询价相关
+  ORDER         // 订单相关
+  PROMOTION     // 促销活动
+  NEWS          // 新闻动态
+  ALERT         // 警告通知
+}
+
+// ==================== 登录历史 ====================
+
+model LoginHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  ip          String?
+  userAgent   String?
+  device      String?
+  location    String?
+  status      String   @default("SUCCESS") // SUCCESS, FAILED
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ==================== 页面内容管理 ====================
+
+model Page {
+  id          String      @id @default(cuid())
+  slug        String      @unique  // 如 "privacy", "terms"
+  title       String               // 页面标题
+  titleEn     String?              // 英文标题
+  titleFr     String?              // 法文标题
+  content     String      @db.Text // 内容 (HTML/Markdown)
+  contentEn   String?     @db.Text // 英文内容
+  contentFr   String?     @db.Text // 法文内容
+  status      PageStatus  @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum PageStatus {
+  DRAFT       // 草稿
+  PUBLISHED   // 已发布
+}
+
+// ==================== 扫码对账系统 ====================
+
+// 柜号/业务批次
+model ScanContainer {
+  id            String       @id @default(cuid())
+  containerNo   String       @unique       // 柜号
+  description   String?                    // 描述
+  dockNo        String?                    // 门号(DOCK) - 柜子在哪个门
+  status        ScanStatus   @default(ACTIVE)
+  mode          ScanMode     @default(MANUAL)  // 工作模式
+  excelData     Json?                      // Excel模板数据(仅EXCEL模式)
+  createdBy     String                     // 创建人
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  scans         SkuScan[]
+
+  @@index([containerNo])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// 扫码记录
+model SkuScan {
+  id            String         @id @default(cuid())
+  containerId   String                     // 关联柜号
+  sku           String                     // SKU
+  rawCode       String                     // 原始扫码内容
+  qty           Int            @default(1) // 数量
+  palletNo      String?                    // 托盘号
+  boxNo         String?                    // 箱子编号
+  operator      String                     // 操作人
+  createdAt     DateTime       @default(now())
+
+  container     ScanContainer  @relation(fields: [containerId], references: [id], onDelete: Cascade)
+
+  @@index([containerId])
+  @@index([sku])
+  @@index([operator])
+  @@index([createdAt])
+}
+
+enum ScanStatus {
+  ACTIVE        // 进行中
+  COMPLETED     // 已完成
+  ARCHIVED      // 已归档
+}
+
+enum ScanMode {
+  MANUAL        // 无Excel模式 - 直接扫码统计
+  EXCEL         // Excel对账模式 - 导入Excel对比
+}
