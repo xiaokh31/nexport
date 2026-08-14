@@ -9,7 +9,7 @@ interface Stats {
   users: { total: number; today: number; change: string };
   quotes: { total: number; today: number; change: string };
   articles: { total: number; today: number; change: string };
-  messages: { total: number; today: number; change: string };
+  notifications: { total: number; today: number; change: string };
 }
 
 interface RecentQuote {
@@ -127,11 +127,11 @@ export default function AdminPage() {
       color: "text-purple-500" 
     },
     { 
-      icon: TrendingUp, 
-      label: "未读消息", 
-      value: stats?.messages.total.toString() || "0",
-      total: stats?.messages.total.toString() || "0",
-      change: stats?.messages.change || "0",
+      icon: TrendingUp,
+      label: t.admin?.unreadNotifications || "未读通知",
+      value: stats?.notifications.total.toString() || "0",
+      total: stats?.notifications.total.toString() || "0",
+      change: stats?.notifications.change || "0",
       color: "text-orange-500" 
     },
   ];

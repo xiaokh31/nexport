@@ -35,37 +35,12 @@ export async function POST(request: Request) {
       },
     });
 
-    // 关联历史询价记录：将该邮箱的所有未关联用户的询价绑定到新用户
-    const linkedQuotes = await prisma.quote.updateMany({
-      where: {
-        email: validatedData.email,
-        userId: null, // 只关联未绑定用户的询价
-      },
-      data: {
-        userId: user.id,
-      },
-    });
-
-    // 关联历史联系记录
-    const linkedContacts = await prisma.contact.updateMany({
-      where: {
-        email: validatedData.email,
-        userId: null,
-      },
-      data: {
-        userId: user.id,
-      },
-    });
-
     console.log("User registered:", user.email);
-    console.log(`Linked ${linkedQuotes.count} historical quotes and ${linkedContacts.count} contacts`);
 
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         message: "注册成功",
-        linkedQuotes: linkedQuotes.count,
-        linkedContacts: linkedContacts.count,
       },
       { status: 200 }
     );

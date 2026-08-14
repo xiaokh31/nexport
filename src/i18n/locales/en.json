@@ -351,6 +351,7 @@
       "actions": "Actions"
     },
     "messages": "Message Management",
+    "unreadNotifications": "Unread Notifications",
     "staffArticlePermission": "Staff Article Permission",
     "staffArticlePermissionHint": "Allow this staff member to manage articles"
   },

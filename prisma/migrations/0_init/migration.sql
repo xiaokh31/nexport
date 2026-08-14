@@ -11,9 +11,6 @@ CREATE TYPE "ServiceType" AS ENUM ('FBA', 'DROPSHIPPING', 'RETURNS', 'OTHER');
 CREATE TYPE "QuoteStatus" AS ENUM ('PENDING', 'PROCESSING', 'QUOTED', 'ACCEPTED', 'REJECTED', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "ContactStatus" AS ENUM ('UNREAD', 'READ', 'REPLIED', 'ARCHIVED');
-
--- CreateEnum
 CREATE TYPE "ArticleStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateEnum
@@ -102,22 +99,6 @@ CREATE TABLE "Quote" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Quote_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Contact" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT,
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "phone" TEXT,
-    "subject" TEXT NOT NULL,
-    "message" TEXT NOT NULL,
-    "status" "ContactStatus" NOT NULL DEFAULT 'UNREAD',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -259,9 +240,6 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Quote" ADD CONSTRAINT "Quote_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Contact" ADD CONSTRAINT "Contact_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

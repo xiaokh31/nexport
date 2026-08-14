@@ -19,17 +19,6 @@ export const quoteFormSchema = z.object({
 
 export type QuoteFormValues = z.infer<typeof quoteFormSchema>;
 
-// 联系表单验证
-export const contactFormSchema = z.object({
-  name: z.string().min(2, "姓名至少2个字符"),
-  email: z.string().email("请输入有效的邮箱地址"),
-  phone: z.string().optional(),
-  subject: z.string().min(2, "主题至少2个字符"),
-  message: z.string().min(10, "留言内容至少10个字符"),
-});
-
-export type ContactFormValues = z.infer<typeof contactFormSchema>;
-
 // 登录表单验证
 export const loginFormSchema = z.object({
   email: z.string().email("请输入有效的邮箱地址"),

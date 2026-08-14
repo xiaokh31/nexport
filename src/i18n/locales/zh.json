@@ -351,6 +351,7 @@
       "actions": "操作"
     },
     "messages": "消息管理",
+    "unreadNotifications": "未读通知",
     "staffArticlePermission": "员工文章管理权限",
     "staffArticlePermissionHint": "允许该员工管理文章"
   },

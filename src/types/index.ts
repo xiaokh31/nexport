@@ -57,15 +57,6 @@ export interface QuoteFormData {
   message: string;
 }
 
-// 联系表单
-export interface ContactFormData {
-  name: string;
-  email: string;
-  phone?: string;
-  subject: string;
-  message: string;
-}
-
 // 新闻/文章
 export interface Article {
   id: string;

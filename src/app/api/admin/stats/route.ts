@@ -46,12 +46,12 @@ export async function GET(request: NextRequest) {
       todayArticles,
       // 昨日新文章
       yesterdayArticles,
-      // 未读消息数
-      unreadMessages,
-      // 今日消息数
-      todayMessages,
-      // 昨日消息数
-      yesterdayMessages,
+      // 未读通知数
+      unreadNotifications,
+      // 今日通知数
+      todayNotifications,
+      // 昨日通知数
+      yesterdayNotifications,
       // 最近询价列表
       recentQuotes,
       // 最近文章列表
@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
       prisma.article.count({ where: { status: 'PUBLISHED' } }),
       prisma.article.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
       prisma.article.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
-      prisma.contact.count({ where: { status: 'UNREAD' } }),
-      prisma.contact.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
-      prisma.contact.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
+      prisma.notification.count({ where: { isRead: false } }),
+      prisma.notification.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
+      prisma.notification.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
       prisma.quote.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -117,10 +117,10 @@ export async function GET(request: NextRequest) {
           today: todayArticles,
           change: calculateChange(todayArticles, yesterdayArticles),
         },
-        messages: {
-          total: unreadMessages,
-          today: todayMessages,
-          change: calculateChange(todayMessages, yesterdayMessages),
+        notifications: {
+          total: unreadNotifications,
+          today: todayNotifications,
+          change: calculateChange(todayNotifications, yesterdayNotifications),
         },
       },
       recentQuotes,

@@ -351,6 +351,7 @@
       "actions": "Actions"
     },
     "messages": "Gestion des messages",
+    "unreadNotifications": "Notifications non lues",
     "staffArticlePermission": "Permission articles employé",
     "staffArticlePermissionHint": "Autoriser cet employé à gérer les articles"
   },

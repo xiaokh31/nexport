@@ -149,24 +149,4 @@ export const emailTemplates = {
     `,
   }),
 
-  // 联系表单通知
-  contactNotification: (data: {
-    name: string;
-    email: string;
-    phone?: string;
-    subject: string;
-    message: string;
-  }) => ({
-    subject: `新联系留言 - ${data.subject}`,
-    html: `
-      <h2>新联系留言</h2>
-      <table style="border-collapse: collapse; width: 100%;">
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>姓名</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.name}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>邮箱</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.email}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>电话</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.phone || '-'}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>主题</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.subject}</td></tr>
-        <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>内容</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.message}</td></tr>
-      </table>
-    `,
-  }),
 };
