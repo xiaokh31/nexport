@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { Prisma } from "@prisma/client";
@@ -7,32 +7,20 @@ import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { serverEnv } from "@/config/env/server";
+import {
+  cryptoRandomByteSource,
+  systemClock,
+} from "@/lib/ports/external-services";
+import { createQuoteReferenceGenerator } from "@/lib/quote/reference";
 
-const REFERENCE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const quoteReferenceGenerator = createQuoteReferenceGenerator({
+  clock: systemClock,
+  randomBytes: cryptoRandomByteSource,
+});
 
 function nullableText(value: string | undefined) {
   const normalized = value?.normalize("NFC").trim();
   return normalized || null;
-}
-
-function createReference(now = new Date()) {
-  const date = now.toISOString().slice(0, 10).replaceAll("-", "");
-  const bytes = randomBytes(5);
-  let buffer = 0;
-  let bufferedBits = 0;
-  let suffix = "";
-
-  for (const byte of bytes) {
-    buffer = (buffer << 8) | byte;
-    bufferedBits += 8;
-    while (bufferedBits >= 5) {
-      bufferedBits -= 5;
-      suffix += REFERENCE_ALPHABET[(buffer >> bufferedBits) & 31];
-      buffer &= (1 << bufferedBits) - 1;
-    }
-  }
-
-  return `Q-${date}-${suffix}`;
 }
 
 function createSubmissionFingerprint(data: QuoteFormValues, subject: string) {
@@ -115,7 +103,7 @@ export async function POST(request: Request) {
       try {
         quote = await prisma.quote.create({
           data: {
-            reference: createReference(),
+            reference: quoteReferenceGenerator.generate(),
             submissionKey: validatedData.submissionKey,
             submissionFingerprint,
             userId,

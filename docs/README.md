@@ -12,6 +12,7 @@
 3. [产品与视觉规格](03-product-design-spec.md)：信息架构、页面职责、海外仓视觉方向和交互验收。
 4. [技术执行计划](04-technical-execution-plan.md)：目标架构、数据与安全方案、实施波次和质量门禁。
 5. [开发 Agent 任务清单](05-agent-backlog.md)：带依赖、文件范围和验收标准的可领取任务。
+6. [测试运行手册](07-testing.md)：隔离数据库、安全守卫、fixtures 与自动化命令。
 
 ## 不可越过的边界
 
