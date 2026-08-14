@@ -28,7 +28,6 @@
     "dropshipping": "Warehouse Dropshipping",
     "returns": "Returns & Relabeling",
     "warehouse": "Warehouse Management System (WMS)",
-    "chinaToCanada": "China-Canada Consolidation",
     "express": "Canada to China Express"
   },
   "hero": {
@@ -738,18 +737,6 @@
         "Seamless Warehouse Delivery",
         "FBA Prep Handling",
         "Amazon Expert Support"
-      ]
-    },
-    "chinaToCanada": {
-      "title": "China-Canada Consolidation Service",
-      "description": "Bi-directional consolidation solutions between China and Canada, supporting multi-warehouse consolidation, combined packing, unified shipping and customs clearance delivery. Covering e-commerce and personal parcels, stable routes, transparent pricing, effectively reducing cross-border shipping costs.",
-      "features": [
-        "China-Canada Bi-directional",
-        "Multi-warehouse Consolidation",
-        "Combined Packing & Shipping",
-        "Customs Clearance Delivery",
-        "Stable Reliable Routes",
-        "Transparent Pricing"
       ]
     },
     "express": {

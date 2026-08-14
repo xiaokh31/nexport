@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Package, Truck, RefreshCw, CheckCircle, Warehouse, Ship, Globe, ShoppingCart, Phone, Mail, Plane, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Package, Truck, RefreshCw, CheckCircle, Warehouse, Ship, Globe, ShoppingCart, Phone, Mail, Zap } from "lucide-react";
 import { CTASection } from "@/components/marketing";
 import { useLocale } from "@/i18n/locale-context";
 import { solutionConfigs, getSolutionBySlug, siteLinks } from "@/config/site-config";
@@ -18,7 +18,6 @@ const iconMap: Record<string, React.ElementType> = {
   Ship: Ship,
   Globe: Globe,
   ShoppingCart: ShoppingCart,
-  Plane: Plane,
   Zap: Zap,
 };
 

@@ -34,9 +34,9 @@ export function SolutionsSection() {
           </p>
         </div>
 
-        {/* 显示前4个主要解决方案的卡片 */}
+        {/* 展示当前保留的全部解决方案 */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {solutions.slice(0, 7).map((solution) => {
+          {solutions.map((solution) => {
             const Icon = iconMap[solution.icon] || Package;
             return (
               <Card

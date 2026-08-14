@@ -28,7 +28,6 @@
     "dropshipping": "Dropshipping en entrepôt",
     "returns": "Retours et Réétiquetage",
     "warehouse": "Système WMS",
-    "chinaToCanada": "Consolidation Chine-Canada",
     "express": "Express Canada-Chine"
   },
   "hero": {
@@ -593,7 +592,6 @@
     "otherService": "Autres services",
     "truckFreightService": "Camionnage Canada",
     "warehouseService": "Système WMS",
-    "chinaToCanadaService": "Consolidation Chine-Canada",
     "expressService": "Express Canada-Chine",
     "selectServiceType": "Sélectionner le type de service",
     "origin": "Origine",
@@ -742,18 +740,6 @@
         "Livraison entrepôt fluide",
         "Gestion prép FBA",
         "Support expert Amazon"
-      ]
-    },
-    "chinaToCanada": {
-      "title": "Consolidation Chine-Canada Bidirectionnelle",
-      "description": "Solutions de consolidation bidirectionnelle entre la Chine et le Canada, avec regroupement, emballage, expédition et livraison après dédouanement.",
-      "features": [
-        "Options d'expédition multiples",
-        "Consolidation professionnelle",
-        "Délais de transit fiables",
-        "Prix compétitifs",
-        "Suivi complet des envois",
-        "Dédouanement professionnel"
       ]
     },
     "express": {
