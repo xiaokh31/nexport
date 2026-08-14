@@ -9,7 +9,6 @@ interface UserSettings {
   emailNotifications?: boolean;
   quoteUpdates?: boolean;
   newsUpdates?: boolean;
-  twoFactorEnabled?: boolean;
   locale?: string;
 }
 
@@ -41,7 +40,6 @@ export async function GET() {
         emailNotifications: (user as any).emailNotifications ?? true,
         quoteUpdates: (user as any).quoteUpdates ?? true,
         newsUpdates: (user as any).newsUpdates ?? false,
-        twoFactorEnabled: (user as any).twoFactorEnabled ?? false,
         locale: (user as any).locale ?? 'en',
       },
     });

@@ -36,8 +36,6 @@ CREATE TABLE "User" (
     "emailNotifications" BOOLEAN NOT NULL DEFAULT true,
     "quoteUpdates" BOOLEAN NOT NULL DEFAULT true,
     "newsUpdates" BOOLEAN NOT NULL DEFAULT false,
-    "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
-    "twoFactorSecret" TEXT,
     "canManageArticles" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

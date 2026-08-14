@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Bell, Shield, Trash2, Loader2, Check, History, KeyRound, Globe } from "lucide-react";
+import { Bell, Shield, Trash2, Loader2, Check, History, Globe } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -46,16 +45,9 @@ export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [quoteUpdates, setQuoteUpdates] = useState(true);
   const [newsUpdates, setNewsUpdates] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [loginHistory, setLoginHistory] = useState<LoginHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [show2FADialog, setShow2FADialog] = useState(false);
-  const [twoFAStep, setTwoFAStep] = useState<string>("setup");
-  const [twoFASecret, setTwoFASecret] = useState("");
-  const [twoFAToken, setTwoFAToken] = useState("");
-  const [twoFALoading, setTwoFALoading] = useState(false);
-  const [twoFAQRCode, setTwoFAQRCode] = useState("");
   const [userLocale, setUserLocale] = useState<Locale>(locale);
 
   useEffect(() => {
@@ -67,7 +59,6 @@ export default function SettingsPage() {
           setEmailNotifications(data.settings.emailNotifications);
           setQuoteUpdates(data.settings.quoteUpdates);
           setNewsUpdates(data.settings.newsUpdates);
-          setTwoFactorEnabled(data.settings.twoFactorEnabled);
           // 读取用户语言偏好并同步到界面
           if (data.settings.locale && locales.includes(data.settings.locale)) {
             setUserLocale(data.settings.locale);
@@ -118,74 +109,6 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const fetch2FASetup = async () => {
-    setTwoFALoading(true);
-    try {
-      const response = await fetch("/api/user/2fa");
-      if (response.ok) {
-        const data = await response.json();
-        setTwoFASecret(data.secret);
-        setTwoFAQRCode(data.qrCode); // 设置QR码
-        setTwoFAToken("");
-        setTwoFAStep("setup");
-      }
-    } catch (err) {
-      console.error("2FA setup error:", err);
-      alert("Failed to get 2FA setup");
-    } finally {
-      setTwoFALoading(false);
-    }
-  };
-
-  const submit2FA = async () => {
-    if (!twoFAToken || twoFAToken.length !== 6) {
-      alert("Please enter a 6-digit code");
-      return;
-    }
-
-    setTwoFALoading(true);
-    try {
-      const response = await fetch("/api/user/2fa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: twoFAStep === "setup" ? "enable" : "disable",
-          secret: twoFASecret,
-          token: twoFAToken,
-        }),
-      });
-
-      if (response.ok) {
-        if (twoFAStep === "setup") {
-          setTwoFactorEnabled(true);
-          alert("2FA enabled successfully");
-        } else {
-          setTwoFactorEnabled(false);
-          alert("2FA disabled successfully");
-        }
-        setShow2FADialog(false);
-        setTwoFAToken("");
-      } else {
-        const error = await response.json();
-        alert(error.error || "Operation failed");
-      }
-    } catch (err) {
-      console.error("2FA error:", err);
-      alert("Operation failed");
-    } finally {
-      setTwoFALoading(false);
-    }
-  };
-
-  const openTwoFADialog = () => {
-    setTwoFAStep(twoFactorEnabled ? "disable" : "setup");
-    setTwoFAToken("");
-    if (!twoFactorEnabled) {
-      fetch2FASetup();
-    }
-    setShow2FADialog(true);
   };
 
   const fetchLoginHistory = async () => {
@@ -373,30 +296,6 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4" />
-                {t.user.twoFactor}
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                {t.user.twoFactorHint}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {twoFactorEnabled ? (
-                <span className="text-sm text-green-600">{t.user.twoFactorEnabled}</span>
-              ) : (
-                <span className="text-sm text-muted-foreground">{t.user.twoFactorDisabled}</span>
-              )}
-              <Button variant="outline" size="sm" onClick={openTwoFADialog}>
-                {twoFactorEnabled ? t.user.manage : t.user.setup}
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="flex items-center gap-2">
                 <History className="h-4 w-4" />
                 {t.user.loginHistory}
               </Label>
@@ -410,78 +309,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={show2FADialog} onOpenChange={setShow2FADialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t.user.twoFactorAuth}</DialogTitle>
-            <DialogDescription>
-              {twoFAStep === "setup"
-                ? t.user.scanQRCode
-                : t.user.disableTwoFactor}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {twoFAStep === "setup" && twoFASecret && (
-              <div className="space-y-3">
-                {/* QR码显示 */}
-                {twoFAQRCode && (
-                  <div className="p-4 bg-gray-50 rounded flex justify-center">
-                    <img 
-                      src={twoFAQRCode} 
-                      alt="2FA QR Code" 
-                      className="w-48 h-48 border-2 border-gray-200 rounded"
-                    />
-                  </div>
-                )}
-                {/* 密钥备用 */}
-                <div className="p-4 bg-gray-100 rounded text-center">
-                  <p className="text-sm text-gray-600 mb-2">{t.user.secretKey}</p>
-                  <code className="text-xs font-mono break-all">{twoFASecret}</code>
-                  <p className="text-xs text-gray-600 mt-2">
-                    {t.user.secretKeyHint}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="token">{t.user.sixDigitCode}</Label>
-              <Input
-                id="token"
-                type="text"
-                placeholder={t.user.codePlaceholder}
-                maxLength={6}
-                value={twoFAToken}
-                onChange={(e) => setTwoFAToken(e.target.value.replace(/\D/g, ""))}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShow2FADialog(false)}
-              disabled={twoFALoading}
-            >
-              {t.user.cancel}
-            </Button>
-            <Button onClick={submit2FA} disabled={twoFALoading || twoFAToken.length !== 6}>
-              {twoFALoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t.user.processing}
-                </>
-              ) : twoFAStep === "setup" ? (
-                t.user.enable2FA
-              ) : (
-                t.user.disable2FA
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
         <DialogContent className="max-w-2xl">
