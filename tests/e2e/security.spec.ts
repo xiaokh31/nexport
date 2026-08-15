@@ -1,7 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
+import { encode } from "next-auth/jwt";
 
 const prisma = new PrismaClient();
+const ownershipReferencePrefix = "Q-SEC003-E2E-";
+
+test.afterEach(async () => {
+  await prisma.quote.deleteMany({
+    where: { reference: { startsWith: ownershipReferencePrefix } },
+  });
+});
 
 test.afterAll(async () => {
   await prisma.$disconnect();
@@ -27,6 +36,77 @@ test("external requests cannot create login history", async ({ request }) => {
   });
 
   expect(response.status()).toBe(405);
+});
+
+test("anonymous callers cannot forge quote ownership query parameters", async ({ request }) => {
+  const response = await request.get(
+    "/api/user/quotes?userId=fixture-partner&email=partner%40nexport.test",
+  );
+
+  expect(response.status()).toBe(401);
+});
+
+test("an authenticated user cannot read another user's quote through forged parameters", async ({
+  page,
+}) => {
+  await prisma.quote.createMany({
+    data: [
+      {
+        reference: `${ownershipReferencePrefix}USER-A`,
+        submissionKey: randomUUID(),
+        submissionFingerprint: "b".repeat(64),
+        userId: "fixture-customer",
+        name: "Customer quote",
+        email: "customer@nexport.test",
+        phone: "+1-555-0101",
+        serviceType: "OTHER",
+        message: "Quote owned by the authenticated customer",
+      },
+      {
+        reference: `${ownershipReferencePrefix}USER-B`,
+        submissionKey: randomUUID(),
+        submissionFingerprint: "c".repeat(64),
+        userId: "fixture-partner",
+        name: "Partner quote",
+        email: "customer@nexport.test",
+        phone: "+1-555-0102",
+        serviceType: "OTHER",
+        message: "Quote owned by a different authenticated user",
+      },
+    ],
+  });
+
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error("NEXTAUTH_SECRET is required for authenticated E2E tests");
+  }
+  const sessionToken = await encode({
+    secret,
+    token: {
+      id: "fixture-customer",
+      sub: "fixture-customer",
+      role: "CUSTOMER",
+      name: "Fixture customer",
+      email: "customer@nexport.test",
+    },
+  });
+  await page.context().addCookies([
+    {
+      name: "next-auth.session-token",
+      value: sessionToken,
+      url: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3100",
+    },
+  ]);
+
+  const response = await page.request.get(
+    "/api/user/quotes?userId=fixture-partner&email=customer%40nexport.test",
+  );
+  expect(response.ok()).toBe(true);
+  const payload = await response.json();
+
+  expect(
+    payload.quotes.map((quote: { reference: string }) => quote.reference),
+  ).toEqual([`${ownershipReferencePrefix}USER-A`]);
 });
 
 test("the removed demo credentials do not create a session", async ({ request }) => {

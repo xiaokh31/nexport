@@ -4,6 +4,7 @@ import { QuoteStatus, Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { QUOTE_STATUSES, type QuoteStatus as QuoteStatusValue } from "@/config/quote";
+import { ownedQuoteWhere } from "@/lib/quote/ownership";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,10 +18,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, Number.parseInt(searchParams.get("limit") || "10", 10)));
     const status = searchParams.get("status");
-    const where: Prisma.QuoteWhereInput = {
-      userId: session.user.id,
-      deletedAt: null,
-    };
+    const where: Prisma.QuoteWhereInput = ownedQuoteWhere(session.user.id);
 
     if (status && status !== "all") {
       if (!QUOTE_STATUSES.includes(status as QuoteStatusValue)) {

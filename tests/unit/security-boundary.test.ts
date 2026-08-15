@@ -14,7 +14,7 @@ function source(relativePath: string): string {
   return readFileSync(path.resolve(relativePath), "utf8");
 }
 
-describe("SEC-001 source boundaries", () => {
+describe("security source boundaries", () => {
   it("contains no demo credential or dangerous OAuth email linking", () => {
     const productionSource = sourceFiles(path.resolve("src"))
       .map((file) => readFileSync(file, "utf8"))
@@ -93,5 +93,19 @@ describe("SEC-001 source boundaries", () => {
     expect(storeSource).toContain("client.rateLimitBucket.upsert");
     expect(storeSource).not.toMatch(/new\s+Map\s*</);
     expect(rateLimitSource).toContain('createHmac("sha256", secret)');
+  });
+
+  it("keeps quote ownership session-scoped and registration claim-free", () => {
+    const quoteSource = source("src/app/api/quote/route.ts");
+    const userQuotesSource = source("src/app/api/user/quotes/route.ts");
+    const registrationSource = source("src/app/api/auth/register/route.ts");
+
+    expect(quoteSource).toContain(
+      "resolveQuoteOwnership(session?.user?.id, validatedData.email)",
+    );
+    expect(userQuotesSource).toContain("ownedQuoteWhere(session.user.id)");
+    expect(userQuotesSource).not.toMatch(/searchParams\.get\(["'](?:userId|email)["']\)/);
+    expect(registrationSource).not.toMatch(/quote\.(?:update|updateMany)\s*\(/);
+    expect(registrationSource).not.toMatch(/contact\.(?:update|updateMany)\s*\(/i);
   });
 });

@@ -11,6 +11,7 @@ import {
   cryptoRandomByteSource,
   systemClock,
 } from "@/lib/ports/external-services";
+import { resolveQuoteOwnership } from "@/lib/quote/ownership";
 import { createQuoteReferenceGenerator } from "@/lib/quote/reference";
 
 const quoteReferenceGenerator = createQuoteReferenceGenerator({
@@ -81,9 +82,11 @@ export async function POST(request: Request) {
   try {
     const validatedData = quoteFormSchema.parse(await request.json());
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id || null;
-    const subject = userId ? `user:${userId}` : `anonymous:${validatedData.email}`;
-    const submissionFingerprint = createSubmissionFingerprint(validatedData, subject);
+    const ownership = resolveQuoteOwnership(session?.user?.id, validatedData.email);
+    const submissionFingerprint = createSubmissionFingerprint(
+      validatedData,
+      ownership.fingerprintSubject,
+    );
 
     const existingQuote = await prisma.quote.findUnique({
       where: { submissionKey: validatedData.submissionKey },
@@ -106,7 +109,7 @@ export async function POST(request: Request) {
             reference: quoteReferenceGenerator.generate(),
             submissionKey: validatedData.submissionKey,
             submissionFingerprint,
-            userId,
+            userId: ownership.userId,
             name: validatedData.name,
             email: validatedData.email,
             phone: validatedData.phone,
