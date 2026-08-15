@@ -1,89 +1,110 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect } from "react";
-import { canAccessAdmin, canAccessPath, UserRole } from "@/lib/permissions";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
+import { AdminAccessProvider } from "@/components/admin/admin-access-context";
+import { useAdminAccess } from "@/hooks/use-admin-access";
+import { canAccessPath } from "@/lib/permissions";
 
 interface AdminGuardProps {
   children: React.ReactNode;
+}
+
+function AccessNotice({
+  message,
+  href,
+  label,
+}: {
+  message: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center gap-3 text-center">
+      <p className="text-muted-foreground">{message}</p>
+      <Link className="text-primary underline underline-offset-4" href={href}>
+        {label}
+      </Link>
+    </div>
+  );
 }
 
 export function AdminGuard({ children }: AdminGuardProps) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const { profile, loading, error } = useAdminAccess(session?.user?.id);
+  const fallbackPath = profile?.defaultPath || "/dashboard";
+  const pathAllowed = Boolean(
+    profile?.defaultPath && canAccessPath(profile.subject, pathname),
+  );
 
   useEffect(() => {
-    if (status === "loading") return;
-
-    // 未登录，重定向到登录页
     if (status === "unauthenticated") {
-      router.push("/login");
-      return;
+      router.replace("/login");
+    } else if (
+      status === "authenticated" &&
+      !loading &&
+      !error &&
+      profile?.defaultPath &&
+      !pathAllowed
+    ) {
+      router.replace(fallbackPath);
     }
+  }, [
+    error,
+    fallbackPath,
+    loading,
+    pathAllowed,
+    profile?.defaultPath,
+    router,
+    status,
+  ]);
 
-    const userRole = (session?.user?.role || "CUSTOMER") as UserRole;
-    const canManageArticles = session?.user?.canManageArticles || false;
-
-    // 检查是否可以访问管理后台
-    if (!canAccessAdmin(userRole)) {
-      router.push("/dashboard");
-      return;
-    }
-
-    // 检查是否可以访问当前路径
-    if (!canAccessPath(userRole, pathname, canManageArticles)) {
-      // 重定向到用户可以访问的第一个模块
-      // 对于员工，默认是消息管理
-      if (userRole === "STAFF") {
-        router.push("/admin/messages");
-      } else {
-        router.push("/dashboard");
-      }
-      return;
-    }
-  }, [session, status, pathname, router]);
-
-  // 加载中
-  if (status === "loading") {
+  if (status === "loading" || (status === "authenticated" && loading)) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // 未登录或无权限
   if (status === "unauthenticated") {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AccessNotice
+        message="需要登录后才能访问后台。"
+        href="/login"
+        label="前往登录"
+      />
     );
   }
 
-  const userRole = (session?.user?.role || "CUSTOMER") as UserRole;
-  const canManageArticles = session?.user?.canManageArticles || false;
+  if (error) {
+    return <AccessNotice message={error} href="/dashboard" label="返回用户中心" />;
+  }
 
-  // 无权访问管理后台
-  if (!canAccessAdmin(userRole)) {
+  if (!profile?.defaultPath) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AccessNotice
+        message="当前账户没有后台访问能力。"
+        href="/dashboard"
+        label="返回用户中心"
+      />
     );
   }
 
-  // 无权访问当前路径
-  if (!canAccessPath(userRole, pathname, canManageArticles)) {
+  if (!pathAllowed) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AccessNotice
+        message="当前账户无权访问此模块，正在跳转。"
+        href={fallbackPath}
+        label="前往可用模块"
+      />
     );
   }
 
-  return <>{children}</>;
+  return <AdminAccessProvider value={profile}>{children}</AdminAccessProvider>;
 }

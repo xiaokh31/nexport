@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { Prisma, QuoteStatus } from "@prisma/client";
 import { ZodError } from "zod";
-import { authOptions } from "@/lib/auth";
+import { requireCapability } from "@/lib/authorization";
 import { prisma } from "@/lib/prisma";
 import { quoteAdminUpdateSchema, quoteSoftDeleteSchema } from "@/lib/validations";
 import { getDictionary, Locale, locales, defaultLocale } from "@/i18n";
@@ -102,15 +101,8 @@ function getActorRole(role: string | undefined): QuoteActorRole | null {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    const actorRole = getActorRole(session?.user?.role);
-
-    if (!session?.user?.id) {
-      return apiError(401, "UNAUTHENTICATED", "Not authenticated");
-    }
-    if (!actorRole) {
-      return apiError(403, "FORBIDDEN", "No permission");
-    }
+    const authorization = await requireCapability("quotes.read");
+    if (!authorization.authorized) return authorization.response;
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10));
@@ -161,16 +153,13 @@ export async function PATCH(request: NextRequest) {
   const requestId = randomUUID();
 
   try {
-    const session = await getServerSession(authOptions);
-    const actorRole = getActorRole(session?.user?.role);
-
-    if (!session?.user?.id) {
-      return apiError(401, "UNAUTHENTICATED", "Not authenticated", requestId);
-    }
+    const authorization = await requireCapability("quotes.update");
+    if (!authorization.authorized) return authorization.response;
+    const actorRole = getActorRole(authorization.actor.role);
     if (!actorRole) {
       return apiError(403, "FORBIDDEN", "No permission", requestId);
     }
-    const actorId = session.user.id;
+    const actorId = authorization.actor.id;
 
     const input = quoteAdminUpdateSchema.parse(await request.json());
 
@@ -346,13 +335,8 @@ export async function DELETE(request: NextRequest) {
   const requestId = randomUUID();
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return apiError(401, "UNAUTHENTICATED", "Not authenticated", requestId);
-    }
-    if (session.user.role !== "ADMIN") {
-      return apiError(403, "FORBIDDEN", "Only administrators can delete quotes", requestId);
-    }
+    const authorization = await requireCapability("quotes.delete");
+    if (!authorization.authorized) return authorization.response;
 
     const input = quoteSoftDeleteSchema.parse(await request.json());
     const current = await prisma.quote.findFirst({ where: { id: input.id, deletedAt: null } });
@@ -367,7 +351,7 @@ export async function DELETE(request: NextRequest) {
       where: { id: current.id },
       data: {
         deletedAt: new Date(),
-        deletedById: session.user.id,
+        deletedById: authorization.actor.id,
         deleteReason: input.reason,
       },
     });

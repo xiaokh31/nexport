@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireCapability } from "@/lib/authorization";
 
 // 获取页面列表
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !["ADMIN", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authorization = await requireCapability("pages.manage");
+    if (!authorization.authorized) return authorization.response;
 
     const pages = await prisma.page.findMany({
       orderBy: { updatedAt: "desc" },
@@ -26,11 +22,8 @@ export async function GET() {
 // 创建新页面
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !["ADMIN", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authorization = await requireCapability("pages.manage");
+    if (!authorization.authorized) return authorization.response;
 
     const body = await request.json();
     const { slug, title, titleEn, titleFr, content, contentEn, contentFr, status } = body;

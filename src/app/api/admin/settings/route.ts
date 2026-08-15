@@ -1,8 +1,7 @@
 // 系统设置 API
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireCapability } from '@/lib/authorization';
 
 // 默认设置值
 const defaultSettings: Record<string, string> = {
@@ -19,14 +18,8 @@ const defaultSettings: Record<string, string> = {
 // GET - 获取系统设置
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '没有权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('settings.manage');
+    if (!authorization.authorized) return authorization.response;
 
     // 从数据库获取所有设置
     const settings = await prisma.setting.findMany();
@@ -53,14 +46,8 @@ export async function GET(request: NextRequest) {
 // PUT - 更新系统设置
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '没有权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('settings.manage');
+    if (!authorization.authorized) return authorization.response;
 
     const body = await request.json();
     const { settings } = body;

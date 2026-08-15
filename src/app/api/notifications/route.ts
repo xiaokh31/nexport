@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireCapability } from '@/lib/authorization';
 
 // GET - 获取用户的消息通知
 export async function GET(request: NextRequest) {
@@ -58,22 +59,8 @@ export async function GET(request: NextRequest) {
 // POST - 创建消息通知（管理员使用）
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-
-    // 只有管理员可以创建通知
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '无权限' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('notifications.broadcast');
+    if (!authorization.authorized) return authorization.response;
 
     const body = await request.json();
     const { userId, type, title, content, link, sendToAll } = body;

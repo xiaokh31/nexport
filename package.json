@@ -19,6 +19,7 @@
     "test:all": "node scripts/test/run-all.mjs",
     "test:db:up": "node scripts/test/database.mjs up",
     "test:db:down": "node scripts/test/database.mjs down",
+    "admin:promote": "node scripts/admin/promote.mjs",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",

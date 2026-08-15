@@ -28,7 +28,7 @@ import { getSiteConfig, solutionConfigs } from "@/config/site-config";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "./language-switcher";
 import { useLocale } from "@/i18n/locale-context";
-import { canAccessAdmin, UserRole } from "@/lib/permissions";
+import { useAdminAccess } from "@/hooks/use-admin-access";
 
 
 
@@ -37,10 +37,9 @@ export function Header() {
   const { t } = useLocale();
   const { data: session, status } = useSession();
   const isLoggedIn = status === "authenticated";
-  // 检查是否有后台管理权限 - 使用统一的权限函数
-  const userRole = session?.user?.role as UserRole | undefined;
-  // 检查是否是管理员 - 支持多种管理角色
-  const isAdmin = userRole ? canAccessAdmin(userRole) : false;
+  const { profile: adminAccess } = useAdminAccess(session?.user?.id);
+  const adminPath = adminAccess?.defaultPath;
+  const isAdmin = Boolean(adminPath);
   
   const siteConfig = getSiteConfig(t);
 
@@ -119,7 +118,7 @@ export function Header() {
                   {isAdmin && (
                     <>
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" className="cursor-pointer">
+                        <Link href={adminPath || "/admin"} className="cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
                           {t.admin.title}
                         </Link>
@@ -259,7 +258,7 @@ export function Header() {
                 {isAdmin && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link href="/admin" className="cursor-pointer">
+                      <Link href={adminPath || "/admin"} className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
                         {t.admin.title}
                       </Link>
@@ -362,7 +361,7 @@ export function Header() {
                     </div>
                     {isAdmin && (
                       <Button variant="outline" asChild className="w-full justify-start">
-                        <Link href="/admin" onClick={() => setIsOpen(false)}>
+                        <Link href={adminPath || "/admin"} onClick={() => setIsOpen(false)}>
                           <Settings className="mr-2 h-4 w-4" />
                           {t.admin.title}
                         </Link>

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { 
   LayoutDashboard, 
@@ -22,7 +21,8 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useLocale } from "@/i18n/locale-context";
-import { canAccessModule, AdminModule, UserRole } from "@/lib/permissions";
+import { useAdminAccessContext } from "@/components/admin/admin-access-context";
+import { canAccessModule, type AdminModule } from "@/lib/permissions";
 
 interface NavItem {
   title: string;
@@ -34,11 +34,8 @@ interface NavItem {
 export function AdminSidebar() {
   const pathname = usePathname();
   const { t } = useLocale();
-  const { data: session } = useSession();
+  const { subject } = useAdminAccessContext();
   const [mobileOpen, setMobileOpen] = useState(false);
-  
-  const userRole = (session?.user?.role || 'CUSTOMER') as UserRole;
-  const canManageArticles = session?.user?.canManageArticles || false;
 
   // 定义所有管理模块
   const allNavItems: NavItem[] = [
@@ -87,8 +84,8 @@ export function AdminSidebar() {
   ];
 
   // 根据用户角色过滤可访问的菜单项
-  const filteredNavItems = allNavItems.filter(item => 
-    canAccessModule(userRole, item.module, canManageArticles)
+  const filteredNavItems = allNavItems.filter((item) =>
+    canAccessModule(subject, item.module),
   );
 
   // 导航内容组件

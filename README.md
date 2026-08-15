@@ -26,6 +26,16 @@ The implementation must retain login, registration, the user center, quote manag
 
 Setup instructions and the definitive environment-variable list will be added by the development tasks after dependency and runtime cleanup.
 
+## Administrator bootstrap
+
+After creating and verifying the intended administrator account, promote that existing user with the configured `DATABASE_URL`:
+
+```bash
+pnpm admin:promote --email administrator@example.invalid
+```
+
+The command is idempotent, requires a verified email, and never creates or embeds a password. Run it separately for each environment that needs its first administrator.
+
 ## License
 
 This project remains licensed under the [GNU Affero General Public License v3.0](LICENSE).

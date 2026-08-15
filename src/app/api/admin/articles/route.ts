@@ -1,9 +1,8 @@
 // 管理员文章管理 API
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ArticleStatus, Prisma } from '@prisma/client';
+import { requireCapability } from '@/lib/authorization';
 
 function normalizeSlug(value: string) {
   return value
@@ -16,22 +15,8 @@ function normalizeSlug(value: string) {
 // GET - 获取文章列表
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-
-    // 只有管理员可以访问
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '无权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('articles.manage');
+    if (!authorization.authorized) return authorization.response;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -105,22 +90,9 @@ export async function GET(request: NextRequest) {
 // POST - 创建文章
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-
-    // 只有管理员可以创建文章
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '无权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('articles.manage');
+    if (!authorization.authorized) return authorization.response;
+    const { actor } = authorization;
 
     const body = await request.json();
     const {
@@ -167,8 +139,8 @@ export async function POST(request: NextRequest) {
         tags: Array.isArray(tags) ? tags : [],
         status: articleStatus,
         publishedAt: articleStatus === 'PUBLISHED' ? new Date() : null,
-        authorId: session.user.id,
-        author: session.user.name || session.user.email || 'Unknown',
+        authorId: actor.id,
+        author: actor.name || actor.email,
       },
       select: {
         id: true,
@@ -213,22 +185,8 @@ export async function POST(request: NextRequest) {
 // PATCH - 更新文章
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-
-    // 只有管理员可以更新文章
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '无权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('articles.manage');
+    if (!authorization.authorized) return authorization.response;
 
     const body = await request.json();
     const {
@@ -349,22 +307,8 @@ export async function PATCH(request: NextRequest) {
 // DELETE - 删除文章
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-
-    // 只有管理员可以删除文章
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '无权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('articles.manage');
+    if (!authorization.authorized) return authorization.response;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

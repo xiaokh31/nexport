@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { use } from "react";
+import { requireCapability } from "@/lib/authorization";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -13,11 +11,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !["ADMIN", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authorization = await requireCapability("pages.manage");
+    if (!authorization.authorized) return authorization.response;
 
     const page = await prisma.page.findUnique({
       where: { id },
@@ -39,11 +34,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || !["ADMIN", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authorization = await requireCapability("pages.manage");
+    if (!authorization.authorized) return authorization.response;
 
     const body = await request.json();
     const { title, titleEn, titleFr, content, contentEn, contentFr, status, slug } = body;
@@ -86,11 +78,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized - Admin only" }, { status: 401 });
-    }
+    const authorization = await requireCapability("pages.manage");
+    if (!authorization.authorized) return authorization.response;
 
     await prisma.page.delete({
       where: { id },

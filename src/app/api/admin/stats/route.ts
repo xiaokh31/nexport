@@ -1,20 +1,13 @@
 // 管理后台统计数据 API
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { requireCapability } from '@/lib/authorization';
 
 // GET - 获取统计数据
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: '没有权限访问' },
-        { status: 403 }
-      );
-    }
+    const authorization = await requireCapability('admin.overview');
+    if (!authorization.authorized) return authorization.response;
 
     // 获取今天的日期范围
     const today = new Date();

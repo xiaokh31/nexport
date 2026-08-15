@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,7 +50,6 @@ interface Page {
 }
 
 export default function PagesManagementPage() {
-  const { data: session, status } = useSession();
   const { t } = useLocale();
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,16 +68,6 @@ export default function PagesManagementPage() {
     status: "DRAFT" as "DRAFT" | "PUBLISHED",
   });
   const [saving, setSaving] = useState(false);
-
-  // 权限检查
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      redirect("/login");
-    }
-    if (session?.user && !["ADMIN", "STAFF"].includes(session.user.role)) {
-      redirect("/dashboard");
-    }
-  }, [session, status]);
 
   // 获取页面列表
   useEffect(() => {

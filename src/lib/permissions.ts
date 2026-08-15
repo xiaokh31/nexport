@@ -1,116 +1,189 @@
-/**
- * 角色权限配置
- * 定义各角色可访问的管理后台模块
- */
+export const USER_ROLES = [
+  "ADMIN",
+  "STAFF",
+  "WAREHOUSE",
+  "FINANCE",
+  "CUSTOMER",
+  "PARTNER",
+] as const;
 
-export type UserRole = 'ADMIN' | 'STAFF' | 'WAREHOUSE' | 'FINANCE' | 'CUSTOMER' | 'PARTNER';
+export type UserRole = (typeof USER_ROLES)[number];
 
-export type AdminModule = 
-  | 'overview'      // 概览
-  | 'articles'      // 文章管理
-  | 'quotes'        // 询价管理
-  | 'users'         // 用户管理
-  | 'messages'      // 消息管理
-  | 'pages'         // 页面管理
-  | 'settings';     // 系统设置
+export const CAPABILITIES = [
+  "admin.overview",
+  "quotes.read",
+  "quotes.update",
+  "quotes.delete",
+  "articles.manage",
+  "pages.manage",
+  "users.manage",
+  "notifications.broadcast",
+  "settings.manage",
+] as const;
 
-// 定义各角色可访问的管理模块
-export const rolePermissions: Record<UserRole, AdminModule[]> = {
-  ADMIN: ['overview', 'articles', 'quotes', 'users', 'messages', 'pages', 'settings'],
-  STAFF: ['messages'],
-  WAREHOUSE: ['messages'],
-  FINANCE: ['messages'],
-  CUSTOMER: [],
-  PARTNER: [],
+export type Capability = (typeof CAPABILITIES)[number];
+
+export interface CapabilitySubject {
+  role: UserRole;
+  canManageArticles: boolean;
+}
+
+export interface CapabilityActor extends CapabilitySubject {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
+export type CurrentActorLoader = (
+  userId: string,
+) => Promise<CapabilityActor | null>;
+
+export type AuthorizationDecision =
+  | { authorized: true; actor: CapabilityActor }
+  | { authorized: false; reason: "UNAUTHENTICATED" | "FORBIDDEN" };
+
+export interface AdminAccessProfile {
+  subject: CapabilitySubject;
+  capabilities: Capability[];
+  defaultPath: string | null;
+}
+
+interface CapabilityRule {
+  roles: readonly UserRole[];
+  staffArticleFlag?: true;
+}
+
+/** The only role-to-capability matrix used by API and UI authorization. */
+export const capabilityMatrix: Record<Capability, CapabilityRule> = {
+  "admin.overview": { roles: ["ADMIN"] },
+  "quotes.read": { roles: ["ADMIN", "STAFF", "FINANCE"] },
+  "quotes.update": { roles: ["ADMIN", "STAFF", "FINANCE"] },
+  "quotes.delete": { roles: ["ADMIN"] },
+  "articles.manage": { roles: ["ADMIN"], staffArticleFlag: true },
+  "pages.manage": { roles: ["ADMIN"] },
+  "users.manage": { roles: ["ADMIN"] },
+  "notifications.broadcast": { roles: ["ADMIN"] },
+  "settings.manage": { roles: ["ADMIN"] },
 };
 
-// 需要管理员权限才能访问的模块
-export const adminOnlyModules: AdminModule[] = ['users', 'settings', 'pages'];
+export type AdminModule =
+  | "overview"
+  | "articles"
+  | "quotes"
+  | "users"
+  | "messages"
+  | "pages"
+  | "settings";
 
-// 检查用户是否可以访问指定模块
-export function canAccessModule(
-  role: UserRole,
-  module: AdminModule,
-  canManageArticles?: boolean
-): boolean {
-  // 管理员可以访问所有模块
-  if (role === 'ADMIN') {
-    return true;
-  }
+export const adminModuleCapabilities: Record<AdminModule, Capability> = {
+  overview: "admin.overview",
+  articles: "articles.manage",
+  quotes: "quotes.read",
+  users: "users.manage",
+  messages: "notifications.broadcast",
+  pages: "pages.manage",
+  settings: "settings.manage",
+};
 
-  // 员工且被授予文章管理权限
-  if (role === 'STAFF' && module === 'articles' && canManageArticles) {
-    return true;
-  }
-
-  // 检查角色默认权限
-  const allowedModules = rolePermissions[role] || [];
-  return allowedModules.includes(module);
-}
-
-// 检查用户是否可以访问管理后台
-export function canAccessAdmin(role: UserRole): boolean {
-  return ['ADMIN', 'STAFF', 'WAREHOUSE', 'FINANCE'].includes(role);
-}
-
-// 获取用户可访问的模块列表
-export function getAccessibleModules(
-  role: UserRole,
-  canManageArticles?: boolean
-): AdminModule[] {
-  if (role === 'ADMIN') {
-    return rolePermissions.ADMIN;
-  }
-
-  const modules = [...(rolePermissions[role] || [])];
-
-  // 如果员工有文章管理权限，添加文章模块
-  if (role === 'STAFF' && canManageArticles) {
-    if (!modules.includes('articles')) {
-      modules.push('articles');
-    }
-  }
-
-  return modules;
-}
-
-// 模块路径映射
 export const modulePathMap: Record<AdminModule, string> = {
-  overview: '/admin',
-  articles: '/admin/articles',
-  quotes: '/admin/quotes',
-  users: '/admin/users',
-  messages: '/admin/messages',
-  pages: '/admin/pages',
-  settings: '/admin/settings',
+  overview: "/admin",
+  articles: "/admin/articles",
+  quotes: "/admin/quotes",
+  users: "/admin/users",
+  messages: "/admin/messages",
+  pages: "/admin/pages",
+  settings: "/admin/settings",
 };
 
-// 根据路径获取模块
-export function getModuleFromPath(path: string): AdminModule | null {
-  if (path === '/admin') {
-    return 'overview';
-  }
-  
-  for (const [module, modulePath] of Object.entries(modulePathMap)) {
-    if (path.startsWith(modulePath) && modulePath !== '/admin') {
-      return module as AdminModule;
-    }
-  }
-  
-  return null;
+const moduleLandingOrder: readonly AdminModule[] = [
+  "overview",
+  "quotes",
+  "articles",
+  "users",
+  "messages",
+  "pages",
+  "settings",
+];
+
+export function isUserRole(value: unknown): value is UserRole {
+  return typeof value === "string" && USER_ROLES.includes(value as UserRole);
 }
 
-// 检查用户是否可以访问指定路径
+export function hasCapability(
+  subject: CapabilitySubject,
+  capability: Capability,
+): boolean {
+  const rule = capabilityMatrix[capability];
+  if (rule.roles.includes(subject.role)) return true;
+
+  return Boolean(
+    rule.staffArticleFlag &&
+      subject.role === "STAFF" &&
+      subject.canManageArticles,
+  );
+}
+
+export function getCapabilities(subject: CapabilitySubject): Capability[] {
+  return CAPABILITIES.filter((capability) => hasCapability(subject, capability));
+}
+
+export async function authorizeCapability(
+  sessionUserId: string | null | undefined,
+  capability: Capability,
+  loadActor: CurrentActorLoader,
+): Promise<AuthorizationDecision> {
+  if (!sessionUserId) {
+    return { authorized: false, reason: "UNAUTHENTICATED" };
+  }
+
+  const actor = await loadActor(sessionUserId);
+  if (!actor) {
+    return { authorized: false, reason: "UNAUTHENTICATED" };
+  }
+  if (!hasCapability(actor, capability)) {
+    return { authorized: false, reason: "FORBIDDEN" };
+  }
+
+  return { authorized: true, actor };
+}
+
+export function canAccessModule(
+  subject: CapabilitySubject,
+  module: AdminModule,
+): boolean {
+  return hasCapability(subject, adminModuleCapabilities[module]);
+}
+
+export function canAccessAdmin(subject: CapabilitySubject): boolean {
+  return getDefaultAdminPath(subject) !== null;
+}
+
+export function getAccessibleModules(subject: CapabilitySubject): AdminModule[] {
+  return moduleLandingOrder.filter((module) => canAccessModule(subject, module));
+}
+
+export function getDefaultAdminPath(subject: CapabilitySubject): string | null {
+  const firstModule = moduleLandingOrder.find((module) =>
+    canAccessModule(subject, module),
+  );
+  return firstModule ? modulePathMap[firstModule] : null;
+}
+
+export function getModuleFromPath(path: string): AdminModule | null {
+  if (path === "/admin") return "overview";
+
+  const matchingModule = Object.entries(modulePathMap).find(
+    ([, modulePath]) =>
+      modulePath !== "/admin" &&
+      (path === modulePath || path.startsWith(`${modulePath}/`)),
+  );
+  return matchingModule ? (matchingModule[0] as AdminModule) : null;
+}
+
 export function canAccessPath(
-  role: UserRole,
+  subject: CapabilitySubject,
   path: string,
-  canManageArticles?: boolean
 ): boolean {
   const module = getModuleFromPath(path);
-  
-  if (!module) {
-    return false;
-  }
-  
-  return canAccessModule(role, module, canManageArticles);
+  return module ? canAccessModule(subject, module) : false;
 }
