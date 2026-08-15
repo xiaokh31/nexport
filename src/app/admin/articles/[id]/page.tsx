@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Save, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useLocale } from "@/i18n/locale-context";
+import { MarkdownPreview } from "@/components/content/safe-markdown";
+import { articleUpdateSchema } from "@/lib/content/validation";
 
 interface Article {
   id: string;
@@ -36,7 +37,6 @@ interface Article {
 export default function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { t } = useLocale();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,17 +96,21 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+
+    const validation = articleUpdateSchema.safeParse({ id, ...formData });
+    if (!validation.success) {
+      setError(validation.error.issues[0]?.message || '文章内容校验失败');
+      return;
+    }
+
+    setSaving(true);
 
     try {
       const response = await fetch('/api/admin/articles', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          ...formData,
-        }),
+        body: JSON.stringify(validation.data),
       });
 
       if (response.ok) {
@@ -179,11 +183,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             </p>
           </CardHeader>
           <CardContent>
-            <div className="prose max-w-none">
-              {formData.content.split('\n').map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
-            </div>
+            <MarkdownPreview content={formData.content} />
           </CardContent>
         </Card>
       ) : (
@@ -247,7 +247,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
                   id="content"
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="输入文章内容"
+                  placeholder="输入 Markdown 内容；不支持原始 HTML"
                   rows={15}
                   required
                 />

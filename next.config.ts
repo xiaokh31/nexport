@@ -1,5 +1,25 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://www.google.com https://www.gstatic.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://www.google.com https://www.gstatic.com",
+  "font-src 'self' data:",
+  `connect-src 'self'${isProduction ? "" : " ws: wss:"} https://www.google.com https://www.gstatic.com`,
+  "frame-src https://www.google.com https://recaptcha.google.com",
+  "media-src 'self'",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  ...(isProduction ? ["upgrade-insecure-requests"] : []),
+].join("; ");
+
 const nextConfig: NextConfig = {
   // 图片优化配置
   images: {
@@ -51,16 +71,26 @@ const nextConfig: NextConfig = {
             value: 'strict-origin-when-cross-origin',
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
+            key: 'Content-Security-Policy',
+            value: contentSecurityPolicy,
           },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
+          },
+          ...(isProduction
+            ? [{
+                key: 'Strict-Transport-Security',
+                value: 'max-age=31536000; includeSubDomains',
+              }]
+            : []),
         ],
       },
     ];
   },
 
   // 生产环境优化
-  ...(process.env.NODE_ENV === 'production' && {
+  ...(isProduction && {
     // 压缩输出
     compress: true,
     // 构建时忽略 TypeScript 和 ESLint 错误（仅在紧急部署时使用）

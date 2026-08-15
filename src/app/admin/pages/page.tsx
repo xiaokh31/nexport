@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, FileText, Eye, Loader2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
+import { MarkdownPreview } from "@/components/content/safe-markdown";
+import { pageCreateSchema, pageUpdateSchema } from "@/lib/content/validation";
 
 interface Page {
   id: string;
@@ -119,8 +121,11 @@ export default function PagesManagementPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.slug || !formData.title || !formData.content) {
-      alert("请填写必填字段（标识、标题、内容）");
+    const validation = editingPage
+      ? pageUpdateSchema.safeParse(formData)
+      : pageCreateSchema.safeParse(formData);
+    if (!validation.success) {
+      alert(validation.error.issues[0]?.message || "页面内容校验失败");
       return;
     }
 
@@ -134,7 +139,7 @@ export default function PagesManagementPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(validation.data),
       });
 
       if (res.ok) {
@@ -337,7 +342,7 @@ export default function PagesManagementPage() {
                   <Textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="支持 HTML 或 Markdown 格式..."
+                    placeholder="支持 Markdown；原始 HTML 不会被接受..."
                     rows={12}
                   />
                 </div>
@@ -357,7 +362,7 @@ export default function PagesManagementPage() {
                   <Textarea
                     value={formData.contentEn}
                     onChange={(e) => setFormData({ ...formData, contentEn: e.target.value })}
-                    placeholder="Supports HTML or Markdown..."
+                    placeholder="Markdown only; raw HTML is not accepted..."
                     rows={12}
                   />
                 </div>
@@ -377,7 +382,7 @@ export default function PagesManagementPage() {
                   <Textarea
                     value={formData.contentFr}
                     onChange={(e) => setFormData({ ...formData, contentFr: e.target.value })}
-                    placeholder="Prend en charge HTML ou Markdown..."
+                    placeholder="Markdown uniquement; le HTML brut est refusé..."
                     rows={12}
                   />
                 </div>
@@ -406,10 +411,7 @@ export default function PagesManagementPage() {
               页面预览 - /{previewPage?.slug}
             </DialogDescription>
           </DialogHeader>
-          <div 
-            className="prose prose-sm max-w-none dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: previewPage?.content || "" }}
-          />
+          <MarkdownPreview content={previewPage?.content || ""} />
         </DialogContent>
       </Dialog>
     </div>

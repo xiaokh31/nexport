@@ -2,7 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ArticleStatus, Prisma } from '@prisma/client';
+import { ZodError } from 'zod';
 import { requireCapability } from '@/lib/authorization';
+import {
+  articleCreateSchema,
+  articleUpdateSchema,
+  markdownContentSchema,
+} from '@/lib/content/validation';
 
 function normalizeSlug(value: string) {
   return value
@@ -94,7 +100,7 @@ export async function POST(request: NextRequest) {
     if (!authorization.authorized) return authorization.response;
     const { actor } = authorization;
 
-    const body = await request.json();
+    const body = articleCreateSchema.parse(await request.json());
     const {
       title,
       slug: requestedSlug,
@@ -109,13 +115,6 @@ export async function POST(request: NextRequest) {
       status,
     } = body;
 
-    if (!title || !content) {
-      return NextResponse.json(
-        { error: '标题和内容不能为空' },
-        { status: 400 }
-      );
-    }
-
     const slug = normalizeSlug(requestedSlug || title);
     if (!slug) {
       return NextResponse.json(
@@ -123,7 +122,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const articleStatus = (status || 'DRAFT') as ArticleStatus;
+    if (slug.length > 120) {
+      return NextResponse.json(
+        { error: 'URL 别名不能超过120个字符' },
+        { status: 400 }
+      );
+    }
+    const articleStatus = status || 'DRAFT';
     
     const article = await prisma.article.create({
       data: {
@@ -168,6 +173,15 @@ export async function POST(request: NextRequest) {
       article,
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: '文章内容校验失败', fieldErrors: error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: '请求正文必须是有效 JSON' }, { status: 400 });
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(
         { error: 'URL 别名已存在' },
@@ -188,7 +202,7 @@ export async function PATCH(request: NextRequest) {
     const authorization = await requireCapability('articles.manage');
     if (!authorization.authorized) return authorization.response;
 
-    const body = await request.json();
+    const body = articleUpdateSchema.parse(await request.json());
     const {
       id,
       title,
@@ -204,16 +218,9 @@ export async function PATCH(request: NextRequest) {
       status,
     } = body;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: '缺少文章ID' },
-        { status: 400 }
-      );
-    }
-
     const current = await prisma.article.findUnique({
       where: { id },
-      select: { slug: true, publishedAt: true },
+      select: { slug: true, content: true, publishedAt: true },
     });
     if (!current) {
       return NextResponse.json(
@@ -223,7 +230,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updateData: Prisma.ArticleUpdateInput = {};
-    if (title) {
+    if (title !== undefined) {
       updateData.title = title;
     }
     if (slug !== undefined) {
@@ -242,7 +249,7 @@ export async function PATCH(request: NextRequest) {
       }
       updateData.slug = normalizedSlug;
     }
-    if (content) {
+    if (content !== undefined) {
       updateData.content = content;
       if (excerpt === undefined) updateData.excerpt = content.substring(0, 200);
     }
@@ -251,9 +258,12 @@ export async function PATCH(request: NextRequest) {
     if (coverImageAlt !== undefined) updateData.coverImageAlt = coverImageAlt || null;
     if (seoTitle !== undefined) updateData.seoTitle = seoTitle || null;
     if (seoDescription !== undefined) updateData.seoDescription = seoDescription || null;
-    if (category) updateData.category = category;
-    if (Array.isArray(tags)) updateData.tags = tags;
+    if (category !== undefined) updateData.category = category;
+    if (tags !== undefined) updateData.tags = tags;
     if (status) {
+      if (status === 'PUBLISHED') {
+        markdownContentSchema.parse(content ?? current.content);
+      }
       updateData.status = status as ArticleStatus;
       // 只在第一次进入发布状态时记录发布时间。
       if (status === 'PUBLISHED' && !current.publishedAt) {
@@ -290,6 +300,15 @@ export async function PATCH(request: NextRequest) {
       article,
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: '文章内容校验失败', fieldErrors: error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: '请求正文必须是有效 JSON' }, { status: 400 });
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(
         { error: 'URL 别名已存在' },

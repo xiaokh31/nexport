@@ -349,7 +349,7 @@ model Page {
   title       String               // 页面标题
   titleEn     String?              // 英文标题
   titleFr     String?              // 法文标题
-  content     String      @db.Text // 内容 (HTML/Markdown)
+  content     String      @db.Text // Markdown 内容（禁止原始 HTML）
   contentEn   String?     @db.Text // 英文内容
   contentFr   String?     @db.Text // 法文内容
   status      PageStatus  @default(DRAFT)

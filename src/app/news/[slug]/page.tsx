@@ -1,141 +1,88 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { notFound } from "next/navigation";
+import { ArrowLeft, Calendar, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, User, Loader2 } from "lucide-react";
-import { useLocale } from "@/i18n/locale-context";
+import { Button } from "@/components/ui/button";
+import { MarkdownRenderer } from "@/components/content/safe-markdown";
+import { isAllowedMarkdownImage } from "@/lib/content/markdown-policy";
+import { prisma } from "@/lib/prisma";
 
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  coverImage?: string;
-  category: string;
-  author: string;
-  tags: string[];
-  publishedAt: string | null;
-  createdAt: string;
+const categories: Record<string, string> = {
+  company: "公司新闻",
+  industry: "行业资讯",
+  service: "服务公告",
+  policy: "政策解读",
+};
+
+function formatDate(date: Date | null) {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/Edmonton",
+  }).format(date);
 }
 
-export default function ArticleDetailPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const { t } = useLocale();
-  const [article, setArticle] = useState<Article | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function ArticleDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const article = await prisma.article.findFirst({
+    where: {
+      status: "PUBLISHED",
+      OR: [{ slug }, { id: slug }],
+    },
+    select: {
+      title: true,
+      excerpt: true,
+      content: true,
+      coverImage: true,
+      coverImageAlt: true,
+      category: true,
+      author: true,
+      tags: true,
+      publishedAt: true,
+      createdAt: true,
+    },
+  });
 
-  const newsCategories = t.news?.categories as Record<string, string> | undefined;
-  const categories: Record<string, string> = {
-    company: newsCategories?.company || "公司新闻",
-    industry: newsCategories?.industry || "行业资讯",
-    service: newsCategories?.service || "服务公告",
-    policy: newsCategories?.policy || "政策解读",
-  };
+  if (!article) notFound();
 
-  useEffect(() => {
-    const fetchArticle = async () => {
-      try {
-        setLoading(true);
-        // 先尝试用slug查询，如果失败则用id查询
-        let response = await fetch(`/api/articles?slug=${encodeURIComponent(slug)}`);
-        
-        if (!response.ok) {
-          // 尝试用id查询
-          response = await fetch(`/api/articles?id=${encodeURIComponent(slug)}`);
-        }
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.article) {
-            setArticle(data.article);
-          } else {
-            setError('文章不存在');
-          }
-        } else {
-          const errData = await response.json();
-          setError(errData.error || '文章不存在');
-        }
-      } catch (err) {
-        setError('加载文章失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (slug) {
-      fetchArticle();
-    }
-  }, [slug]);
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="container py-16 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error || !article) {
-    return (
-      <div className="container py-16">
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl font-bold mb-4">文章不存在</h1>
-          <p className="text-muted-foreground mb-6">{error || '您访问的文章可能已被删除或尚未发布'}</p>
-          <Button asChild>
-            <Link href="/news">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              返回新闻列表
-            </Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const coverImage = article.coverImage && isAllowedMarkdownImage(article.coverImage)
+    ? article.coverImage
+    : null;
 
   return (
     <>
-      {/* Hero */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/5 to-primary/10">
+      <section className="bg-gradient-to-br from-primary/5 to-primary/10 py-16 md:py-24">
         <div className="container">
-          <div className="max-w-3xl mx-auto">
+          <div className="mx-auto max-w-3xl">
             <Button variant="ghost" asChild className="mb-6">
               <Link href="/news">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 返回新闻列表
               </Link>
             </Button>
-            
-            <div className="flex items-center gap-2 mb-4">
+
+            <div className="mb-4 flex flex-wrap items-center gap-2">
               <Badge variant="secondary">
                 {categories[article.category] || article.category}
               </Badge>
-              {article.tags?.map((tag) => (
+              {article.tags.map((tag) => (
                 <Badge key={tag} variant="outline">
                   {tag}
                 </Badge>
               ))}
             </div>
-            
-            <h1 className="text-3xl md:text-4xl font-bold mb-6">
+
+            <h1 className="mb-6 break-words text-3xl font-bold md:text-4xl">
               {article.title}
             </h1>
-            
-            <div className="flex items-center gap-6 text-muted-foreground">
+
+            <div className="flex flex-wrap items-center gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 {article.author}
@@ -149,44 +96,37 @@ export default function ArticleDetailPage() {
         </div>
       </section>
 
-      {/* Cover Image */}
-      {article.coverImage && (
+      {coverImage && (
         <section className="container py-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="mx-auto max-w-4xl">
+            {/* The source is constrained to a same-origin path by the shared content policy. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={article.coverImage}
-              alt={article.title}
-              className="w-full h-auto rounded-lg shadow-lg"
+              src={coverImage}
+              alt={article.coverImageAlt || article.title}
+              className="h-auto w-full rounded-lg shadow-lg"
             />
           </div>
         </section>
       )}
 
-      {/* Content */}
       <section className="py-12 md:py-16">
         <div className="container">
-          <article className="max-w-3xl mx-auto">
-            {/* Excerpt */}
-            <p className="text-lg text-muted-foreground mb-8 pb-8 border-b">
+          <article className="mx-auto min-w-0 max-w-3xl">
+            <p className="mb-8 break-words border-b pb-8 text-lg text-muted-foreground">
               {article.excerpt}
             </p>
-            
-            {/* Main Content */}
-            <div 
-              className="prose prose-lg max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: article.content }}
-            />
+            <MarkdownRenderer content={article.content} />
           </article>
         </div>
       </section>
 
-      {/* Navigation */}
-      <section className="py-8 border-t">
+      <section className="border-t py-8">
         <div className="container">
-          <div className="max-w-3xl mx-auto flex justify-between">
+          <div className="mx-auto flex max-w-3xl justify-between">
             <Button variant="outline" asChild>
               <Link href="/news">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 返回新闻列表
               </Link>
             </Button>

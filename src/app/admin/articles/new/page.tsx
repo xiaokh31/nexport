@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Form,
   FormControl,
   FormField,
@@ -27,13 +34,15 @@ import {
 import { ArrowLeft, Save, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/i18n/locale-context";
+import { MarkdownPreview } from "@/components/content/safe-markdown";
+import { markdownContentSchema } from "@/lib/content/validation";
 
 const articleSchema = z.object({
-  title: z.string().min(2, "标题至少2个字符"),
-  slug: z.string().min(2, "URL别名至少2个字符"),
-  excerpt: z.string().min(10, "摘要至少10个字符"),
-  content: z.string().min(50, "内容至少50个字符"),
-  category: z.string().min(1, "请选择分类"),
+  title: z.string().trim().min(2, "标题至少2个字符").max(200, "标题不能超过200个字符"),
+  slug: z.string().trim().min(2, "URL别名至少2个字符").max(120, "URL别名不能超过120个字符"),
+  excerpt: z.string().trim().min(10, "摘要至少10个字符").max(500, "摘要不能超过500个字符"),
+  content: markdownContentSchema.refine((value) => value.length >= 50, "内容至少50个字符"),
+  category: z.string().trim().min(1, "请选择分类").max(80, "分类不能超过80个字符"),
   status: z.enum(["DRAFT", "PUBLISHED"]),
 });
 
@@ -43,6 +52,7 @@ export default function NewArticlePage() {
   const { t } = useLocale();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // 分类选项
   const categories = [
@@ -166,7 +176,7 @@ export default function NewArticlePage() {
                         <FormLabel>{t.admin.content}</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder={t.admin.contentPlaceholder}
+                            placeholder={`${t.admin.contentPlaceholder}（Markdown；不支持原始 HTML）`}
                             rows={15}
                             {...field}
                           />
@@ -244,7 +254,7 @@ export default function NewArticlePage() {
                         </>
                       )}
                     </Button>
-                    <Button type="button" variant="outline">
+                    <Button type="button" variant="outline" onClick={() => setShowPreview(true)}>
                       <Eye className="h-4 w-4 mr-2" />
                       {t.admin.preview}
                     </Button>
@@ -255,6 +265,16 @@ export default function NewArticlePage() {
           </div>
         </form>
       </Form>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{form.getValues("title") || "无标题"}</DialogTitle>
+            <DialogDescription>文章 Markdown 安全预览</DialogDescription>
+          </DialogHeader>
+          <MarkdownPreview content={form.getValues("content")} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { serializeStructuredData } from "@/lib/security/structured-data";
 
 interface OrganizationSchemaProps {
   name?: string;
@@ -50,7 +51,7 @@ export function OrganizationSchema({
     <Script
       id="organization-schema"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeStructuredData(schema) }}
     />
   );
 }
@@ -119,7 +120,7 @@ export function LocalBusinessSchema({
     <Script
       id="local-business-schema"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeStructuredData(schema) }}
     />
   );
 }
@@ -163,7 +164,7 @@ export function ServiceSchema({
     <Script
       id={`service-schema-${name.toLowerCase().replace(/\s+/g, "-")}`}
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeStructuredData(schema) }}
     />
   );
 }
@@ -192,7 +193,7 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
     <Script
       id="breadcrumb-schema"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeStructuredData(schema) }}
     />
   );
 }
@@ -223,7 +224,7 @@ export function FAQSchema({ items }: FAQSchemaProps) {
     <Script
       id="faq-schema"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeStructuredData(schema) }}
     />
   );
 }
@@ -269,7 +270,7 @@ export function WebsiteSchema({
     <Script
       id="website-schema"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeStructuredData(schema) }}
     />
   );
 }

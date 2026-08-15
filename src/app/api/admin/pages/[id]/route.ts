@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireCapability } from "@/lib/authorization";
+import {
+  markdownContentSchema,
+  pageUpdateSchema,
+} from "@/lib/content/validation";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -37,27 +43,45 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const authorization = await requireCapability("pages.manage");
     if (!authorization.authorized) return authorization.response;
 
-    const body = await request.json();
+    const body = pageUpdateSchema.parse(await request.json());
     const { title, titleEn, titleFr, content, contentEn, contentFr, status, slug } = body;
 
+    const current = await prisma.page.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        content: true,
+        contentEn: true,
+        contentFr: true,
+      },
+    });
+    if (!current) {
+      return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    }
+
     // 构建更新数据
-    const updateData: any = {};
+    const updateData: Prisma.PageUpdateInput = {};
     if (title !== undefined) updateData.title = title;
-    if (titleEn !== undefined) updateData.titleEn = titleEn;
-    if (titleFr !== undefined) updateData.titleFr = titleFr;
+    if (titleEn !== undefined) updateData.titleEn = titleEn || null;
+    if (titleFr !== undefined) updateData.titleFr = titleFr || null;
     if (content !== undefined) updateData.content = content;
-    if (contentEn !== undefined) updateData.contentEn = contentEn;
-    if (contentFr !== undefined) updateData.contentFr = contentFr;
+    if (contentEn !== undefined) updateData.contentEn = contentEn || null;
+    if (contentFr !== undefined) updateData.contentFr = contentFr || null;
     if (slug !== undefined) updateData.slug = slug;
     
     if (status !== undefined) {
-      updateData.status = status;
       if (status === "PUBLISHED") {
-        // 检查当前状态
-        const current = await prisma.page.findUnique({ where: { id } });
-        if (current && current.status !== "PUBLISHED") {
-          updateData.publishedAt = new Date();
-        }
+        markdownContentSchema.parse(content ?? current.content);
+
+        const nextContentEn = contentEn === undefined ? current.contentEn : contentEn;
+        const nextContentFr = contentFr === undefined ? current.contentFr : contentFr;
+        if (nextContentEn) markdownContentSchema.parse(nextContentEn);
+        if (nextContentFr) markdownContentSchema.parse(nextContentFr);
+      }
+
+      updateData.status = status;
+      if (status === "PUBLISHED" && current.status !== "PUBLISHED") {
+        updateData.publishedAt = new Date();
       }
     }
 
@@ -68,6 +92,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     return NextResponse.json(page);
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "页面内容校验失败", fieldErrors: error.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: "请求正文必须是有效 JSON" }, { status: 400 });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ error: "Page with this slug already exists" }, { status: 409 });
+    }
     console.error("Error updating page:", error);
     return NextResponse.json({ error: "Failed to update page" }, { status: 500 });
   }

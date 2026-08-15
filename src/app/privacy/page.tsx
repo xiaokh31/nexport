@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLocale } from "@/i18n/locale-context";
 import { Loader2 } from "lucide-react";
+import { MarkdownRenderer } from "@/components/content/safe-markdown";
 
 interface PageData {
   title: string;
@@ -15,7 +16,7 @@ interface PageData {
 }
 
 export default function PrivacyPage() {
-  const { locale, t } = useLocale();
+  const { locale } = useLocale();
   const [page, setPage] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,33 +55,54 @@ export default function PrivacyPage() {
 
   const getDefaultContent = () => {
     if (locale === "en") {
-      return `<h2>Privacy Policy</h2>
-<p>Welcome to Company Name. We respect your privacy and are committed to protecting your personal information.</p>
-<h3>Information Collection</h3>
-<p>We collect information you provide directly to us, such as when you create an account, request a quote, or contact us.</p>
-<h3>Use of Information</h3>
-<p>We use the information we collect to provide, maintain, and improve our services.</p>
-<h3>Contact Us</h3>
-<p>If you have any questions about this Privacy Policy, please contact us at contact@example.com</p>`;
+      return `# Privacy Policy
+
+Welcome to Company Name. We respect your privacy and are committed to protecting your personal information.
+
+## Information Collection
+
+We collect information you provide directly to us, such as when you create an account, request a quote, or contact us.
+
+## Use of Information
+
+We use the information we collect to provide, maintain, and improve our services.
+
+## Contact Us
+
+If you have any questions about this Privacy Policy, please contact us at contact@example.com.`;
     }
     if (locale === "fr") {
-      return `<h2>Politique de Confidentialité</h2>
-<p>Bienvenue chez Company Name. Nous respectons votre vie privée et nous nous engageons à protéger vos informations personnelles.</p>
-<h3>Collecte d'Informations</h3>
-<p>Nous collectons les informations que vous nous fournissez directement, comme lorsque vous créez un compte, demandez un devis ou nous contactez.</p>
-<h3>Utilisation des Informations</h3>
-<p>Nous utilisons les informations collectées pour fournir, maintenir et améliorer nos services.</p>
-<h3>Contactez-nous</h3>
-<p>Si vous avez des questions concernant cette politique de confidentialité, veuillez nous contacter à contact@example.com</p>`;
+      return `# Politique de Confidentialité
+
+Bienvenue chez Company Name. Nous respectons votre vie privée et nous nous engageons à protéger vos informations personnelles.
+
+## Collecte d'Informations
+
+Nous collectons les informations que vous nous fournissez directement, comme lorsque vous créez un compte, demandez un devis ou nous contactez.
+
+## Utilisation des Informations
+
+Nous utilisons les informations collectées pour fournir, maintenir et améliorer nos services.
+
+## Contactez-nous
+
+Si vous avez des questions concernant cette politique de confidentialité, veuillez nous contacter à contact@example.com.`;
     }
-    return `<h2>隐私政策</h2>
-<p>欢迎使用 Company Name。我们尊重您的隐私，并致力于保护您的个人信息。</p>
-<h3>信息收集</h3>
-<p>我们收集您直接提供给我们的信息，例如当您创建账户、请求报价或联系我们时。</p>
-<h3>信息使用</h3>
-<p>我们使用收集的信息来提供、维护和改进我们的服务。</p>
-<h3>联系我们</h3>
-<p>如果您对本隐私政策有任何疑问，请通过 contact@example.com 联系我们。</p>`;
+    return `# 隐私政策
+
+欢迎使用 Company Name。我们尊重您的隐私，并致力于保护您的个人信息。
+
+## 信息收集
+
+我们收集您直接提供给我们的信息，例如当您创建账户、请求报价或联系我们时。
+
+## 信息使用
+
+我们使用收集的信息来提供、维护和改进我们的服务。
+
+## 联系我们
+
+如果您对本隐私政策有任何疑问，请通过 contact@example.com 联系我们。`;
   };
 
   if (loading) {
@@ -113,10 +135,7 @@ export default function PrivacyPage() {
       {/* Content */}
       <section className="py-12 md:py-16">
         <div className="container">
-          <div 
-            className="max-w-3xl mx-auto prose prose-slate dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: getContent() }}
-          />
+          <MarkdownRenderer content={getContent()} className="mx-auto max-w-3xl" />
         </div>
       </section>
     </>
