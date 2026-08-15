@@ -188,7 +188,7 @@ export default function ArticlesPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={() => window.open(`/news/${article.id}`, '_blank')}
+                                onClick={() => window.open(`/admin/articles/${article.id}/preview`, '_blank', 'noopener,noreferrer')}
                                 title="预览"
                               >
                                 <Eye className="h-4 w-4" />

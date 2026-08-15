@@ -118,7 +118,14 @@ test("admin content APIs reject raw HTML and unsafe destinations", async ({ page
     data: {
       title: "Unsafe article",
       slug: apiArticleSlug,
+      excerpt: "Unsafe content must be rejected.",
       content: '<img src="x" onerror="alert(1)">',
+      coverImage: "",
+      coverImageAlt: "",
+      seoTitle: "",
+      seoDescription: "",
+      category: "company",
+      tags: ["security"],
       status: "DRAFT",
     },
   });

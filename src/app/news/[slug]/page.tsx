@@ -33,7 +33,8 @@ export default async function ArticleDetailPage({
   const article = await prisma.article.findFirst({
     where: {
       status: "PUBLISHED",
-      OR: [{ slug }, { id: slug }],
+      publishedAt: { not: null },
+      slug,
     },
     select: {
       title: true,

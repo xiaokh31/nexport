@@ -14,8 +14,8 @@ describe("safe content source boundaries", () => {
       "src/app/privacy/page.tsx",
       "src/app/terms/page.tsx",
       "src/app/admin/pages/page.tsx",
-      "src/app/admin/articles/[id]/page.tsx",
-      "src/app/admin/articles/new/page.tsx",
+      "src/components/admin/article-editor-form.tsx",
+      "src/app/admin/articles/[id]/preview/page.tsx",
     ];
 
     expect(renderer).toContain("skipHtml");
@@ -35,6 +35,16 @@ describe("safe content source boundaries", () => {
     expect(articlePage).not.toContain('"use client"');
     expect(articlePage).toContain("prisma.article.findFirst");
     expect(articlePage).toContain('status: "PUBLISHED"');
+    expect(articlePage).toContain("publishedAt: { not: null }");
+  });
+
+  it("protects saved Article previews on the server", () => {
+    const preview = source("src/app/admin/articles/[id]/preview/page.tsx");
+
+    expect(preview).toContain("currentSessionActor()");
+    expect(preview).toContain('hasCapability(actor, "articles.manage")');
+    expect(preview).toContain("MarkdownRenderer");
+    expect(preview).toContain("index: false");
   });
 
   it("validates Article and Page writes with the shared Zod policy", () => {

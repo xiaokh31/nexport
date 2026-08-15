@@ -5,8 +5,10 @@ import {
   MARKDOWN_MAX_LENGTH,
 } from "@/lib/content/markdown-policy";
 
-const ARTICLE_STATUSES = ["DRAFT", "PUBLISHED", "ARCHIVED"] as const;
+export const ARTICLE_STATUSES = ["DRAFT", "PUBLISHED", "ARCHIVED"] as const;
 const PAGE_STATUSES = ["DRAFT", "PUBLISHED"] as const;
+
+export type ArticleStatusValue = (typeof ARTICLE_STATUSES)[number];
 
 function markdownSchema({ required }: { required: boolean }) {
   let schema = z.string().trim().max(
@@ -29,34 +31,47 @@ function markdownSchema({ required }: { required: boolean }) {
 const optionalNullableText = (max: number, message: string) =>
   z.string().trim().max(max, message).nullable().optional();
 
-const contentImageSchema = z.string().trim().max(2_048, "图片地址不能超过2048个字符")
+const contentImageValueSchema = z.string().trim().max(2_048, "图片地址不能超过2048个字符")
   .refine(
     (value) => !value || isAllowedMarkdownImage(value),
     "内容图片只能使用站内绝对路径（例如 /images/example.jpg）",
-  )
-  .nullable()
-  .optional();
+  );
 
 export const markdownContentSchema = markdownSchema({ required: true });
 export const optionalMarkdownContentSchema = markdownSchema({ required: false }).nullable().optional();
 
 const articleFields = {
   title: z.string().trim().min(1, "标题不能为空").max(200, "标题不能超过200个字符"),
-  slug: z.string().trim().max(120, "URL 别名不能超过120个字符").optional(),
-  excerpt: z.string().trim().max(500, "摘要不能超过500个字符").optional(),
+  slug: z.string().trim().min(1, "URL 别名不能为空").max(120, "URL 别名不能超过120个字符"),
+  excerpt: z.string().trim().min(1, "摘要不能为空").max(500, "摘要不能超过500个字符"),
   content: markdownContentSchema,
-  coverImage: contentImageSchema,
-  coverImageAlt: optionalNullableText(300, "图片替代文本不能超过300个字符"),
-  seoTitle: optionalNullableText(70, "SEO 标题不能超过70个字符"),
-  seoDescription: optionalNullableText(170, "SEO 描述不能超过170个字符"),
-  category: z.string().trim().min(1, "分类不能为空").max(80, "分类不能超过80个字符").optional(),
+  coverImage: contentImageValueSchema,
+  coverImageAlt: z.string().trim().max(300, "图片替代文本不能超过300个字符"),
+  seoTitle: z.string().trim().max(70, "SEO 标题不能超过70个字符"),
+  seoDescription: z.string().trim().max(170, "SEO 描述不能超过170个字符"),
+  category: z.string().trim().min(1, "分类不能为空").max(80, "分类不能超过80个字符"),
   tags: z.array(z.string().trim().min(1).max(40, "单个标签不能超过40个字符"))
     .max(20, "标签不能超过20个")
-    .optional(),
-  status: z.enum(ARTICLE_STATUSES).optional(),
+    .refine((tags) => new Set(tags).size === tags.length, "标签不能重复"),
+  status: z.enum(ARTICLE_STATUSES),
 };
 
-export const articleCreateSchema = z.object(articleFields).strict();
+/** The single complete Article editor contract shared by forms and write APIs. */
+export const articleInputSchema = z.object(articleFields)
+  .strict()
+  .superRefine((value, context) => {
+    if (value.coverImage && !value.coverImageAlt) {
+      context.addIssue({
+        code: "custom",
+        path: ["coverImageAlt"],
+        message: "设置封面图时必须提供替代文本",
+      });
+    }
+  });
+
+export const articleCreateSchema = articleInputSchema;
+
+export type ArticleInputValues = z.infer<typeof articleInputSchema>;
 
 export const articleUpdateSchema = z.object(articleFields)
   .partial()
@@ -65,6 +80,27 @@ export const articleUpdateSchema = z.object(articleFields)
   .refine((value) => Object.keys(value).some((key) => key !== "id"), {
     message: "没有可更新的文章字段",
   });
+
+export type ArticleUpdateValues = z.infer<typeof articleUpdateSchema>;
+
+const articlePageSchema = z.coerce.number().int().min(1).max(10_000);
+const articleLimitSchema = z.coerce.number().int().min(1).max(100);
+
+export const articleAdminListQuerySchema = z.object({
+  page: articlePageSchema.default(1),
+  limit: articleLimitSchema.default(10),
+  status: z.union([z.enum(ARTICLE_STATUSES), z.literal("all")]).default("all"),
+  category: z.string().trim().max(80).default("all"),
+  search: z.string().trim().max(200).default(""),
+}).strict();
+
+export const articlePublicQuerySchema = z.object({
+  page: articlePageSchema.default(1),
+  limit: articleLimitSchema.default(10),
+  category: z.string().trim().max(80).default("all"),
+  id: z.string().trim().max(200).default(""),
+  slug: z.string().trim().max(120).default(""),
+}).strict();
 
 const pageFields = {
   slug: z.string().trim()

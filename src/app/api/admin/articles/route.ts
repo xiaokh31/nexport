@@ -1,79 +1,119 @@
-// 管理员文章管理 API
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { ArticleStatus, Prisma } from '@prisma/client';
-import { ZodError } from 'zod';
-import { requireCapability } from '@/lib/authorization';
+import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
+import { requireCapability } from "@/lib/authorization";
 import {
+  ARTICLE_ADMIN_SELECT,
+  ArticleServiceError,
+  createArticle,
+  deleteArticle,
+  updateArticle,
+} from "@/lib/articles/service";
+import { ArticleWorkflowError } from "@/lib/articles/workflow";
+import {
+  articleAdminListQuerySchema,
   articleCreateSchema,
   articleUpdateSchema,
-  markdownContentSchema,
-} from '@/lib/content/validation';
+} from "@/lib/content/validation";
+import { systemClock } from "@/lib/ports/external-services";
+import { prisma } from "@/lib/prisma";
 
-function normalizeSlug(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+function articleErrorResponse(error: unknown, action: string) {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      {
+        error: "文章请求校验失败",
+        code: "VALIDATION_ERROR",
+        fieldErrors: error.flatten().fieldErrors,
+      },
+      { status: 400 },
+    );
+  }
+  if (error instanceof SyntaxError) {
+    return NextResponse.json(
+      { error: "请求正文必须是有效 JSON", code: "INVALID_JSON" },
+      { status: 400 },
+    );
+  }
+  if (error instanceof ArticleServiceError && error.code === "ARTICLE_NOT_FOUND") {
+    return NextResponse.json(
+      { error: "文章不存在", code: error.code },
+      { status: 404 },
+    );
+  }
+  if (error instanceof ArticleWorkflowError) {
+    const messages = {
+      INVALID_SLUG: "URL 别名无效",
+      SLUG_LOCKED: "文章首次发布后不能修改 URL 别名",
+    } as const;
+    return NextResponse.json(
+      { error: messages[error.code], code: error.code },
+      { status: error.code === "SLUG_LOCKED" ? 409 : 400 },
+    );
+  }
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    return NextResponse.json(
+      { error: "URL 别名已存在", code: "SLUG_CONFLICT" },
+      { status: 409 },
+    );
+  }
+
+  console.error(`${action}文章失败:`, error);
+  return NextResponse.json(
+    { error: `${action}文章失败`, code: "INTERNAL_ERROR" },
+    { status: 500 },
+  );
 }
 
-// GET - 获取文章列表
+function revalidateArticle(slugs: string[], id?: string) {
+  revalidatePath("/news");
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin/articles");
+  for (const slug of new Set(slugs.filter(Boolean))) {
+    revalidatePath(`/news/${slug}`);
+  }
+  if (id) {
+    revalidatePath(`/admin/articles/${id}`);
+    revalidatePath(`/admin/articles/${id}/preview`);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const authorization = await requireCapability('articles.manage');
+    const authorization = await requireCapability("articles.manage");
     if (!authorization.authorized) return authorization.response;
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const status = searchParams.get('status');
-    const category = searchParams.get('category');
-    const search = searchParams.get('search');
-
-    // 构建查询条件
+    const searchParams = new URL(request.url).searchParams;
+    const query = articleAdminListQuerySchema.parse({
+      page: searchParams.get("page") || undefined,
+      limit: searchParams.get("limit") || undefined,
+      status: searchParams.get("status") || undefined,
+      category: searchParams.get("category") || undefined,
+      search: searchParams.get("search") || undefined,
+    });
     const where: Prisma.ArticleWhereInput = {};
-    
-    if (status && status !== 'all') {
-      where.status = status as ArticleStatus;
-    }
-    
-    if (category && category !== 'all') {
-      where.category = category;
-    }
-    
-    if (search) {
+
+    if (query.status !== "all") where.status = query.status;
+    if (query.category !== "all") where.category = query.category;
+    if (query.search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
+        { title: { contains: query.search, mode: "insensitive" } },
+        { excerpt: { contains: query.search, mode: "insensitive" } },
+        { content: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          title: true,
-          content: true,
-          slug: true,
-          excerpt: true,
-          coverImage: true,
-          coverImageAlt: true,
-          seoTitle: true,
-          seoDescription: true,
-          category: true,
-          tags: true,
-          status: true,
-          authorId: true,
-          author: true,
-          publishedAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        orderBy: { createdAt: "desc" },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        select: ARTICLE_ADMIN_SELECT,
       }),
       prisma.article.count({ where }),
     ]);
@@ -81,277 +121,69 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       articles,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: query.page,
+      pages: Math.ceil(total / query.limit),
     });
   } catch (error) {
-    console.error('获取文章列表失败:', error);
-    return NextResponse.json(
-      { error: '获取文章列表失败' },
-      { status: 500 }
-    );
+    return articleErrorResponse(error, "获取");
   }
 }
 
-// POST - 创建文章
 export async function POST(request: NextRequest) {
   try {
-    const authorization = await requireCapability('articles.manage');
+    const authorization = await requireCapability("articles.manage");
     if (!authorization.authorized) return authorization.response;
-    const { actor } = authorization;
 
-    const body = articleCreateSchema.parse(await request.json());
-    const {
-      title,
-      slug: requestedSlug,
-      excerpt,
-      content,
-      coverImage,
-      coverImageAlt,
-      seoTitle,
-      seoDescription,
-      category,
-      tags,
-      status,
-    } = body;
-
-    const slug = normalizeSlug(requestedSlug || title);
-    if (!slug) {
-      return NextResponse.json(
-        { error: 'URL 别名不能为空' },
-        { status: 400 }
-      );
-    }
-    if (slug.length > 120) {
-      return NextResponse.json(
-        { error: 'URL 别名不能超过120个字符' },
-        { status: 400 }
-      );
-    }
-    const articleStatus = status || 'DRAFT';
-    
-    const article = await prisma.article.create({
-      data: {
-        title,
-        content,
-        slug,
-        excerpt: excerpt || content.substring(0, 200),
-        coverImage: coverImage || null,
-        coverImageAlt: coverImageAlt || null,
-        seoTitle: seoTitle || null,
-        seoDescription: seoDescription || null,
-        category: category || 'news',
-        tags: Array.isArray(tags) ? tags : [],
-        status: articleStatus,
-        publishedAt: articleStatus === 'PUBLISHED' ? new Date() : null,
-        authorId: actor.id,
-        author: actor.name || actor.email,
-      },
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        coverImageAlt: true,
-        seoTitle: true,
-        seoDescription: true,
-        category: true,
-        tags: true,
-        status: true,
-        authorId: true,
-        author: true,
-        publishedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    const article = await createArticle(prisma, {
+      actor: authorization.actor,
+      article: articleCreateSchema.parse(await request.json()),
+      clock: systemClock,
     });
+    revalidateArticle([article.slug], article.id);
 
-    return NextResponse.json({
-      success: true,
-      article,
-    });
+    return NextResponse.json({ success: true, article }, { status: 201 });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: '文章内容校验失败', fieldErrors: error.flatten().fieldErrors },
-        { status: 400 }
-      );
-    }
-    if (error instanceof SyntaxError) {
-      return NextResponse.json({ error: '请求正文必须是有效 JSON' }, { status: 400 });
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'URL 别名已存在' },
-        { status: 409 }
-      );
-    }
-    console.error('创建文章失败:', error);
-    return NextResponse.json(
-      { error: '创建文章失败' },
-      { status: 500 }
-    );
+    return articleErrorResponse(error, "创建");
   }
 }
 
-// PATCH - 更新文章
 export async function PATCH(request: NextRequest) {
   try {
-    const authorization = await requireCapability('articles.manage');
+    const authorization = await requireCapability("articles.manage");
     if (!authorization.authorized) return authorization.response;
 
-    const body = articleUpdateSchema.parse(await request.json());
-    const {
-      id,
-      title,
-      slug,
-      excerpt,
-      content,
-      coverImage,
-      coverImageAlt,
-      seoTitle,
-      seoDescription,
-      category,
-      tags,
-      status,
-    } = body;
-
-    const current = await prisma.article.findUnique({
-      where: { id },
-      select: { slug: true, content: true, publishedAt: true },
+    const result = await updateArticle(prisma, {
+      article: articleUpdateSchema.parse(await request.json()),
+      clock: systemClock,
     });
-    if (!current) {
-      return NextResponse.json(
-        { error: '文章不存在' },
-        { status: 404 }
-      );
-    }
-
-    const updateData: Prisma.ArticleUpdateInput = {};
-    if (title !== undefined) {
-      updateData.title = title;
-    }
-    if (slug !== undefined) {
-      const normalizedSlug = normalizeSlug(slug);
-      if (!normalizedSlug) {
-        return NextResponse.json(
-          { error: 'URL 别名不能为空' },
-          { status: 400 }
-        );
-      }
-      if (current.publishedAt && normalizedSlug !== current.slug) {
-        return NextResponse.json(
-          { error: '文章首次发布后不能修改 URL 别名' },
-          { status: 409 }
-        );
-      }
-      updateData.slug = normalizedSlug;
-    }
-    if (content !== undefined) {
-      updateData.content = content;
-      if (excerpt === undefined) updateData.excerpt = content.substring(0, 200);
-    }
-    if (excerpt !== undefined) updateData.excerpt = excerpt;
-    if (coverImage !== undefined) updateData.coverImage = coverImage || null;
-    if (coverImageAlt !== undefined) updateData.coverImageAlt = coverImageAlt || null;
-    if (seoTitle !== undefined) updateData.seoTitle = seoTitle || null;
-    if (seoDescription !== undefined) updateData.seoDescription = seoDescription || null;
-    if (category !== undefined) updateData.category = category;
-    if (tags !== undefined) updateData.tags = tags;
-    if (status) {
-      if (status === 'PUBLISHED') {
-        markdownContentSchema.parse(content ?? current.content);
-      }
-      updateData.status = status as ArticleStatus;
-      // 只在第一次进入发布状态时记录发布时间。
-      if (status === 'PUBLISHED' && !current.publishedAt) {
-        updateData.publishedAt = new Date();
-      }
-    }
-
-    const article = await prisma.article.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        coverImageAlt: true,
-        seoTitle: true,
-        seoDescription: true,
-        category: true,
-        tags: true,
-        status: true,
-        authorId: true,
-        author: true,
-        publishedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      article,
-    });
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: '文章内容校验失败', fieldErrors: error.flatten().fieldErrors },
-        { status: 400 }
-      );
-    }
-    if (error instanceof SyntaxError) {
-      return NextResponse.json({ error: '请求正文必须是有效 JSON' }, { status: 400 });
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'URL 别名已存在' },
-        { status: 409 }
-      );
-    }
-    console.error('更新文章失败:', error);
-    return NextResponse.json(
-      { error: '更新文章失败' },
-      { status: 500 }
+    revalidateArticle(
+      [result.previousSlug, result.article.slug],
+      result.article.id,
     );
+
+    return NextResponse.json({ success: true, article: result.article });
+  } catch (error) {
+    return articleErrorResponse(error, "更新");
   }
 }
 
-// DELETE - 删除文章
 export async function DELETE(request: NextRequest) {
   try {
-    const authorization = await requireCapability('articles.manage');
+    const authorization = await requireCapability("articles.manage");
     if (!authorization.authorized) return authorization.response;
 
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
+    const id = new URL(request.url).searchParams.get("id")?.trim();
     if (!id) {
       return NextResponse.json(
-        { error: '缺少文章ID' },
-        { status: 400 }
+        { error: "缺少文章 ID", code: "VALIDATION_ERROR" },
+        { status: 400 },
       );
     }
 
-    await prisma.article.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: '文章删除成功',
-    });
+    const deleted = await deleteArticle(prisma, id);
+    revalidateArticle([deleted.slug], deleted.id);
+    return NextResponse.json({ success: true, message: "文章删除成功" });
   } catch (error) {
-    console.error('删除文章失败:', error);
-    return NextResponse.json(
-      { error: '删除文章失败' },
-      { status: 500 }
-    );
+    return articleErrorResponse(error, "删除");
   }
 }

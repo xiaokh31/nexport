@@ -1,25 +1,44 @@
-// 公共文章 API - 获取已发布的文章
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
+import { articlePublicQuerySchema } from "@/lib/content/validation";
+import { prisma } from "@/lib/prisma";
 
-// GET - 获取已发布的文章列表
+function publicArticleError(error: unknown) {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      { error: "文章查询参数无效", code: "VALIDATION_ERROR" },
+      { status: 400 },
+    );
+  }
+  console.error("获取文章失败:", error);
+  return NextResponse.json(
+    { error: "获取文章失败", code: "INTERNAL_ERROR" },
+    { status: 500 },
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const category = searchParams.get('category');
-    const id = searchParams.get('id');
-    const slug = searchParams.get('slug');
+    const searchParams = new URL(request.url).searchParams;
+    const query = articlePublicQuerySchema.parse({
+      page: searchParams.get("page") || undefined,
+      limit: searchParams.get("limit") || undefined,
+      category: searchParams.get("category") || undefined,
+      id: searchParams.get("id") || undefined,
+      slug: searchParams.get("slug") || undefined,
+    });
+    const publishedWhere: Prisma.ArticleWhereInput = {
+      status: "PUBLISHED",
+      publishedAt: { not: null },
+    };
 
-    // 如果请求单篇文章
-    if (id || slug) {
+    if (query.id || query.slug) {
       const article = await prisma.article.findFirst({
         where: {
-          status: 'PUBLISHED',
-          ...(id ? { id } : {}),
-          ...(slug ? { slug } : {}),
+          ...publishedWhere,
+          ...(query.id ? { id: query.id } : {}),
+          ...(query.slug ? { slug: query.slug } : {}),
         },
         select: {
           id: true,
@@ -32,39 +51,32 @@ export async function GET(request: NextRequest) {
           seoTitle: true,
           seoDescription: true,
           category: true,
-          authorId: true,
           author: true,
           tags: true,
           publishedAt: true,
           createdAt: true,
+          updatedAt: true,
         },
       });
 
       if (!article) {
         return NextResponse.json(
-          { error: '文章不存在' },
-          { status: 404 }
+          { error: "文章不存在", code: "ARTICLE_NOT_FOUND" },
+          { status: 404 },
         );
       }
-
       return NextResponse.json({ article });
     }
 
-    // 构建查询条件 - 只获取已发布的文章
-    const where: Prisma.ArticleWhereInput = {
-      status: 'PUBLISHED',
-    };
-    
-    if (category && category !== 'all') {
-      where.category = category;
-    }
+    const where: Prisma.ArticleWhereInput = { ...publishedWhere };
+    if (query.category !== "all") where.category = query.category;
 
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where,
-        orderBy: { publishedAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+        orderBy: { publishedAt: "desc" },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
         select: {
           id: true,
           title: true,
@@ -73,11 +85,11 @@ export async function GET(request: NextRequest) {
           coverImage: true,
           coverImageAlt: true,
           category: true,
-          authorId: true,
           author: true,
           tags: true,
           publishedAt: true,
           createdAt: true,
+          updatedAt: true,
         },
       }),
       prisma.article.count({ where }),
@@ -86,14 +98,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       articles,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: query.page,
+      pages: Math.ceil(total / query.limit),
     });
   } catch (error) {
-    console.error('获取文章列表失败:', error);
-    return NextResponse.json(
-      { error: '获取文章列表失败' },
-      { status: 500 }
-    );
+    return publicArticleError(error);
   }
 }
