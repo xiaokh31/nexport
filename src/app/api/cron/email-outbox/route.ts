@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   requireCronRuntimeConfig,
   requireEmailRuntimeConfig,
+  requireAuthRuntimeConfig,
 } from "@/config/env/server";
 import { EnvironmentConfigurationError } from "@/config/env/shared";
 import { processEmailOutbox } from "@/lib/notifications/outbox-worker";
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const emailConfig = requireEmailRuntimeConfig();
+    const authConfig = requireAuthRuntimeConfig();
     const rawBatchSize = Number.parseInt(
       new URL(request.url).searchParams.get("limit") || "25",
       10,
@@ -41,7 +43,11 @@ export async function POST(request: NextRequest) {
       : 25;
     const summary = await processEmailOutbox({
       store: new PrismaEmailOutboxStore(prisma),
-      sender: new ResendEmailSender(emailConfig.apiKey, emailConfig.from),
+      sender: new ResendEmailSender(
+        emailConfig.apiKey,
+        emailConfig.from,
+        authConfig.secret,
+      ),
       clock: systemClock,
       batchSize,
     });

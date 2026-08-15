@@ -12,6 +12,7 @@ const storedUser: CredentialUser = {
   role: "CUSTOMER",
   canManageArticles: false,
   password: "stored-password-hash",
+  emailVerified: new Date("2026-01-01T00:00:00.000Z"),
 };
 
 function securityDependencies() {
@@ -75,6 +76,24 @@ describe("credential authentication", () => {
         verifyPassword: vi.fn().mockResolvedValue(false),
       },
     )).rejects.toThrow(INVALID_CREDENTIALS_MESSAGE);
+  });
+
+  it("rejects a correct password until the credentials email is verified", async () => {
+    await expect(authenticateCredentials(
+      {
+        email: storedUser.email,
+        password: "valid-password",
+        captchaToken: "valid-captcha-token",
+      },
+      {
+        ...securityDependencies(),
+        findUserByEmail: vi.fn().mockResolvedValue({
+          ...storedUser,
+          emailVerified: null,
+        }),
+        verifyPassword: vi.fn().mockResolvedValue(true),
+      },
+    )).rejects.toThrow("请先验证邮箱");
   });
 
   it("rejects the removed demo credentials when no database user exists", async () => {

@@ -62,6 +62,32 @@ export async function enqueueRequiredEmail(
   });
 }
 
+/** Verification mail is required transactional mail and bypasses preferences. */
+export async function enqueueEmailVerification(
+  transaction: Prisma.TransactionClient,
+  input: {
+    eventKey: string;
+    recipient: string;
+    from: string | null | undefined;
+    subject: string;
+    verificationId: string;
+    htmlTemplate: string;
+  },
+) {
+  return enqueueEmail(transaction, {
+    eventKey: input.eventKey,
+    recipient: input.recipient,
+    payload: {
+      version: 1,
+      kind: "EMAIL_VERIFICATION",
+      from: input.from?.trim() || null,
+      subject: input.subject,
+      verificationId: input.verificationId,
+      htmlTemplate: input.htmlTemplate,
+    },
+  });
+}
+
 export async function createQuoteEventNotifications(
   transaction: Prisma.TransactionClient,
   input: {

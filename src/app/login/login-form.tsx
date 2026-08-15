@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
 import { CaptchaUnavailable, CaptchaV2Checkbox } from "@/components/captcha";
 import { publicEnv } from "@/config/env/public";
+import { EMAIL_NOT_VERIFIED_MESSAGE } from "@/lib/auth/messages";
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export function LoginForm() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [googleLoginEnabled, setGoogleLoginEnabled] = useState(false);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -66,6 +68,7 @@ export function LoginForm() {
 
     setIsLoading(true);
     setError(null);
+    setEmailVerificationRequired(false);
 
     try {
       const result = await signIn("credentials", {
@@ -76,7 +79,16 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        if (result.error.includes(EMAIL_NOT_VERIFIED_MESSAGE)) {
+          setError(t.auth.emailNotVerified);
+          sessionStorage.setItem(
+            "pending-verification-email",
+            data.email.trim().toLowerCase(),
+          );
+          setEmailVerificationRequired(true);
+        } else {
+          setError(result.error);
+        }
       } else {
         router.push("/dashboard");
         router.refresh();
@@ -202,6 +214,17 @@ export function LoginForm() {
               {t.auth.googleLogin}
             </Button>
           </>
+        )}
+
+        {emailVerificationRequired && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => router.push("/verify-email")}
+          >
+            {t.auth.resendVerification}
+          </Button>
         )}
       </form>
     </Form>

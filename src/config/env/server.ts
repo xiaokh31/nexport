@@ -58,13 +58,21 @@ export function getGoogleOAuthConfig(): {
 }
 
 export function requireAuthRuntimeConfig(): { secret: string } {
-  return {
-    secret: requireEnvironmentValue(
-      "NEXTAUTH_SECRET",
-      values.nextAuthSecret,
-      "Authentication"
-    ),
-  };
+  const secret = requireEnvironmentValue(
+    "NEXTAUTH_SECRET",
+    values.nextAuthSecret,
+    "Authentication",
+  );
+  if (Buffer.byteLength(secret, "utf8") < 32) {
+    throw new EnvironmentConfigurationError(
+      "NEXTAUTH_SECRET must contain at least 32 bytes.",
+    );
+  }
+  return { secret };
+}
+
+export function requireSiteRuntimeConfig(): { siteUrl: string } {
+  return { siteUrl: validateSiteUrl(values.siteUrl, process.env.NODE_ENV) };
 }
 
 export function requireCaptchaRuntimeConfig(): {

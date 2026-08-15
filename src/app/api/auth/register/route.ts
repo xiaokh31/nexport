@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { registerFormSchema } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,16 @@ import {
   clientIpRateLimitSubject,
   RATE_LIMIT_POLICIES,
 } from "@/lib/security/rate-limit";
+import {
+  requireAuthRuntimeConfig,
+  requireSiteRuntimeConfig,
+  serverEnv,
+} from "@/config/env/server";
+import { issueEmailVerification } from "@/lib/auth/email-verification-service";
+import {
+  cryptoRandomByteSource,
+  systemClock,
+} from "@/lib/ports/external-services";
 
 function errorResponse(error: string, status: number, retryAfterSeconds?: number) {
   return NextResponse.json(
@@ -65,34 +76,51 @@ export async function POST(request: Request) {
     // 检查邮箱是否已存在
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email },
+      select: { id: true },
     });
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: "该邮箱已被注册" },
-        { status: 400 }
-      );
+      return errorResponse("该邮箱已被注册", 409);
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 
-    // 创建用户
-    await prisma.user.create({
-      data: {
-        name: validatedData.name,
-        email: validatedData.email,
-        password: hashedPassword,
-        company: validatedData.company || null,
-        phone: validatedData.phone || null,
-      },
+    const authConfig = requireAuthRuntimeConfig();
+    const siteConfig = requireSiteRuntimeConfig();
+
+    // 用户、哈希验证令牌与必要邮件 outbox 原子创建。
+    await prisma.$transaction(async (transaction) => {
+      const user = await transaction.user.create({
+        data: {
+          name: validatedData.name,
+          email: validatedData.email,
+          password: hashedPassword,
+          company: validatedData.company || null,
+          phone: validatedData.phone || null,
+        },
+      });
+      await issueEmailVerification(transaction, {
+        email: user.email,
+        locale: user.locale,
+        config: {
+          secret: authConfig.secret,
+          siteUrl: siteConfig.siteUrl,
+          emailFrom: serverEnv.emailFrom,
+        },
+        dependencies: {
+          clock: systemClock,
+          randomBytes: cryptoRandomByteSource,
+        },
+      });
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: "注册成功",
+        message: "注册成功，请查收验证邮件",
+        requiresEmailVerification: true,
       },
-      { status: 200 }
+      { status: 201 }
     );
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -104,6 +132,9 @@ export async function POST(request: Request) {
     if (error instanceof EnvironmentConfigurationError) {
       console.error("Registration security configuration error:", error.message);
       return errorResponse("安全验证服务未配置或暂不可用", 503);
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return errorResponse("该邮箱已被注册", 409);
     }
 
     console.error("Error registering user:", error);

@@ -59,11 +59,12 @@ export function RegisterForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, captchaToken }),
       });
+      const result = await response.json();
 
       if (response.ok) {
-        router.push("/login?registered=true");
+        sessionStorage.setItem("pending-verification-email", data.email.trim().toLowerCase());
+        router.push("/verify-email?sent=true");
       } else {
-        const result = await response.json();
         setError(result.error || t.auth.registerFailed);
       }
     } catch {

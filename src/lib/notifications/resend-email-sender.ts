@@ -4,6 +4,7 @@ import type {
   EmailSender,
 } from "@/lib/ports/external-services";
 import { emailOutboxPayloadSchema } from "@/lib/notifications/outbox-payload";
+import { renderEmailVerificationHtml } from "@/lib/auth/email-verification-token";
 
 export interface ResendError {
   message?: string;
@@ -33,6 +34,7 @@ export class ResendEmailSender implements EmailSender {
   constructor(
     private readonly apiKey: string,
     private readonly defaultFrom: string | null = null,
+    private readonly emailVerificationSecret: string | null = null,
   ) {}
 
   async send(request: EmailDeliveryRequest): Promise<EmailDeliveryResult> {
@@ -49,6 +51,34 @@ export class ResendEmailSender implements EmailSender {
       };
     }
 
+    let html: string;
+    if (payload.data.kind === "EMAIL_VERIFICATION") {
+      if (!this.emailVerificationSecret) {
+        return {
+          success: false,
+          reason: "CONFIGURATION",
+          retryable: false,
+          ambiguous: false,
+        };
+      }
+      try {
+        html = renderEmailVerificationHtml({
+          htmlTemplate: payload.data.htmlTemplate,
+          verificationId: payload.data.verificationId,
+          secret: this.emailVerificationSecret,
+        });
+      } catch {
+        return {
+          success: false,
+          reason: "CONFIGURATION",
+          retryable: false,
+          ambiguous: false,
+        };
+      }
+    } else {
+      html = payload.data.html;
+    }
+
     try {
       const { Resend } = await import("resend");
       const resend = new Resend(this.apiKey);
@@ -57,7 +87,7 @@ export class ResendEmailSender implements EmailSender {
           from,
           to: [request.recipient],
           subject: payload.data.subject,
-          html: payload.data.html,
+          html,
         },
         { idempotencyKey: request.idempotencyKey },
       );

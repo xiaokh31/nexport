@@ -84,7 +84,8 @@ CREATE TABLE "Session" (
 CREATE TABLE "VerificationToken" (
     "identifier" TEXT NOT NULL,
     "token" TEXT NOT NULL,
-    "expires" TIMESTAMP(3) NOT NULL
+    "expires" TIMESTAMP(3) NOT NULL,
+    "consumedAt" TIMESTAMP(3)
 );
 
 -- CreateTable
@@ -291,6 +292,9 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- CreateIndex
+CREATE INDEX "VerificationToken_identifier_consumedAt_expires_idx" ON "VerificationToken"("identifier", "consumedAt", "expires");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Quote_reference_key" ON "Quote"("reference");

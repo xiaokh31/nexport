@@ -24,7 +24,7 @@ const optionalCount = z.number().int().min(0).max(1_000_000).optional();
 const optionalWeightValue = normalizedPositiveDecimal(11, 3, "重量必须是大于0且最多3位小数的数值").optional();
 const optionalDimensionValue = normalizedPositiveDecimal(9, 3, "尺寸必须是大于0且最多3位小数的数值").optional();
 const optionalAmount = normalizedPositiveDecimal(12, 2, "报价金额必须是大于0且最多2位小数的数值").nullable().optional();
-const normalizedEmailSchema = z.string()
+export const normalizedEmailSchema = z.string()
   .trim()
   .toLowerCase()
   .email("请输入有效的邮箱地址")
@@ -136,7 +136,7 @@ export const quoteSoftDeleteSchema = z.object({
 // 登录表单验证
 export const loginFormSchema = z.object({
   email: normalizedEmailSchema,
-  password: z.string().min(6, "密码至少6个字符"),
+  password: z.string().min(6, "密码至少6个字符").max(128, "密码不能超过128个字符"),
   captchaToken: optionalCaptchaTokenSchema,
 });
 
@@ -144,12 +144,12 @@ export type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 // 注册表单验证
 export const registerFormSchema = z.object({
-  name: z.string().min(2, "姓名至少2个字符"),
+  name: z.string().trim().min(2, "姓名至少2个字符").max(100, "姓名不能超过100个字符"),
   email: normalizedEmailSchema,
-  password: z.string().min(6, "密码至少6个字符"),
-  confirmPassword: z.string().min(6, "密码至少6个字符"),
-  company: z.string().optional(),
-  phone: z.string().optional(),
+  password: z.string().min(6, "密码至少6个字符").max(128, "密码不能超过128个字符"),
+  confirmPassword: z.string().min(6, "密码至少6个字符").max(128, "密码不能超过128个字符"),
+  company: z.string().trim().max(160, "公司名称不能超过160个字符").optional(),
+  phone: z.string().trim().max(32, "联系电话不能超过32个字符").optional(),
   captchaToken: optionalCaptchaTokenSchema,
 }).refine((data) => data.password === data.confirmPassword, {
   message: "两次密码输入不一致",
@@ -157,3 +157,11 @@ export const registerFormSchema = z.object({
 });
 
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
+
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(1).max(256),
+}).strict();
+
+export const resendEmailVerificationSchema = z.object({
+  email: normalizedEmailSchema,
+}).strict();

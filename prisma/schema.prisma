@@ -75,8 +75,10 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+  consumedAt DateTime?
 
   @@unique([identifier, token])
+  @@index([identifier, consumedAt, expires])
 }
 
 enum UserRole {

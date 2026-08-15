@@ -5,6 +5,9 @@ import {
   RATE_LIMIT_POLICIES,
   type RateLimiter,
 } from "@/lib/security/rate-limit";
+import { EMAIL_NOT_VERIFIED_MESSAGE } from "@/lib/auth/messages";
+
+export { EMAIL_NOT_VERIFIED_MESSAGE } from "@/lib/auth/messages";
 
 export const INVALID_CREDENTIALS_MESSAGE = "邮箱或密码错误";
 export const CAPTCHA_REQUIRED_MESSAGE = "请先完成人机验证";
@@ -23,6 +26,7 @@ export interface CredentialUser {
   role: string;
   canManageArticles: boolean;
   password: string | null;
+  emailVerified: Date | null;
 }
 
 interface CredentialDependencies {
@@ -106,6 +110,9 @@ export async function authenticateCredentials(
   );
   if (!user?.password || !passwordIsValid) {
     throw new Error(INVALID_CREDENTIALS_MESSAGE);
+  }
+  if (!user.emailVerified) {
+    throw new Error(EMAIL_NOT_VERIFIED_MESSAGE);
   }
 
   return {

@@ -25,10 +25,10 @@ describe("security source boundaries", () => {
     expect(productionSource).not.toContain("allowDangerousEmailAccountLinking");
   });
 
-  it("uses the normalized email schema for quote, login, and registration", () => {
+  it("uses the normalized email schema for quote, login, registration, and verification resend", () => {
     const validationSource = source("src/lib/validations.ts");
 
-    expect(validationSource.match(/email:\s*normalizedEmailSchema/g)).toHaveLength(3);
+    expect(validationSource.match(/email:\s*normalizedEmailSchema/g)).toHaveLength(4);
     expect(validationSource).toMatch(
       /const normalizedEmailSchema = z\.string\(\)\s*\.trim\(\)\s*\.toLowerCase\(\)/,
     );
