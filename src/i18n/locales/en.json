@@ -477,7 +477,9 @@
     "wrongPassword": "Wrong password",
     "captchaRequired": "Please complete the verification first",
     "verifyHuman": "Verify you are human",
-    "captchaHint": "Please complete verification to enable login/register"
+    "captchaHint": "Please complete verification to enable login/register",
+    "captchaFailed": "Human verification failed. Please try again.",
+    "captchaUnavailable": "Human verification is not configured. Login and registration are unavailable."
   },
   "form": {
     "nameRequired": "Name must be at least 2 characters",

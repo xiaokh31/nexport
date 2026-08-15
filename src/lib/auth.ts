@@ -5,30 +5,28 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
-import { getGoogleOAuthConfig, serverEnv } from "@/config/env/server";
-import { authenticateCredentials } from "@/lib/auth/credentials";
+import {
+  getGoogleOAuthConfig,
+  getTrustedProxyHops,
+  serverEnv,
+} from "@/config/env/server";
+import { EnvironmentConfigurationError } from "@/config/env/shared";
+import {
+  AUTH_PROTECTION_UNAVAILABLE_MESSAGE,
+  authenticateCredentials,
+} from "@/lib/auth/credentials";
+import { resolveTrustedClientIp } from "@/lib/security/client-ip";
+import { createServerProtection } from "@/lib/security/server-protection";
 
 const googleOAuthConfig = getGoogleOAuthConfig();
 
 // 获取客户端IP地址
-async function getClientIP(): Promise<string> {
+async function getClientIP(): Promise<string | null> {
   try {
     const headersList = await headers();
-    // Vercel/Cloudflare 等平台的真实IP头
-    const forwardedFor = headersList.get('x-forwarded-for');
-    if (forwardedFor) {
-      return forwardedFor.split(',')[0].trim();
-    }
-    // 其他可能的IP头
-    const realIP = headersList.get('x-real-ip');
-    if (realIP) return realIP;
-    
-    const cfIP = headersList.get('cf-connecting-ip');
-    if (cfIP) return cfIP;
-    
-    return 'Unknown';
+    return resolveTrustedClientIp(headersList, getTrustedProxyHops());
   } catch {
-    return 'Unknown';
+    return null;
   }
 }
 
@@ -94,12 +92,21 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        captchaToken: { label: "CAPTCHA token", type: "text" },
       },
-      async authorize(credentials) {
-        return authenticateCredentials(credentials, {
-          findUserByEmail: (email) => prisma.user.findUnique({ where: { email } }),
-          verifyPassword: (password, passwordHash) => bcrypt.compare(password, passwordHash),
-        });
+      async authorize(credentials, request) {
+        try {
+          return authenticateCredentials(credentials, {
+            ...createServerProtection(request.headers),
+            findUserByEmail: (email) => prisma.user.findUnique({ where: { email } }),
+            verifyPassword: (password, passwordHash) => bcrypt.compare(password, passwordHash),
+          });
+        } catch (error) {
+          if (error instanceof EnvironmentConfigurationError) {
+            throw new Error(AUTH_PROTECTION_UNAVAILABLE_MESSAGE);
+          }
+          throw error;
+        }
       },
     }),
   ],

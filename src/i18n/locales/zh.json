@@ -477,7 +477,9 @@
     "wrongPassword": "密码错误",
     "captchaRequired": "请先完成人机验证",
     "verifyHuman": "请验证您是人类",
-    "captchaHint": "请完成验证以启用登录/注册"
+    "captchaHint": "请完成验证以启用登录/注册",
+    "captchaFailed": "人机验证失败，请重试",
+    "captchaUnavailable": "人机验证服务未配置，暂时无法登录或注册"
   },
   "form": {
     "nameRequired": "姓名至少2个字符",

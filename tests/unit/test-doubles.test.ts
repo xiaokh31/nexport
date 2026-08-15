@@ -61,6 +61,7 @@ describe("test-only dependency doubles", () => {
     vi.stubEnv("NODE_ENV", "production");
 
     expect(() => new FixedClock(new Date())).toThrow("NODE_ENV=test");
+    expect(() => new FakeCaptchaVerifier()).toThrow("NODE_ENV=test");
     expect(() => new RecordingEmailSender()).toThrow("NODE_ENV=test");
   });
 });

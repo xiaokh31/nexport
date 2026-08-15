@@ -477,7 +477,9 @@
     "wrongPassword": "Mot de passe incorrect",
     "captchaRequired": "Veuillez d'abord compléter la vérification",
     "verifyHuman": "Vérifiez que vous êtes humain",
-    "captchaHint": "Veuillez compléter la vérification pour activer la connexion/inscription"
+    "captchaHint": "Veuillez compléter la vérification pour activer la connexion/inscription",
+    "captchaFailed": "La vérification humaine a échoué. Veuillez réessayer.",
+    "captchaUnavailable": "La vérification humaine n'est pas configurée. La connexion et l'inscription sont indisponibles."
   },
   "form": {
     "nameRequired": "Le nom doit contenir au moins 2 caractères",

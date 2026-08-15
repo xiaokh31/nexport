@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -62,5 +62,36 @@ describe("SEC-001 source boundaries", () => {
     expect(emailSource).not.toMatch(/\.domains\.(?:create|get|verify)\s*\(/);
     expect(emailSource).not.toMatch(/sendgrid/i);
     expect(emailSource).toContain("resend.emails.send(message)");
+  });
+
+  it("contains no client-only CAPTCHA bypass or standalone verification endpoint", () => {
+    const productionSource = sourceFiles(path.resolve("src"))
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+
+    expect(productionSource).not.toContain("SimpleMathCaptcha");
+    expect(productionSource).not.toContain("useCaptcha(");
+    expect(productionSource).not.toContain("6LeIxAcTAAAAA");
+    expect(existsSync(path.resolve("src/app/api/auth/verify-captcha/route.ts"))).toBe(false);
+  });
+
+  it("protects credentials and registration inside their business requests", () => {
+    const authSource = source("src/lib/auth.ts");
+    const registrationSource = source("src/app/api/auth/register/route.ts");
+
+    expect(authSource).toContain("captchaToken: { label:");
+    expect(authSource).toContain("createServerProtection(request.headers)");
+    expect(registrationSource).toContain("createServerProtection(request.headers)");
+    expect(registrationSource.indexOf("captchaVerifier.verify"))
+      .toBeLessThan(registrationSource.indexOf("prisma.user.findUnique"));
+  });
+
+  it("uses the persistent rate-limit store without retaining raw subjects", () => {
+    const storeSource = source("src/lib/security/prisma-rate-limit-store.ts");
+    const rateLimitSource = source("src/lib/security/rate-limit.ts");
+
+    expect(storeSource).toContain("client.rateLimitBucket.upsert");
+    expect(storeSource).not.toMatch(/new\s+Map\s*</);
+    expect(rateLimitSource).toContain('createHmac("sha256", secret)');
   });
 });

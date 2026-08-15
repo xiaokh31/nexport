@@ -29,6 +29,7 @@ const normalizedEmailSchema = z.string()
   .toLowerCase()
   .email("请输入有效的邮箱地址")
   .max(254, "邮箱不能超过254个字符");
+const optionalCaptchaTokenSchema = z.string().trim().min(1).max(4_096).optional();
 
 // 询价表单验证
 export const quoteFormSchema = z.object({
@@ -54,7 +55,7 @@ export const quoteFormSchema = z.object({
   dimensionUnit: z.enum(DIMENSION_UNITS).optional(),
   requestedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "期望日期格式必须为YYYY-MM-DD").optional(),
   message: z.string().trim().min(10, "留言内容至少10个字符").max(4_000, "留言内容不能超过4000个字符"),
-  captchaToken: z.string().trim().min(1).max(4_096).optional(),
+  captchaToken: optionalCaptchaTokenSchema,
 }).superRefine((data, ctx) => {
   if (Boolean(data.weightValue) !== Boolean(data.weightUnit)) {
     ctx.addIssue({
@@ -136,6 +137,7 @@ export const quoteSoftDeleteSchema = z.object({
 export const loginFormSchema = z.object({
   email: normalizedEmailSchema,
   password: z.string().min(6, "密码至少6个字符"),
+  captchaToken: optionalCaptchaTokenSchema,
 });
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
@@ -148,6 +150,7 @@ export const registerFormSchema = z.object({
   confirmPassword: z.string().min(6, "密码至少6个字符"),
   company: z.string().optional(),
   phone: z.string().optional(),
+  captchaToken: optionalCaptchaTokenSchema,
 }).refine((data) => data.password === data.confirmPassword, {
   message: "两次密码输入不一致",
   path: ["confirmPassword"],

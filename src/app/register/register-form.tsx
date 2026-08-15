@@ -17,7 +17,7 @@ import {
 import { registerFormSchema, RegisterFormValues } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
-import { SimpleMathCaptcha, CaptchaV2Checkbox } from "@/components/captcha";
+import { CaptchaUnavailable, CaptchaV2Checkbox } from "@/components/captcha";
 import { publicEnv } from "@/config/env/public";
 
 export function RegisterForm() {
@@ -25,7 +25,8 @@ export function RegisterForm() {
   const { t } = useLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
   // Check if external reCAPTCHA is configured
   const recaptchaSiteKey = publicEnv.recaptchaSiteKey;
@@ -39,11 +40,12 @@ export function RegisterForm() {
       confirmPassword: "",
       company: "",
       phone: "",
+      captchaToken: undefined,
     },
   });
 
   async function onSubmit(data: RegisterFormValues) {
-    if (!isCaptchaVerified) {
+    if (!captchaToken) {
       setError(t.auth?.captchaRequired || "Please complete the verification first");
       return;
     }
@@ -55,7 +57,7 @@ export function RegisterForm() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, captchaToken }),
       });
 
       if (response.ok) {
@@ -64,20 +66,29 @@ export function RegisterForm() {
         const result = await response.json();
         setError(result.error || t.auth.registerFailed);
       }
-    } catch (error) {
+    } catch {
       setError(t.auth.registerFailed);
     } finally {
       setIsLoading(false);
+      setCaptchaToken("");
+      form.setValue("captchaToken", undefined);
+      setCaptchaResetKey((value) => value + 1);
     }
   }
 
-  const handleCaptchaVerify = (verified: boolean | string) => {
-    // SimpleMathCaptcha passes boolean, CaptchaV2Checkbox passes token string
-    setIsCaptchaVerified(typeof verified === "string" ? true : verified);
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+    form.setValue("captchaToken", token, { shouldValidate: true });
   };
 
   const handleCaptchaExpire = () => {
-    setIsCaptchaVerified(false);
+    setCaptchaToken("");
+    form.setValue("captchaToken", undefined);
+  };
+
+  const handleCaptchaError = () => {
+    handleCaptchaExpire();
+    setError(t.auth?.captchaFailed || "Human verification failed. Please try again.");
   };
 
   return (
@@ -181,12 +192,13 @@ export function RegisterForm() {
             <CaptchaV2Checkbox
               siteKey={recaptchaSiteKey}
               onVerify={handleCaptchaVerify}
+              onError={handleCaptchaError}
               onExpire={handleCaptchaExpire}
+              resetKey={captchaResetKey}
             />
           ) : (
-            <SimpleMathCaptcha
-              onVerify={handleCaptchaVerify}
-              label={t.auth?.verifyHuman || "Verify you are human"}
+            <CaptchaUnavailable
+              message={t.auth?.captchaUnavailable || "Human verification is not configured."}
             />
           )}
         </div>
@@ -194,7 +206,7 @@ export function RegisterForm() {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={isLoading || !isCaptchaVerified}
+          disabled={isLoading || !recaptchaSiteKey || !captchaToken}
         >
           {isLoading ? (
             <>
@@ -206,7 +218,7 @@ export function RegisterForm() {
           )}
         </Button>
 
-        {!isCaptchaVerified && (
+        {recaptchaSiteKey && !captchaToken && (
           <p className="text-xs text-center text-muted-foreground">
             {t.auth?.captchaHint || "Please complete verification to enable register"}
           </p>

@@ -1,6 +1,6 @@
 # 测试运行手册
 
-状态：TEST-001 基础设施基线  
+状态：TEST-001 基础设施基线，已接入 SEC-002 安全用例
 日期：2026-08-14
 
 ## 测试分层
@@ -68,3 +68,10 @@ pnpm test:all
 - 记录 recipient、不可变 payload 和稳定 idempotency key 的邮件 sender，可模拟成功、超时、HTTP 4xx 与 HTTP 5xx。
 
 所有替身在 `NODE_ENV` 不是 `test` 时拒绝实例化；单元测试还会扫描 `src/**`，阻止生产代码导入 `tests/**`。
+
+## CAPTCHA 与限流测试边界
+
+- 单元测试通过依赖注入模拟 CAPTCHA 成功、伪造/过期 token、hostname/action 不匹配、HTTP 故障、异常和超时，不访问 Google 网络。
+- E2E 测试进程显式清空 CAPTCHA site/secret key，用于验证未配置时 UI 禁用且服务端 fail closed；测试环境不会注入通用 bypass token。
+- 测试进程使用固定且仅限测试的 HMAC secret。集成测试并发写入隔离 PostgreSQL 的 `RateLimitBucket`，并断言记录中不包含原始 IP 或邮箱。
+- 如需人工验证真实 reCAPTCHA v2，应只使用 Google 官方测试 key 或独立开发 key，禁止把测试 key 写入生产源码或生产环境。

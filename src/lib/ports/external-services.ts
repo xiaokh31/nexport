@@ -19,10 +19,17 @@ export interface CaptchaVerificationRequest {
 }
 
 export type CaptchaVerificationResult =
-  | { success: true; score?: number; action?: string }
+  | { success: true; score?: number; action?: string; hostname?: string }
   | {
       success: false;
-      reason: "MISSING" | "REJECTED" | "TIMEOUT" | "UNAVAILABLE";
+      reason:
+        | "MISSING"
+        | "REJECTED"
+        | "EXPIRED_OR_REPLAYED"
+        | "ACTION_MISMATCH"
+        | "HOSTNAME_MISMATCH"
+        | "TIMEOUT"
+        | "UNAVAILABLE";
     };
 
 export interface CaptchaVerifier {

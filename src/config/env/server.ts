@@ -4,10 +4,12 @@ import {
   EnvironmentConfigurationError,
   optionalEnvironmentValue,
   requireEnvironmentValue,
+  validateSiteUrl,
 } from "@/config/env/shared";
 
 const values = Object.freeze({
   databaseUrl: optionalEnvironmentValue(process.env.DATABASE_URL),
+  siteUrl: optionalEnvironmentValue(process.env.NEXT_PUBLIC_SITE_URL),
   nextAuthSecret: optionalEnvironmentValue(process.env.NEXTAUTH_SECRET),
   googleClientId: optionalEnvironmentValue(process.env.GOOGLE_CLIENT_ID),
   googleClientSecret: optionalEnvironmentValue(process.env.GOOGLE_CLIENT_SECRET),
@@ -64,13 +66,19 @@ export function requireAuthRuntimeConfig(): { secret: string } {
   };
 }
 
-export function requireCaptchaRuntimeConfig(): { secretKey: string } {
+export function requireCaptchaRuntimeConfig(): {
+  secretKey: string;
+  expectedHostname: string;
+} {
+  const siteUrl = validateSiteUrl(values.siteUrl, process.env.NODE_ENV);
+
   return {
     secretKey: requireEnvironmentValue(
       "RECAPTCHA_SECRET_KEY",
       values.recaptchaSecretKey,
       "CAPTCHA verification"
     ),
+    expectedHostname: new URL(siteUrl).hostname,
   };
 }
 
@@ -101,6 +109,17 @@ export function requireRateLimitRuntimeConfig(): {
     values.rateLimitSecret,
     "Rate limiting"
   );
+
+  if (Buffer.byteLength(secret, "utf8") < 32) {
+    throw new EnvironmentConfigurationError(
+      "RATE_LIMIT_SECRET must contain at least 32 bytes."
+    );
+  }
+
+  return { secret, trustedProxyHops: getTrustedProxyHops() };
+}
+
+export function getTrustedProxyHops(): number {
   const rawTrustedProxyHops = values.trustedProxyHops ?? "0";
   const trustedProxyHops = Number(rawTrustedProxyHops);
 
@@ -110,5 +129,5 @@ export function requireRateLimitRuntimeConfig(): {
     );
   }
 
-  return { secret, trustedProxyHops };
+  return trustedProxyHops;
 }

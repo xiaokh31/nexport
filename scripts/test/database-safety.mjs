@@ -103,6 +103,10 @@ export function createTestProcessEnvironment(environment = process.env) {
       environment.NEXTAUTH_SECRET || "nexport-test-only-nextauth-secret",
     GOOGLE_CLIENT_ID: "",
     GOOGLE_CLIENT_SECRET: "",
+    NEXT_PUBLIC_RECAPTCHA_SITE_KEY: "",
+    RECAPTCHA_SECRET_KEY: "",
+    RATE_LIMIT_SECRET: "nexport-test-only-rate-limit-secret-2026",
+    TRUSTED_PROXY_HOPS: "0",
   };
 }
 

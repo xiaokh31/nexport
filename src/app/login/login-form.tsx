@@ -18,7 +18,7 @@ import {
 import { loginFormSchema, LoginFormValues } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
-import { SimpleMathCaptcha, CaptchaV2Checkbox } from "@/components/captcha";
+import { CaptchaUnavailable, CaptchaV2Checkbox } from "@/components/captcha";
 import { publicEnv } from "@/config/env/public";
 
 export function LoginForm() {
@@ -26,7 +26,8 @@ export function LoginForm() {
   const { t } = useLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [googleLoginEnabled, setGoogleLoginEnabled] = useState(false);
 
   useEffect(() => {
@@ -53,11 +54,12 @@ export function LoginForm() {
     defaultValues: {
       email: "",
       password: "",
+      captchaToken: undefined,
     },
   });
 
   async function onSubmit(data: LoginFormValues) {
-    if (!isCaptchaVerified) {
+    if (!captchaToken) {
       setError(t.auth?.captchaRequired || "Please complete the verification first");
       return;
     }
@@ -69,6 +71,7 @@ export function LoginForm() {
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
+        captchaToken,
         redirect: false,
       });
 
@@ -82,16 +85,25 @@ export function LoginForm() {
       setError(t.auth.loginFailed);
     } finally {
       setIsLoading(false);
+      setCaptchaToken("");
+      form.setValue("captchaToken", undefined);
+      setCaptchaResetKey((value) => value + 1);
     }
   }
 
-  const handleCaptchaVerify = (verified: boolean | string) => {
-    // SimpleMathCaptcha passes boolean, CaptchaV2Checkbox passes token string
-    setIsCaptchaVerified(typeof verified === "string" ? true : verified);
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+    form.setValue("captchaToken", token, { shouldValidate: true });
   };
 
   const handleCaptchaExpire = () => {
-    setIsCaptchaVerified(false);
+    setCaptchaToken("");
+    form.setValue("captchaToken", undefined);
+  };
+
+  const handleCaptchaError = () => {
+    handleCaptchaExpire();
+    setError(t.auth?.captchaFailed || "Human verification failed. Please try again.");
   };
 
   return (
@@ -137,12 +149,13 @@ export function LoginForm() {
             <CaptchaV2Checkbox
               siteKey={recaptchaSiteKey}
               onVerify={handleCaptchaVerify}
+              onError={handleCaptchaError}
               onExpire={handleCaptchaExpire}
+              resetKey={captchaResetKey}
             />
           ) : (
-            <SimpleMathCaptcha
-              onVerify={handleCaptchaVerify}
-              label={t.auth?.verifyHuman || "Verify you are human"}
+            <CaptchaUnavailable
+              message={t.auth?.captchaUnavailable || "Human verification is not configured."}
             />
           )}
         </div>
@@ -150,7 +163,7 @@ export function LoginForm() {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={isLoading || !isCaptchaVerified}
+          disabled={isLoading || !recaptchaSiteKey || !captchaToken}
         >
           {isLoading ? (
             <>
@@ -162,7 +175,7 @@ export function LoginForm() {
           )}
         </Button>
 
-        {!isCaptchaVerified && (
+        {recaptchaSiteKey && !captchaToken && (
           <p className="text-xs text-center text-muted-foreground">
             {t.auth?.captchaHint || "Please complete verification to enable login"}
           </p>
