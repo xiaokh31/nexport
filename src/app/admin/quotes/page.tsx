@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,9 +31,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Eye, CheckCircle, XCircle, Loader2, Send } from "lucide-react";
+import { Search, Eye, CheckCircle, XCircle, Loader2, Send, Trash2 } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
 import { getServiceTypeLabel } from "@/config/site-config";
+import { QUOTE_STATUSES, type QuoteStatus } from "@/config/quote";
+import {
+  asQuoteActorRole,
+  canEditQuoteInternalNote,
+  canEditQuotePricing,
+  canTransitionQuote,
+} from "@/lib/quote/workflow";
 
 interface Quote {
   id: string;
@@ -80,8 +88,11 @@ export default function QuotesManagePage() {
   const [quoteAmount, setQuoteAmount] = useState("");
   const [quoteCurrency, setQuoteCurrency] = useState("");
   const [customerNote, setCustomerNote] = useState("");
+  const [internalNote, setInternalNote] = useState("");
   const [updating, setUpdating] = useState(false);
   const { t } = useLocale();
+  const { data: session } = useSession();
+  const actorRole = asQuoteActorRole(session?.user?.role);
 
   const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
     PENDING: { label: t.admin?.pending || "待处理", variant: "secondary" },
@@ -167,6 +178,7 @@ export default function QuotesManagePage() {
   // 查看详情
   const viewDetail = (quote: Quote) => {
     setSelectedQuote(quote);
+    setInternalNote(quote.internalNote || "");
     setShowDetailDialog(true);
   };
 
@@ -214,6 +226,64 @@ export default function QuotesManagePage() {
       }
     } catch (err) {
       alert("提交报价失败");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const saveInternalNote = async () => {
+    if (!selectedQuote || !actorRole) return;
+    setUpdating(true);
+    try {
+      const response = await fetch("/api/admin/quotes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedQuote.id,
+          internalNote,
+          requestKey: crypto.randomUUID(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error?.message || "保存内部备注失败");
+        return;
+      }
+      setSelectedQuote(data.quote);
+      setQuotes((current) => current.map((quote) =>
+        quote.id === data.quote.id ? data.quote : quote
+      ));
+    } catch {
+      alert("保存内部备注失败");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const deleteQuote = async (quote: Quote) => {
+    const reason = window.prompt("请输入删除原因（10至500字符）");
+    if (!reason || reason.trim().length < 10) {
+      alert("删除原因至少需要10个字符");
+      return;
+    }
+    setUpdating(true);
+    try {
+      const response = await fetch("/api/admin/quotes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: quote.id, reason }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error?.message || "删除询价失败");
+        return;
+      }
+      setQuotes((current) => current.filter((item) => item.id !== quote.id));
+      setTotal((current) => Math.max(0, current - 1));
+      setShowDetailDialog(false);
+      setSelectedQuote(null);
+    } catch {
+      alert("删除询价失败");
     } finally {
       setUpdating(false);
     }
@@ -319,7 +389,11 @@ export default function QuotesManagePage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              {quote.status === "PENDING" && (
+                              {actorRole && canTransitionQuote(
+                                actorRole,
+                                quote.status as QuoteStatus,
+                                "PROCESSING",
+                              ) && (
                                 <Button
                                   variant="ghost" 
                                   size="icon" 
@@ -330,19 +404,35 @@ export default function QuotesManagePage() {
                                   <Send className="h-4 w-4" />
                                 </Button>
                               )}
-                              {quote.status === "PROCESSING" && (
-                                <Button variant="ghost" size="icon" className="text-blue-500" onClick={() => openQuoteDialog(quote)} title="提交报价">
+                              {actorRole && canTransitionQuote(
+                                actorRole,
+                                quote.status as QuoteStatus,
+                                "QUOTED",
+                              ) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-blue-500"
+                                  onClick={() => canEditQuotePricing(actorRole, "PROCESSING")
+                                    ? openQuoteDialog(quote)
+                                    : updateQuoteStatus(quote.id, "QUOTED")}
+                                  title="提交报价"
+                                >
                                   <Send className="h-4 w-4" />
                                 </Button>
                               )}
-                              {quote.status === "QUOTED" && (
+                              {actorRole && quote.status === "QUOTED" && (
                                 <>
-                                  <Button variant="ghost" size="icon" className="text-green-500" onClick={() => updateQuoteStatus(quote.id, "ACCEPTED")} title="接受">
-                                    <CheckCircle className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => updateQuoteStatus(quote.id, "REJECTED")} title="拒绝">
-                                    <XCircle className="h-4 w-4" />
-                                  </Button>
+                                  {canTransitionQuote(actorRole, "QUOTED", "ACCEPTED") && (
+                                    <Button variant="ghost" size="icon" className="text-green-500" onClick={() => updateQuoteStatus(quote.id, "ACCEPTED")} title="接受">
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {canTransitionQuote(actorRole, "QUOTED", "REJECTED") && (
+                                    <Button variant="ghost" size="icon" className="text-red-500" onClick={() => updateQuoteStatus(quote.id, "REJECTED")} title="拒绝">
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -502,9 +592,37 @@ export default function QuotesManagePage() {
                 </div>
               )}
               {selectedQuote.internalNote && (
+                !actorRole ||
+                !canEditQuoteInternalNote(
+                  actorRole,
+                  selectedQuote.status as QuoteStatus,
+                )
+              ) && (
                 <div>
                   <Label className="text-muted-foreground">内部备注</Label>
                   <p className="font-medium whitespace-pre-wrap">{selectedQuote.internalNote}</p>
+                </div>
+              )}
+              {actorRole && canEditQuoteInternalNote(
+                actorRole,
+                selectedQuote.status as QuoteStatus,
+              ) && (
+                <div className="space-y-2">
+                  <Label htmlFor="internal-note">内部备注</Label>
+                  <Textarea
+                    id="internal-note"
+                    maxLength={4_000}
+                    value={internalNote}
+                    onChange={(event) => setInternalNote(event.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={saveInternalNote}
+                    disabled={updating}
+                  >
+                    保存内部备注
+                  </Button>
                 </div>
               )}
               
@@ -515,7 +633,14 @@ export default function QuotesManagePage() {
             </div>
           )}
           <DialogFooter>
-            {selectedQuote?.status === "PROCESSING" && (
+            {selectedQuote && actorRole && canTransitionQuote(
+              actorRole,
+              selectedQuote.status as QuoteStatus,
+              "QUOTED",
+            ) && canEditQuotePricing(
+              actorRole,
+              selectedQuote.status as QuoteStatus,
+            ) && (
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -526,23 +651,42 @@ export default function QuotesManagePage() {
                 提交报价
               </Button>
             )}
-            <Select 
-              value={selectedQuote?.status} 
-              onValueChange={(value) => selectedQuote && updateQuoteStatus(selectedQuote.id, value)}
-              disabled={updating}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PENDING">待处理</SelectItem>
-                <SelectItem value="PROCESSING">处理中</SelectItem>
-                <SelectItem value="QUOTED">已报价</SelectItem>
-                <SelectItem value="ACCEPTED">已接受</SelectItem>
-                <SelectItem value="REJECTED">已拒绝</SelectItem>
-                <SelectItem value="CLOSED">已关闭</SelectItem>
-              </SelectContent>
-            </Select>
+            {selectedQuote && actorRole && (
+              <Select
+                value={selectedQuote.status}
+                onValueChange={(value) => updateQuoteStatus(selectedQuote.id, value)}
+                disabled={updating}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={selectedQuote.status} disabled>
+                    {statusMap[selectedQuote.status].label}
+                  </SelectItem>
+                  {QUOTE_STATUSES.filter((status) => canTransitionQuote(
+                    actorRole,
+                    selectedQuote.status as QuoteStatus,
+                    status,
+                  )).map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {statusMap[status].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {selectedQuote?.status === "PENDING" && actorRole === "ADMIN" && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => deleteQuote(selectedQuote)}
+                disabled={updating}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
               关闭
             </Button>

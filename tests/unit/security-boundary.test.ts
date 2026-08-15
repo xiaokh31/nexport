@@ -97,11 +97,13 @@ describe("security source boundaries", () => {
 
   it("keeps quote ownership session-scoped and registration claim-free", () => {
     const quoteSource = source("src/app/api/quote/route.ts");
+    const quoteSubmissionSource = source("src/lib/quote/submission.ts");
     const userQuotesSource = source("src/app/api/user/quotes/route.ts");
     const registrationSource = source("src/app/api/auth/register/route.ts");
 
-    expect(quoteSource).toContain(
-      "resolveQuoteOwnership(session?.user?.id, validatedData.email)",
+    expect(quoteSource).toContain("sessionUserId: session?.user?.id");
+    expect(quoteSubmissionSource).toContain(
+      "resolveQuoteOwnership(input.sessionUserId, data.email)",
     );
     expect(userQuotesSource).toContain("ownedQuoteWhere(session.user.id)");
     expect(userQuotesSource).not.toMatch(/searchParams\.get\(["'](?:userId|email)["']\)/);

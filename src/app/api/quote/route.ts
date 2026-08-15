@@ -1,55 +1,28 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
-import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations";
+import { quoteFormSchema } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { EnvironmentConfigurationError } from "@/config/env/shared";
 import {
   cryptoRandomByteSource,
   systemClock,
 } from "@/lib/ports/external-services";
-import { resolveQuoteOwnership } from "@/lib/quote/ownership";
 import { createQuoteReferenceGenerator } from "@/lib/quote/reference";
+import { submitQuote } from "@/lib/quote/submission";
+import { createServerProtection } from "@/lib/security/server-protection";
+import {
+  clientIpRateLimitSubject,
+  emailRateLimitSubject,
+  RATE_LIMIT_POLICIES,
+} from "@/lib/security/rate-limit";
 
 const quoteReferenceGenerator = createQuoteReferenceGenerator({
   clock: systemClock,
   randomBytes: cryptoRandomByteSource,
 });
-
-function nullableText(value: string | undefined) {
-  const normalized = value?.normalize("NFC").trim();
-  return normalized || null;
-}
-
-function createSubmissionFingerprint(data: QuoteFormValues, subject: string) {
-  const canonicalPayload = {
-    version: 1,
-    subject,
-    name: data.name.normalize("NFC").trim(),
-    email: data.email.normalize("NFC").trim().toLowerCase(),
-    phone: data.phone.normalize("NFC").trim(),
-    company: nullableText(data.company),
-    serviceType: data.serviceType,
-    origin: nullableText(data.origin),
-    destination: nullableText(data.destination),
-    cargoType: nullableText(data.cargoType),
-    pieceCount: data.pieceCount ?? null,
-    cartonCount: data.cartonCount ?? null,
-    palletCount: data.palletCount ?? null,
-    weightValue: data.weightValue ?? null,
-    weightUnit: data.weightUnit ?? null,
-    length: data.length ?? null,
-    width: data.width ?? null,
-    height: data.height ?? null,
-    dimensionUnit: data.dimensionUnit ?? null,
-    requestedDate: data.requestedDate ?? null,
-    message: data.message.normalize("NFC").trim(),
-  };
-
-  return createHash("sha256").update(JSON.stringify(canonicalPayload)).digest("hex");
-}
 
 function successResponse(reference: string, status: string, httpStatus: number) {
   return NextResponse.json(
@@ -64,6 +37,7 @@ function errorResponse(
   code: string,
   message: string,
   fieldErrors?: Record<string, string[] | undefined>,
+  retryAfterSeconds?: number,
 ) {
   return NextResponse.json(
     {
@@ -71,7 +45,12 @@ function errorResponse(
       error: { code, message, ...(fieldErrors ? { fieldErrors } : {}) },
       requestId,
     },
-    { status },
+    {
+      status,
+      ...(retryAfterSeconds
+        ? { headers: { "Retry-After": String(retryAfterSeconds) } }
+        : {}),
+    },
   );
 }
 
@@ -80,86 +59,110 @@ export async function POST(request: Request) {
 
   try {
     const validatedData = quoteFormSchema.parse(await request.json());
-    const session = await getServerSession(authOptions);
-    const ownership = resolveQuoteOwnership(session?.user?.id, validatedData.email);
-    const submissionFingerprint = createSubmissionFingerprint(
-      validatedData,
-      ownership.fingerprintSubject,
-    );
+    const protection = createServerProtection(request.headers);
 
-    const existingQuote = await prisma.quote.findUnique({
-      where: { submissionKey: validatedData.submissionKey },
-      select: { reference: true, status: true, submissionFingerprint: true },
+    let limits;
+    try {
+      limits = await Promise.all([
+        protection.rateLimiter.consume(
+          RATE_LIMIT_POLICIES.quoteByIp,
+          [clientIpRateLimitSubject(protection.clientIp)],
+        ),
+        protection.rateLimiter.consume(
+          RATE_LIMIT_POLICIES.quoteByEmail,
+          [emailRateLimitSubject(validatedData.email)],
+        ),
+      ]);
+    } catch (error) {
+      console.error("Quote rate limiter unavailable", { requestId, error });
+      return errorResponse(
+        requestId,
+        503,
+        "SECURITY_UNAVAILABLE",
+        "安全验证服务未配置或暂不可用",
+      );
+    }
+
+    const deniedLimit = limits.find((limit) => !limit.allowed);
+    if (deniedLimit && !deniedLimit.allowed) {
+      return errorResponse(
+        requestId,
+        429,
+        "RATE_LIMITED",
+        "询价提交过于频繁，请稍后再试",
+        undefined,
+        deniedLimit.retryAfterSeconds,
+      );
+    }
+
+    const captchaResult = await protection.captchaVerifier.verify({
+      token: validatedData.captchaToken || "",
+      ...(protection.clientIp ? { remoteIp: protection.clientIp } : {}),
+    });
+    if (!captchaResult.success) {
+      if (captchaResult.reason === "MISSING") {
+        return errorResponse(
+          requestId,
+          400,
+          "CAPTCHA_REQUIRED",
+          "请先完成人机验证",
+        );
+      }
+      if (
+        captchaResult.reason === "TIMEOUT" ||
+        captchaResult.reason === "UNAVAILABLE"
+      ) {
+        return errorResponse(
+          requestId,
+          503,
+          "SECURITY_UNAVAILABLE",
+          "安全验证服务未配置或暂不可用",
+        );
+      }
+      return errorResponse(
+        requestId,
+        400,
+        "CAPTCHA_REJECTED",
+        "人机验证失败，请重新验证",
+      );
+    }
+
+    const session = await getServerSession(authOptions);
+    const result = await submitQuote(prisma, {
+      data: validatedData,
+      sessionUserId: session?.user?.id,
+      referenceGenerator: quoteReferenceGenerator,
     });
 
-    if (existingQuote) {
-      if (existingQuote.submissionFingerprint !== submissionFingerprint) {
-        return errorResponse(requestId, 409, "SUBMISSION_KEY_CONFLICT", "该提交标识已用于不同的询价内容");
-      }
-      return successResponse(existingQuote.reference, existingQuote.status, 200);
+    if (result.outcome === "SUBMISSION_KEY_CONFLICT") {
+      return errorResponse(
+        requestId,
+        409,
+        "SUBMISSION_KEY_CONFLICT",
+        "该提交标识已用于不同的询价内容",
+      );
     }
-
-    let quote: { reference: string; status: string } | null = null;
-
-    for (let attempt = 0; attempt < 5 && !quote; attempt += 1) {
-      try {
-        quote = await prisma.quote.create({
-          data: {
-            reference: quoteReferenceGenerator.generate(),
-            submissionKey: validatedData.submissionKey,
-            submissionFingerprint,
-            userId: ownership.userId,
-            name: validatedData.name,
-            email: validatedData.email,
-            phone: validatedData.phone,
-            company: nullableText(validatedData.company),
-            serviceType: validatedData.serviceType,
-            origin: nullableText(validatedData.origin),
-            destination: nullableText(validatedData.destination),
-            cargoType: nullableText(validatedData.cargoType),
-            pieceCount: validatedData.pieceCount ?? null,
-            cartonCount: validatedData.cartonCount ?? null,
-            palletCount: validatedData.palletCount ?? null,
-            weightValue: validatedData.weightValue ?? null,
-            weightUnit: validatedData.weightUnit ?? null,
-            length: validatedData.length ?? null,
-            width: validatedData.width ?? null,
-            height: validatedData.height ?? null,
-            dimensionUnit: validatedData.dimensionUnit ?? null,
-            requestedDate: validatedData.requestedDate
-              ? new Date(`${validatedData.requestedDate}T00:00:00.000Z`)
-              : null,
-            message: validatedData.message,
-          },
-          select: { reference: true, status: true },
-        });
-      } catch (error) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
-          throw error;
-        }
-
-        const concurrentQuote = await prisma.quote.findUnique({
-          where: { submissionKey: validatedData.submissionKey },
-          select: { reference: true, status: true, submissionFingerprint: true },
-        });
-
-        if (concurrentQuote) {
-          if (concurrentQuote.submissionFingerprint !== submissionFingerprint) {
-            return errorResponse(requestId, 409, "SUBMISSION_KEY_CONFLICT", "该提交标识已用于不同的询价内容");
-          }
-          return successResponse(concurrentQuote.reference, concurrentQuote.status, 200);
-        }
-      }
+    if (result.outcome === "REFERENCE_UNAVAILABLE") {
+      return errorResponse(
+        requestId,
+        503,
+        "REFERENCE_UNAVAILABLE",
+        "暂时无法生成询价编号，请重试",
+      );
     }
-
-    if (!quote) {
-      return errorResponse(requestId, 503, "REFERENCE_UNAVAILABLE", "暂时无法生成询价编号，请重试");
-    }
-
-    return successResponse(quote.reference, quote.status, 201);
+    return successResponse(
+      result.reference,
+      result.status,
+      result.outcome === "CREATED" ? 201 : 200,
+    );
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return errorResponse(requestId, 400, "INVALID_JSON", "请求内容不是有效的JSON");
+      return errorResponse(
+        requestId,
+        400,
+        "INVALID_JSON",
+        "请求内容不是有效的JSON",
+      );
     }
     if (error instanceof ZodError) {
       return errorResponse(
@@ -170,8 +173,25 @@ export async function POST(request: Request) {
         error.flatten().fieldErrors,
       );
     }
+    if (error instanceof EnvironmentConfigurationError) {
+      console.error("Quote security configuration error", {
+        requestId,
+        message: error.message,
+      });
+      return errorResponse(
+        requestId,
+        503,
+        "SECURITY_UNAVAILABLE",
+        "安全验证服务未配置或暂不可用",
+      );
+    }
 
-    console.error("Error processing quote:", { requestId, error });
-    return errorResponse(requestId, 500, "INTERNAL_ERROR", "提交失败，请稍后重试");
+    console.error("Error processing quote", { requestId, error });
+    return errorResponse(
+      requestId,
+      500,
+      "INTERNAL_ERROR",
+      "提交失败，请稍后重试",
+    );
   }
 }

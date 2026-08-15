@@ -56,7 +56,7 @@ export const quoteFormSchema = z.object({
   requestedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "期望日期格式必须为YYYY-MM-DD").optional(),
   message: z.string().trim().min(10, "留言内容至少10个字符").max(4_000, "留言内容不能超过4000个字符"),
   captchaToken: optionalCaptchaTokenSchema,
-}).superRefine((data, ctx) => {
+}).strict().superRefine((data, ctx) => {
   if (Boolean(data.weightValue) !== Boolean(data.weightUnit)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -96,6 +96,13 @@ export const quoteFormSchema = z.object({
 
 export type QuoteFormValues = z.infer<typeof quoteFormSchema>;
 
+export const quoteListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  status: z.union([z.enum(QUOTE_STATUSES), z.literal("all")]).default("all"),
+  search: z.string().trim().max(200, "搜索内容不能超过200个字符").optional(),
+}).strict();
+
 export const quoteAdminUpdateSchema = z.object({
   id: z.string().min(1, "询价ID不能为空"),
   requestKey: z.string().uuid("请求标识必须是有效的UUID"),
@@ -105,7 +112,7 @@ export const quoteAdminUpdateSchema = z.object({
   customerNote: z.string().trim().max(4_000, "客户备注不能超过4000个字符").nullable().optional(),
   internalNote: z.string().trim().max(4_000, "内部备注不能超过4000个字符").nullable().optional(),
   reason: z.string().trim().max(500, "原因不能超过500个字符").optional(),
-}).superRefine((data, ctx) => {
+}).strict().superRefine((data, ctx) => {
   if ((data.amount !== undefined) !== (data.currency !== undefined)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -128,10 +135,14 @@ export const quoteAdminUpdateSchema = z.object({
   }
 });
 
+export type QuoteAdminUpdateValues = z.infer<typeof quoteAdminUpdateSchema>;
+
 export const quoteSoftDeleteSchema = z.object({
   id: z.string().min(1, "询价ID不能为空"),
   reason: z.string().trim().min(10, "删除原因至少10个字符").max(500, "删除原因不能超过500个字符"),
-});
+}).strict();
+
+export type QuoteSoftDeleteValues = z.infer<typeof quoteSoftDeleteSchema>;
 
 // 登录表单验证
 export const loginFormSchema = z.object({

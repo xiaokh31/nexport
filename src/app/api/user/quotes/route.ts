@@ -3,8 +3,10 @@ import { getServerSession } from "next-auth";
 import { QuoteStatus, Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { QUOTE_STATUSES, type QuoteStatus as QuoteStatusValue } from "@/config/quote";
+import { type QuoteStatus as QuoteStatusValue } from "@/config/quote";
 import { ownedQuoteWhere } from "@/lib/quote/ownership";
+import { quoteListQuerySchema } from "@/lib/validations";
+import { ZodError } from "zod";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,16 +17,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, Number.parseInt(searchParams.get("limit") || "10", 10)));
-    const status = searchParams.get("status");
+    const query = quoteListQuerySchema.parse({
+      page: searchParams.get("page") ?? undefined,
+      limit: searchParams.get("limit") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+    });
     const where: Prisma.QuoteWhereInput = ownedQuoteWhere(session.user.id);
 
-    if (status && status !== "all") {
-      if (!QUOTE_STATUSES.includes(status as QuoteStatusValue)) {
-        return NextResponse.json({ error: "未知询价状态" }, { status: 400 });
-      }
-      where.status = status as QuoteStatus;
+    if (query.status !== "all") {
+      where.status = query.status as QuoteStatus;
     }
 
     const select = {
@@ -63,26 +64,39 @@ export async function GET(request: NextRequest) {
         where,
         select,
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
       }),
       prisma.quote.count({ where }),
     ]);
 
     return NextResponse.json({
-      quotes: quotes.map((quote) => ({
-        ...quote,
-        amount: quote.amount?.toString() ?? null,
-        weightValue: quote.weightValue?.toString() ?? null,
-        length: quote.length?.toString() ?? null,
-        width: quote.width?.toString() ?? null,
-        height: quote.height?.toString() ?? null,
-      })),
+      quotes: quotes.map((quote) => {
+        const publishedQuoteVisible = Boolean(
+          quote.quotedAt &&
+          (["QUOTED", "ACCEPTED", "REJECTED", "CLOSED"] as QuoteStatusValue[])
+            .includes(quote.status as QuoteStatusValue),
+        );
+        return {
+          ...quote,
+          amount: publishedQuoteVisible ? quote.amount?.toString() ?? null : null,
+          currency: publishedQuoteVisible ? quote.currency : null,
+          customerNote: publishedQuoteVisible ? quote.customerNote : null,
+          quotedAt: publishedQuoteVisible ? quote.quotedAt : null,
+          weightValue: quote.weightValue?.toString() ?? null,
+          length: quote.length?.toString() ?? null,
+          width: quote.width?.toString() ?? null,
+          height: quote.height?.toString() ?? null,
+        };
+      }),
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: query.page,
+      pages: Math.ceil(total / query.limit),
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: "查询参数无效" }, { status: 400 });
+    }
     console.error("获取询价记录失败:", error);
     return NextResponse.json({ error: "获取询价记录失败" }, { status: 500 });
   }

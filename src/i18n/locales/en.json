@@ -509,7 +509,7 @@
     "passwordRequired": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",
     "submitSuccess": "Submitted successfully!",
-    "thankYou": "Thank you for your inquiry, our professional team will contact you within 24 hours.",
+    "thankYou": "Your inquiry has been saved. We will follow up using the contact details you provided.",
     "reference": "Quote Reference",
     "continueQuote": "Continue Quote",
     "submitFailed": "Submit failed",
@@ -643,7 +643,7 @@
       ]
     },
     "truckFreight": {
-      "title": "Canada Truck Freight Service",
+      "title": "Truck Freight",
       "description": "Truck delivery service covering major Canadian cities and Amazon FBA warehouses. Full truckload and LTL options, appointment delivery and last mile service. Stable routes, reliable transit times, suitable for heavy cargo and bulk warehouse deliveries.",
       "features": [
         "Major Canadian Cities",
@@ -655,7 +655,7 @@
       ]
     },
     "crossBorder": {
-      "title": "North America Cross-Border",
+      "title": "Cross-Border Logistics",
       "description": "Complete cross-border logistics services between Canada and the US, including truck freight and parcel services for a range of shipment sizes.",
       "features": [
         "Canada-US Shipping",
@@ -679,7 +679,7 @@
       ]
     },
     "express": {
-      "title": "Canada to China Express Service",
+      "title": "Express Service",
       "description": "International express service from Canada direct to China, supporting documents and parcel delivery. Mature customs clearance process, stable transit times. Door pickup, full tracking and last mile delivery available, meeting personal and business needs.",
       "features": [
         "Canada to China Direct",
@@ -691,7 +691,7 @@
       ]
     },
     "warehouse": {
-      "title": "Warehouse Management System (WMS)",
+      "title": "Warehousing & Fulfillment",
       "description": "Intelligent warehouse management system supporting inbound, inventory, picking, outbound and order management. Real-time inventory visibility, efficient and controllable operations. Multi-platform order integration, reducing errors, improving warehouse and fulfillment efficiency.",
       "features": [
         "Inbound Management",

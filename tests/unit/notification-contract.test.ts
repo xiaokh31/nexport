@@ -87,11 +87,13 @@ describe("notification domain contract", () => {
   it("keeps provider delivery outside business routes and centralizes quote production", () => {
     const quoteRoute = source("src/app/api/quote/route.ts");
     const adminQuoteRoute = source("src/app/api/admin/quotes/route.ts");
+    const quoteWorkflow = source("src/lib/quote/admin-service.ts");
     const cronRoute = source("src/app/api/cron/email-outbox/route.ts");
     const adminPage = source("src/app/admin/messages/page.tsx");
 
     expect(quoteRoute).not.toMatch(/sendEmail|emails\.send|Resend/);
-    expect(adminQuoteRoute).toContain("createQuoteEventNotifications(tx");
+    expect(adminQuoteRoute).toContain("updateQuoteWorkflow(prisma");
+    expect(quoteWorkflow).toContain("createQuoteEventNotifications(transaction");
     expect(cronRoute).toContain("requireCronRuntimeConfig");
     expect(cronRoute).toContain("processEmailOutbox");
     expect(adminPage).toContain("通知管理");

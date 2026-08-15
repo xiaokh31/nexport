@@ -509,7 +509,7 @@
     "passwordRequired": "Le mot de passe doit contenir au moins 6 caractères",
     "passwordMismatch": "Les mots de passe ne correspondent pas",
     "submitSuccess": "Soumis avec succès !",
-    "thankYou": "Merci pour votre demande, notre équipe vous contactera dans les 24 heures.",
+    "thankYou": "Votre demande a été enregistrée. Nous utiliserons les coordonnées fournies pour vous recontacter.",
     "reference": "Référence du devis",
     "continueQuote": "Continuer le devis",
     "submitFailed": "Échec de soumission",
@@ -521,9 +521,6 @@
     "dropshippingService": "Dropshipping en entrepôt",
     "returnsService": "Retours et Réétiquetage",
     "otherService": "Autres services",
-    "truckFreightService": "Camionnage Canada",
-    "warehouseService": "Système WMS",
-    "expressService": "Express Canada-Chine",
     "selectServiceType": "Sélectionner le type de service",
     "origin": "Origine",
     "originPlaceholder": "Entrez l'origine",
@@ -646,7 +643,7 @@
       ]
     },
     "truckFreight": {
-      "title": "Service de Camionnage Canada",
+      "title": "Transport routier",
       "description": "Service de camionnage couvrant les principales villes canadiennes et les entrepôts Amazon FBA, avec transport complet et partagé, livraison planifiée en entrepôt et distribution dernière mile. Lignes stables, délais contrôlés, idéal pour les envois volumineux et lourds.",
       "features": [
         "Couverture principales villes Canada",
@@ -658,7 +655,7 @@
       ]
     },
     "crossBorder": {
-      "title": "Logistique transfrontalière NA",
+      "title": "Logistique transfrontalière",
       "description": "Services de logistique transfrontalière entre le Canada et les États-Unis, incluant le fret routier et les services de colis.",
       "features": [
         "Expédition Canada-USA",
@@ -682,7 +679,7 @@
       ]
     },
     "express": {
-      "title": "Express Canada-Chine",
+      "title": "Service express",
       "description": "Service de messagerie internationale du Canada vers la Chine pour documents et colis, avec dédouanement mature et délais stables. Collecte à domicile, suivi complet et livraison dernière mile disponibles pour besoins personnels et commerciaux.",
       "features": [
         "Expédition directe vers la Chine",
@@ -694,7 +691,7 @@
       ]
     },
     "warehouse": {
-      "title": "Système de Gestion d'Entrepôt (WMS)",
+      "title": "Entreposage et traitement des commandes",
       "description": "Système de gestion d'entrepôt intelligent pour la réception, l'inventaire, la préparation, l'expédition et la gestion complète des commandes. Visibilité stock en temps réel, opérations efficaces et contrôlées. Intégration multi-plateforme, réduction des erreurs, amélioration de l'efficacité.",
       "features": [
         "Gestion d'entrepôt intelligente",
