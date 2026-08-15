@@ -64,7 +64,7 @@ export function AdminSidebar() {
       module: 'users',
     },
     {
-      title: t.admin?.messages || "消息管理",
+      title: t.admin?.messages || "通知管理",
       href: "/admin/messages",
       icon: Bell,
       module: 'messages',

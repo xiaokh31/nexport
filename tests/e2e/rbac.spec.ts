@@ -80,6 +80,14 @@ const apiChecks: ApiCheck[] = [
     allowedStatuses: [400],
   },
   {
+    name: "notifications.outbox",
+    method: "GET",
+    path: "/api/admin/email-outbox",
+    allowedUserId: "fixture-admin",
+    deniedUserId: "fixture-staff-editor",
+    allowedStatuses: [200],
+  },
+  {
     name: "settings.manage",
     method: "GET",
     path: "/api/admin/settings",

@@ -288,6 +288,7 @@ model NotificationBroadcast {
   title              String
   content            String                     @db.Text
   link               String?
+  recipientCount     Int
   createdAt          DateTime                   @default(now())
 
   actor      User? @relation("NotificationBroadcastActor", fields: [actorId], references: [id], onDelete: SetNull)

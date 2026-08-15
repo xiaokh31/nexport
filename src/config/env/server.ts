@@ -20,6 +20,7 @@ const values = Object.freeze({
   emailFrom: optionalEnvironmentValue(process.env.EMAIL_FROM),
   emailTo: optionalEnvironmentValue(process.env.EMAIL_TO),
   rateLimitSecret: optionalEnvironmentValue(process.env.RATE_LIMIT_SECRET),
+  cronSecret: optionalEnvironmentValue(process.env.CRON_SECRET),
   trustedProxyHops: optionalEnvironmentValue(process.env.TRUSTED_PROXY_HOPS),
   googleSiteVerification: optionalEnvironmentValue(
     process.env.GOOGLE_SITE_VERIFICATION
@@ -117,6 +118,22 @@ export function requireRateLimitRuntimeConfig(): {
   }
 
   return { secret, trustedProxyHops: getTrustedProxyHops() };
+}
+
+export function requireCronRuntimeConfig(): { secret: string } {
+  const secret = requireEnvironmentValue(
+    "CRON_SECRET",
+    values.cronSecret,
+    "Email outbox worker",
+  );
+
+  if (Buffer.byteLength(secret, "utf8") < 32) {
+    throw new EnvironmentConfigurationError(
+      "CRON_SECRET must contain at least 32 bytes.",
+    );
+  }
+
+  return { secret };
 }
 
 export function getTrustedProxyHops(): number {

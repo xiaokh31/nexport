@@ -225,6 +225,7 @@ CREATE TABLE "NotificationBroadcast" (
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "link" TEXT,
+    "recipientCount" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "NotificationBroadcast_pkey" PRIMARY KEY ("id")

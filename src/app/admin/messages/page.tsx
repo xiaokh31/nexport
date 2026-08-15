@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Bell, Send, Plus, Loader2, Users } from "lucide-react";
-import { useLocale } from "@/i18n/locale-context";
 
 interface User {
   id: string;
@@ -32,8 +31,7 @@ interface User {
   email: string;
 }
 
-export default function MessagesManagePage() {
-  const { t } = useLocale();
+export default function NotificationsManagePage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -41,6 +39,7 @@ export default function MessagesManagePage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    requestKey: "",
     type: "SYSTEM",
     title: "",
     content: "",
@@ -48,6 +47,14 @@ export default function MessagesManagePage() {
     userId: "",
     sendToAll: false,
   });
+
+  const openDialog = () => {
+    setFormData((previous) => ({
+      ...previous,
+      requestKey: crypto.randomUUID(),
+    }));
+    setShowDialog(true);
+  };
 
   const notificationTypes = [
     { value: "SYSTEM", label: "系统通知" },
@@ -92,12 +99,16 @@ export default function MessagesManagePage() {
     setSending(true);
     setError(null);
     setSuccess(null);
+    const requestKey = formData.requestKey || crypto.randomUUID();
+    if (!formData.requestKey) {
+      setFormData((previous) => ({ ...previous, requestKey }));
+    }
 
     try {
       const response = await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, requestKey }),
       });
 
       if (response.ok) {
@@ -105,6 +116,7 @@ export default function MessagesManagePage() {
         setSuccess(data.message || '通知发送成功');
         setShowDialog(false);
         setFormData({
+          requestKey: "",
           type: "SYSTEM",
           title: "",
           content: "",
@@ -114,7 +126,7 @@ export default function MessagesManagePage() {
         });
       } else {
         const errData = await response.json();
-        setError(errData.error || '发送通知失败');
+        setError(typeof errData.error === "string" ? errData.error : '发送通知失败');
       }
     } catch (err) {
       setError('发送通知失败');
@@ -145,6 +157,7 @@ export default function MessagesManagePage() {
   const applyTemplate = (template: typeof quickTemplates[0]) => {
     setFormData(prev => ({
       ...prev,
+      requestKey: crypto.randomUUID(),
       type: template.type,
       title: template.title,
       content: template.content,
@@ -157,11 +170,11 @@ export default function MessagesManagePage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Bell className="h-6 w-6" />
-            消息管理
+            通知管理
           </h1>
           <p className="text-muted-foreground">发送和管理系统通知</p>
         </div>
-        <Button onClick={() => setShowDialog(true)}>
+        <Button onClick={openDialog}>
           <Plus className="h-4 w-4 mr-2" />
           发送新通知
         </Button>

@@ -6,7 +6,6 @@ import { ZodError } from "zod";
 import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { serverEnv } from "@/config/env/server";
 import {
   cryptoRandomByteSource,
   systemClock,
@@ -155,28 +154,6 @@ export async function POST(request: Request) {
 
     if (!quote) {
       return errorResponse(requestId, 503, "REFERENCE_UNAVAILABLE", "暂时无法生成询价编号，请重试");
-    }
-
-    if (serverEnv.emailTo) {
-      const { sendEmail, emailTemplates } = await import("@/lib/email");
-      const template = emailTemplates.quoteNotification({
-        name: validatedData.name,
-        email: validatedData.email,
-        phone: validatedData.phone,
-        company: validatedData.company,
-        serviceType: validatedData.serviceType,
-        message: validatedData.message,
-      });
-
-      const emailResult = await sendEmail({
-        to: serverEnv.emailTo,
-        subject: template.subject,
-        html: template.html,
-      });
-
-      if (!emailResult.success) {
-        console.error("Failed to send quote notification email:", emailResult.error);
-      }
     }
 
     return successResponse(quote.reference, quote.status, 201);

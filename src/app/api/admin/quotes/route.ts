@@ -5,8 +5,9 @@ import { ZodError } from "zod";
 import { requireCapability } from "@/lib/authorization";
 import { prisma } from "@/lib/prisma";
 import { quoteAdminUpdateSchema, quoteSoftDeleteSchema } from "@/lib/validations";
-import { getDictionary, Locale, locales, defaultLocale } from "@/i18n";
 import { QUOTE_STATUSES, type QuoteStatus as QuoteStatusValue } from "@/config/quote";
+import { serverEnv } from "@/config/env/server";
+import { createQuoteEventNotifications } from "@/lib/notifications/domain";
 
 type QuoteActorRole = "ADMIN" | "STAFF" | "FINANCE";
 
@@ -65,30 +66,6 @@ function serializeQuote<
     width: quote.width?.toString() ?? null,
     height: quote.height?.toString() ?? null,
   };
-}
-
-function getNotificationContent(status: string, amountLabel?: string, locale: string = "en") {
-  const validLocale: Locale = locales.includes(locale as Locale) ? (locale as Locale) : defaultLocale;
-  const dictionary = getDictionary(validLocale);
-  const t = dictionary.notifications;
-  const statusLabels = t.statusLabels as Record<string, string>;
-  const statusLabel = statusLabels[status] || status;
-
-  let title = t.quoteStatusUpdated;
-  let content = t.quoteStatusUpdatedContent.replace("{status}", statusLabel);
-
-  if (status === "QUOTED") {
-    title = t.yourQuoteHasBeenQuoted;
-    content = t.quoteAmountProvided.replace("{price}", amountLabel || statusLabel);
-  } else if (status === "ACCEPTED") {
-    title = t.quoteAccepted;
-    content = t.quoteAcceptedContent;
-  } else if (status === "REJECTED") {
-    title = t.quoteRejected;
-    content = t.quoteRejectedContent;
-  }
-
-  return { title, content };
 }
 
 function apiError(status: number, code: string, message: string, requestId = randomUUID()) {
@@ -257,26 +234,15 @@ export async function PATCH(request: NextRequest) {
             },
           });
 
-          if (updated.userId) {
-            const user = await tx.user.findUnique({
-              where: { id: updated.userId },
-              select: { locale: true },
-            });
-            const amountLabel = updated.amount && updated.currency
-              ? `${updated.amount.toString()} ${updated.currency}`
-              : undefined;
-            const notification = getNotificationContent(targetStatus, amountLabel, user?.locale || "en");
-            await tx.notification.create({
-              data: {
-                userId: updated.userId,
-                eventKey: `quote-event/${event.id}`,
-                type: "QUOTE",
-                title: notification.title,
-                content: notification.content,
-                link: `/user/quotes?reference=${updated.reference}`,
-              },
-            });
-          }
+          await createQuoteEventNotifications(tx, {
+            eventId: event.id,
+            userId: updated.userId,
+            reference: updated.reference,
+            status: targetStatus,
+            amount: updated.amount?.toString() ?? null,
+            currency: updated.currency,
+            emailFrom: serverEnv.emailFrom,
+          });
 
           console.info("Quote status changed", { quoteId: current.id, quoteEventId: event.id });
         }

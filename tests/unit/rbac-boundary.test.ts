@@ -17,6 +17,7 @@ describe("RBAC source boundaries", () => {
       ["src/app/api/admin/pages/[id]/route.ts", ["pages.manage"]],
       ["src/app/api/admin/users/route.ts", ["users.manage"]],
       ["src/app/api/admin/settings/route.ts", ["settings.manage"]],
+      ["src/app/api/admin/email-outbox/route.ts", ["notifications.broadcast"]],
       ["src/app/api/notifications/route.ts", ["notifications.broadcast"]],
     ]);
 

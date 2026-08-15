@@ -13,13 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLocale } from "@/i18n/locale-context";
 import Link from "next/link";
+import { normalizeNotificationLink } from "@/lib/notifications/link";
 
 interface Notification {
   id: string;
   type: string;
   title: string;
   content: string;
-  link?: string;
+  link: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -185,15 +186,17 @@ export function NotificationBell() {
               {t.messages?.noMessages || '暂无消息'}
             </div>
           ) : (
-            notifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className={`flex flex-col items-start p-3 cursor-pointer ${
-                  !notification.isRead ? 'bg-accent/50' : ''
-                }`}
-                onClick={() => !notification.isRead && markAsRead(notification.id)}
-              >
-                <div className="flex items-start gap-2 w-full">
+            notifications.map((notification) => {
+              const safeLink = normalizeNotificationLink(notification.link);
+              return (
+                <DropdownMenuItem
+                  key={notification.id}
+                  className={`flex flex-col items-start p-3 cursor-pointer ${
+                    !notification.isRead ? 'bg-accent/50' : ''
+                  }`}
+                  onClick={() => !notification.isRead && markAsRead(notification.id)}
+                >
+                  <div className="flex items-start gap-2 w-full">
                   <div className={`w-2 h-2 rounded-full mt-2 ${getTypeColor(notification.type)}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -214,7 +217,7 @@ export function NotificationBell() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {notification.link && (
+                    {safeLink && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -222,7 +225,7 @@ export function NotificationBell() {
                         asChild
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Link href={notification.link}>
+                        <Link href={safeLink}>
                           <ExternalLink className="h-3 w-3" />
                         </Link>
                       </Button>
@@ -252,9 +255,10 @@ export function NotificationBell() {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                </div>
-              </DropdownMenuItem>
-            ))
+                  </div>
+                </DropdownMenuItem>
+              );
+            })
           )}
         </div>
         

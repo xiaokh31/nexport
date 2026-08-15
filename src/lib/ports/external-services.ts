@@ -46,7 +46,7 @@ export type EmailDeliveryResult =
   | { success: true; providerMessageId: string }
   | {
       success: false;
-      reason: "TIMEOUT" | "HTTP_4XX" | "HTTP_5XX";
+      reason: "TIMEOUT" | "HTTP_4XX" | "HTTP_5XX" | "CONFIGURATION";
       retryable: boolean;
       ambiguous: boolean;
     };
