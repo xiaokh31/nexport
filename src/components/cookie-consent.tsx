@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Cookie, Settings } from "lucide-react";
+import { Cookie, Settings } from "lucide-react";
 import { useLocale } from "@/i18n/locale-context";
 import {
   Dialog,

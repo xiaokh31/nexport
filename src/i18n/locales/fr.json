@@ -300,7 +300,7 @@
     "editArticleDescription": "Mettre à jour le contenu, l'état de publication et la présentation de recherche",
     "mediaSettings": "Image de couverture",
     "coverImage": "Chemin de l'image de couverture",
-    "coverImagePlaceholder": "/images/news/example.jpg",
+    "coverImagePlaceholder": "Laisser vide pour ne pas afficher d’image",
     "coverImageHint": "Seuls les chemins absolus du site sont pris en charge.",
     "coverImageAlt": "Texte alternatif de l'image",
     "coverImageAltPlaceholder": "Décrivez les informations importantes de l'image",

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
-import { getSiteConfig, solutionConfigs } from "@/config/site-config";
+import { siteInfo, siteLinks, solutionConfigs } from "@/config/site-config";
 import { getSolutionUiContent } from "@/config/marketing-content";
 import { useLocale } from "@/i18n/locale-context";
 import { isPlaceholderIdentityValue } from "@/lib/seo/structured-data";
@@ -18,7 +18,6 @@ interface ContactLink {
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const { locale, t } = useLocale();
-  const siteConfig = getSiteConfig(t);
   const quickLinks = [
     { title: t.nav.home, href: "/" },
     { title: t.nav.solutions || t.nav.services, href: "/solutions" },
@@ -29,20 +28,20 @@ export function Footer() {
   const contactLinks: ContactLink[] = [
     {
       label: "邮箱",
-      value: siteConfig.links.email,
-      href: `mailto:${siteConfig.links.email}`,
+      value: siteLinks.email,
+      href: `mailto:${siteLinks.email}`,
       icon: Mail,
     },
     {
       label: "电话",
-      value: siteConfig.links.phone,
-      href: `tel:${siteConfig.links.phone}`,
+      value: siteLinks.phone,
+      href: `tel:${siteLinks.phone}`,
       icon: Phone,
     },
     {
       label: "地址",
-      value: siteConfig.links.address,
-      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteConfig.links.address)}`,
+      value: siteLinks.address,
+      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteLinks.address)}`,
       icon: MapPin,
       external: true,
     },
@@ -54,7 +53,7 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-4">
             <p className="font-display text-2xl font-bold tracking-wide">
-              {siteConfig.name}
+              {siteInfo.name}
             </p>
             <p className="max-w-sm text-sm leading-7 text-paper-white/75">
               海外仓储、订单履约与运输衔接。
@@ -134,7 +133,7 @@ export function Footer() {
       <div className="border-t border-paper-white/20">
         <div className="container flex flex-col gap-4 py-6 text-xs text-paper-white/65 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            &copy; {currentYear} {siteConfig.name}. {t.footer.rights}
+            &copy; {currentYear} {siteInfo.name}. {t.footer.rights}
           </p>
           <nav aria-label="法律信息" className="flex flex-wrap gap-x-6 gap-y-2">
             <Link href="/privacy" className="min-h-11 content-center hover:text-paper-white hover:underline">

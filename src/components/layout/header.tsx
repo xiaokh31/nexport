@@ -40,7 +40,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getSiteConfig, solutionConfigs } from "@/config/site-config";
+import { siteInfo, solutionConfigs } from "@/config/site-config";
 import { getSolutionUiContent } from "@/config/marketing-content";
 import { useAdminAccess } from "@/hooks/use-admin-access";
 import { useLocale } from "@/i18n/locale-context";
@@ -55,8 +55,6 @@ export function Header() {
   const { profile: adminAccess } = useAdminAccess(session?.user?.id);
   const adminPath = adminAccess?.defaultPath;
   const hasAdminAccess = Boolean(adminPath);
-  const siteConfig = getSiteConfig(t);
-
   const solutionNavItems = [
     {
       title: t.nav.allSolutions || "全部解决方案",
@@ -89,7 +87,7 @@ export function Header() {
         <Link
           href="/"
           className="mr-auto flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-paper-white"
-          aria-label={`${siteConfig.name}，${t.nav.home}`}
+          aria-label={`${siteInfo.name}，${t.nav.home}`}
         >
           <span
             aria-hidden="true"
@@ -99,7 +97,7 @@ export function Header() {
             <span className="absolute inset-x-1.5 bottom-1.5 border-b border-paper-white/70" />
           </span>
           <span className="font-display truncate text-xl font-bold tracking-wide text-paper-white sm:text-2xl">
-            {siteConfig.name}
+            {siteInfo.name}
           </span>
         </Link>
 

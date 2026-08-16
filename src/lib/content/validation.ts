@@ -34,7 +34,7 @@ const optionalNullableText = (max: number, message: string) =>
 const contentImageValueSchema = z.string().trim().max(2_048, "图片地址不能超过2048个字符")
   .refine(
     (value) => !value || isAllowedMarkdownImage(value),
-    "内容图片只能使用站内绝对路径（例如 /images/example.jpg）",
+    "内容图片只能使用以 / 开头的站内绝对路径",
   );
 
 export const markdownContentSchema = markdownSchema({ required: true });

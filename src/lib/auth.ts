@@ -35,11 +35,11 @@ async function getDeviceInfo(): Promise<{ device: string; userAgent: string }> {
   try {
     const headersList = await headers();
     const userAgent = headersList.get('user-agent') || 'Unknown';
-    
+
     // 解析设备类型
     let device = '桌面端';
     const ua = userAgent.toLowerCase();
-    
+
     if (ua.includes('iphone')) {
       device = 'iPhone';
     } else if (ua.includes('ipad')) {
@@ -57,7 +57,7 @@ async function getDeviceInfo(): Promise<{ device: string; userAgent: string }> {
     } else if (ua.includes('linux')) {
       device = 'Linux';
     }
-    
+
     // 添加浏览器信息
     if (ua.includes('chrome') && !ua.includes('edg')) {
       device += ' / Chrome';
@@ -68,7 +68,7 @@ async function getDeviceInfo(): Promise<{ device: string; userAgent: string }> {
     } else if (ua.includes('edg')) {
       device += ' / Edge';
     }
-    
+
     return { device, userAgent };
   } catch {
     return { device: 'Unknown', userAgent: 'Unknown' };
@@ -121,7 +121,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.canManageArticles = user.canManageArticles;
       }
-      
+
       // 如果是刷新或更新，从数据库重新获取用户信息（确保角色变更能即时生效）
       if (trigger === 'update' || (token.id && !token.role)) {
         try {
@@ -136,7 +136,7 @@ export const authOptions: NextAuthOptions = {
           console.error('Error fetching user role:', error);
         }
       }
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -155,7 +155,7 @@ export const authOptions: NextAuthOptions = {
         try {
           const ip = await getClientIP();
           const { device, userAgent } = await getDeviceInfo();
-          
+
           // 获取登录方式的友好名称
           let loginMethod = '邮箱密码登录';
           if (account?.provider === 'google') {

@@ -65,7 +65,7 @@ export default function ArticlesPage() {
           limit: "10",
           search: searchTerm,
         });
-        
+
         const response = await fetch(`/api/admin/articles?${params}`);
         if (response.ok) {
           const data = await response.json();
@@ -186,8 +186,8 @@ export default function ArticlesPage() {
                           <TableCell>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : "-"}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => window.open(`/admin/articles/${article.id}/preview`, '_blank', 'noopener,noreferrer')}
                                 aria-label={`预览文章：${article.title}`}
@@ -195,8 +195,8 @@ export default function ArticlesPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => router.push(`/admin/articles/${article.id}`)}
                                 aria-label={`编辑文章：${article.title}`}
@@ -204,9 +204,9 @@ export default function ArticlesPage() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="text-red-500"
                                 onClick={() => deleteArticle(article.id)}
                                 aria-label={`删除文章：${article.title}`}
@@ -229,13 +229,13 @@ export default function ArticlesPage() {
                   )}
                 </TableBody>
               </Table>
-              
+
               {/* 分页 */}
               {total > 0 && (
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-muted-foreground">
-                    {t.common.loading === "Loading..." 
-                      ? `Showing ${articles.length} of ${total} articles` 
+                    {t.common.loading === "Loading..."
+                      ? `Showing ${articles.length} of ${total} articles`
                       : `显示第 ${(page - 1) * 10 + 1}-${Math.min(page * 10, total)} 条，共 ${total} 条`}
                   </div>
                   <div className="flex gap-2">

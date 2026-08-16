@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { 
-  LayoutDashboard, 
-  MessageSquare, 
-  Users, 
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Users,
   Settings,
   Newspaper,
   Home,
@@ -111,7 +111,7 @@ export function AdminSidebar() {
       <nav aria-label={t.admin?.title || "管理后台"} className="space-y-1">
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || 
+          const isActive = pathname === item.href ||
             (item.href !== "/admin" && pathname.startsWith(item.href));
           return (
             <Link

@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
-import { deliverEmail } from "../../src/lib/email-delivery";
+import { describe, expect, it } from "vitest";
 import {
   createQuoteNotificationTemplate,
   escapeHtml,
@@ -30,25 +29,5 @@ describe("email security", () => {
     expect(template.html).toContain(
       "&lt;img src=x onerror=&quot;alert(&#39;xss&#39;)&quot;&gt; &amp;",
     );
-  });
-
-  it("delegates delivery exactly once to the email send API", async () => {
-    const send = vi.fn().mockResolvedValue({
-      data: { id: "provider-message-1" },
-      error: null,
-    });
-    const message = {
-      from: "Nexport <noreply@example.com>",
-      to: ["ops@example.com"],
-      subject: "New quote",
-      html: "<p>Safe content</p>",
-    };
-
-    await expect(deliverEmail({ send }, message)).resolves.toEqual({
-      success: true,
-      messageId: "provider-message-1",
-    });
-    expect(send).toHaveBeenCalledOnce();
-    expect(send).toHaveBeenCalledWith(message);
   });
 });

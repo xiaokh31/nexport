@@ -99,7 +99,7 @@ export function inspectMarkdown(markdown: string): MarkdownPolicyIssue[] {
       issues.push({
         code: isImage ? "UNSAFE_IMAGE" : "UNSAFE_LINK",
         message: isImage
-          ? "Markdown 图片只能使用站内绝对路径（例如 /images/example.jpg）"
+          ? "Markdown 图片只能使用以 / 开头的站内绝对路径"
           : "Markdown 链接仅支持站内地址、http、https 或 mailto",
       });
     }

@@ -36,7 +36,7 @@ function errorResponse(error: string, status: number, retryAfterSeconds?: number
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     // 验证表单数据
     const validatedData = registerFormSchema.parse(body);
 

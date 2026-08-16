@@ -16,36 +16,43 @@ const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
 const LOCALE_STORAGE_KEY = "site-locale";
 
+function readStoredLocale(): Locale | null {
+  try {
+    const value = localStorage.getItem(LOCALE_STORAGE_KEY);
+    return value && locales.includes(value as Locale) ? (value as Locale) : null;
+  } catch (error) {
+    console.warn("Unable to read the saved locale preference.", error);
+    return null;
+  }
+}
+
+function storeLocale(locale: Locale) {
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch (error) {
+    console.warn("Unable to save the locale preference.", error);
+  }
+}
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
   const [dictionary, setDictionary] = useState<Dictionary>(getDictionary(defaultLocale));
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // 标记客户端已加载
     setMounted(true);
-    // 从 localStorage 读取语言设置
-    try {
-      const savedLocale = localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null;
-      if (savedLocale && locales.includes(savedLocale)) {
-        setLocaleState(savedLocale);
-        setDictionary(getDictionary(savedLocale));
-      }
-    } catch {
-      // localStorage 可能在某些环境下不可用
+    const savedLocale = readStoredLocale();
+    if (savedLocale) {
+      setLocaleState(savedLocale);
+      setDictionary(getDictionary(savedLocale));
     }
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     setDictionary(getDictionary(newLocale));
-    try {
-      localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
-      // 更新 html lang 属性
-      document.documentElement.lang = newLocale === "zh" ? "zh-CN" : newLocale;
-    } catch {
-      // localStorage 可能在某些环境下不可用
-    }
+    document.documentElement.lang = newLocale === "zh" ? "zh-CN" : newLocale;
+    storeLocale(newLocale);
   }, []);
 
   return (

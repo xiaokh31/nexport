@@ -94,7 +94,7 @@ export default function UsersManagePage() {
           role: roleFilter,
           search: searchTerm,
         });
-        
+
         const response = await fetch(`/api/admin/users?${params}`);
         if (response.ok) {
           const data = await response.json();
@@ -161,7 +161,7 @@ export default function UsersManagePage() {
     if (permissionsChanged && !window.confirm(`确认修改 ${selectedUser.email} 的角色或管理权限？`)) {
       return;
     }
-    
+
     setSaving(true);
     try {
       const response = await fetch("/api/admin/users", {
@@ -309,7 +309,7 @@ export default function UsersManagePage() {
                   {users.length > 0 ? (
                     users.map((user) => {
                       const role = roleMap[user.role] || { label: user.role, variant: "outline" as const };
-                      
+
                       return (
                         <TableRow key={user.id}>
                           <TableCell>
@@ -330,8 +330,8 @@ export default function UsersManagePage() {
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
-                            <Select 
-                              value={user.role} 
+                            <Select
+                              value={user.role}
                               onValueChange={(value) => updateUserRole(user.id, value)}
                             >
                               <SelectTrigger className="w-28 h-8">
@@ -380,7 +380,7 @@ export default function UsersManagePage() {
                                   <UserCog className="h-4 w-4 mr-2" />
                                   编辑信息
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   className="text-red-600"
                                   onClick={() => deleteUser(user.id)}
                                 >
@@ -403,7 +403,7 @@ export default function UsersManagePage() {
                   )}
                 </TableBody>
               </Table>
-              
+
               {/* 分页 */}
               {total > 0 && (
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -474,8 +474,8 @@ export default function UsersManagePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">角色</Label>
-              <Select 
-                value={editForm.role} 
+              <Select
+                value={editForm.role}
                 onValueChange={(value) => setEditForm({ ...editForm, role: value, canManageArticles: value === 'STAFF' ? editForm.canManageArticles : false })}
               >
                 <SelectTrigger>

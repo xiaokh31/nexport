@@ -114,7 +114,7 @@ export default function QuotesManagePage() {
           status: statusFilter,
           search: searchTerm,
         });
-        
+
         const response = await fetch(`/api/admin/quotes?${params}`);
         if (response.ok) {
           const data = await response.json();
@@ -209,7 +209,7 @@ export default function QuotesManagePage() {
       const response = await fetch("/api/admin/quotes", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: selectedQuote.id,
           status: "QUOTED",
           amount: quoteAmount,
@@ -391,8 +391,8 @@ export default function QuotesManagePage() {
                           <TableCell>{new Date(quote.createdAt).toLocaleString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 onClick={() => viewDetail(quote)}
                                 aria-label={`查看询价：${quote.reference}`}
@@ -406,8 +406,8 @@ export default function QuotesManagePage() {
                                 "PROCESSING",
                               ) && (
                                 <Button
-                                  variant="ghost" 
-                                  size="icon" 
+                                  variant="ghost"
+                                  size="icon"
                                   className="text-blue-500"
                                   onClick={() => updateQuoteStatus(quote.id, "PROCESSING")}
                                   aria-label={`开始处理询价：${quote.reference}`}
@@ -463,7 +463,7 @@ export default function QuotesManagePage() {
                   )}
                 </TableBody>
               </Table>
-              
+
               {/* 分页 */}
               {total > 0 && (
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -578,7 +578,7 @@ export default function QuotesManagePage() {
                 <Label className="text-muted-foreground">留言内容</Label>
                 <p className="font-medium whitespace-pre-wrap">{selectedQuote.message}</p>
               </div>
-              
+
               {/* 报价信息 */}
               {(selectedQuote.amount || selectedQuote.status === "QUOTED") && (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
@@ -639,7 +639,7 @@ export default function QuotesManagePage() {
                   </Button>
                 </div>
               )}
-              
+
               <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
                 <div>提交时间: {new Date(selectedQuote.createdAt).toLocaleString()}</div>
                 <div>更新时间: {new Date(selectedQuote.updatedAt).toLocaleString()}</div>
@@ -655,8 +655,8 @@ export default function QuotesManagePage() {
               actorRole,
               selectedQuote.status as QuoteStatus,
             ) && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowDetailDialog(false);
                   setTimeout(() => openQuoteDialog(selectedQuote), 100);

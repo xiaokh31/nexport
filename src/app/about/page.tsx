@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { CheckCircle, Users, Globe, Award, Target } from "lucide-react";
 import { CTASection } from "@/components/marketing";
 import { useLocale } from "@/i18n/locale-context";

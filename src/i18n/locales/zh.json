@@ -300,7 +300,7 @@
     "editArticleDescription": "更新内容、发布状态与搜索展示信息",
     "mediaSettings": "封面图片",
     "coverImage": "封面图路径",
-    "coverImagePlaceholder": "/images/news/example.jpg",
+    "coverImagePlaceholder": "留空则不显示封面图",
     "coverImageHint": "只支持站内绝对路径。",
     "coverImageAlt": "封面图替代文本",
     "coverImageAltPlaceholder": "描述图片中的关键信息",

@@ -300,7 +300,7 @@
     "editArticleDescription": "Update content, publication state, and search presentation",
     "mediaSettings": "Cover Image",
     "coverImage": "Cover Image Path",
-    "coverImagePlaceholder": "/images/news/example.jpg",
+    "coverImagePlaceholder": "Leave blank to show no cover image",
     "coverImageHint": "Only same-site absolute paths are supported.",
     "coverImageAlt": "Cover Image Alt Text",
     "coverImageAltPlaceholder": "Describe the important information in the image",
