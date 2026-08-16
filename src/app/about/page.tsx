@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { CheckCircle, Users, Globe, Award, Target } from "lucide-react";
-import { CTASection, StatsSection } from "@/components/marketing";
+import { CTASection } from "@/components/marketing";
 import { useLocale } from "@/i18n/locale-context";
 
 export default function AboutPage() {
@@ -79,8 +79,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-      <StatsSection />
 
       {/* Advantages */}
       <section className="py-16 md:py-24">

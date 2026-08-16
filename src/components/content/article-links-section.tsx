@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getMarketingCopy } from "@/config/marketing-content";
+import { useLocale } from "@/i18n/locale-context";
 
 export interface ArticleLinkItem {
   id: string;
@@ -11,9 +14,9 @@ export interface ArticleLinkItem {
   publishedAt: Date | null;
 }
 
-function formatDate(date: Date | null) {
+function formatDate(date: Date | null, locale: "zh" | "en" | "fr") {
   if (!date) return "";
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -22,65 +25,65 @@ function formatDate(date: Date | null) {
 }
 
 export function ArticleLinksSection({
-  title,
-  description,
   articles,
   viewAll = true,
+  context = "home",
 }: {
-  title: string;
-  description?: string;
   articles: ArticleLinkItem[];
   viewAll?: boolean;
+  context?: "home" | "related";
 }) {
+  const { locale, t } = useLocale();
+  const copy = getMarketingCopy(locale).articles;
+  const title = context === "home" ? copy.homeTitle : copy.relatedTitle;
+  const description = context === "home" ? copy.homeDescription : undefined;
+
   if (articles.length === 0) return null;
 
   return (
-    <section className="border-t py-16 md:py-24">
+    <section className="border-t-2 border-dock-navy bg-paper-white py-16 md:py-24">
       <div className="container">
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+        <div className="grid gap-6 border-b-2 border-dock-navy pb-8 md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <h2 className="text-3xl font-bold">{title}</h2>
-            {description && <p className="mt-3 text-muted-foreground">{description}</p>}
+            <p className="font-utility text-xs font-semibold uppercase tracking-[0.16em] text-steel-blue">
+              JOURNAL / PUBLISHED
+            </p>
+            <h2 className="mt-4 font-display text-4xl font-bold md:text-5xl">{title}</h2>
+            {description && <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>}
           </div>
           {viewAll && (
-            <Link href="/news" className="inline-flex items-center text-primary hover:underline">
-              查看全部新闻
-              <ArrowRight className="ml-1 h-4 w-4" />
+            <Link href="/news" className="inline-flex min-h-11 items-center font-semibold hover:underline">
+              {t.common.viewAll} {t.nav.news}
+              <ArrowRight className="ml-2 size-4" aria-hidden="true" />
             </Link>
           )}
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid border-b border-border md:grid-cols-3">
           {articles.map((article) => (
-            <Card key={article.id} className="group h-full transition-shadow hover:shadow-lg">
-              <CardHeader>
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded bg-primary/10 px-2 py-1 text-primary">
-                    {article.category}
+            <article key={article.id} className="flex min-h-64 flex-col border-b border-border p-6 md:border-b-0 md:border-r md:last:border-r-0">
+              <div className="font-utility flex flex-wrap items-center gap-3 text-[0.68rem] uppercase tracking-[0.1em] text-muted-foreground">
+                <span className="break-all border-l-2 border-signal-amber pl-2 text-steel-blue">{article.category}</span>
+                {article.publishedAt && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="size-3" aria-hidden="true" />
+                    {formatDate(article.publishedAt, locale)}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(article.publishedAt)}
-                  </span>
-                </div>
-                <CardTitle className="text-xl group-hover:text-primary">
-                  <h3>
-                    <Link href={`/news/${article.slug}`}>{article.title}</Link>
-                  </h3>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="line-clamp-3 text-sm text-muted-foreground">
-                  {article.excerpt}
-                </p>
-                <Link
-                  href={`/news/${article.slug}`}
-                  className="mt-4 inline-flex items-center text-sm text-primary hover:underline"
-                >
-                  阅读文章
-                  <ArrowRight className="ml-1 h-3 w-3" />
+                )}
+              </div>
+              <h3 className="mt-6 break-words text-xl font-semibold">
+                <Link href={`/news/${article.slug}`} className="underline-offset-4 hover:underline">
+                  {article.title}
                 </Link>
-              </CardContent>
-            </Card>
+              </h3>
+              <p className="mt-4 line-clamp-3 break-words text-sm leading-7 text-muted-foreground">{article.excerpt}</p>
+              <Link
+                href={`/news/${article.slug}`}
+                className="mt-auto inline-flex min-h-11 items-end pt-5 text-sm font-semibold hover:underline"
+              >
+                {t.common.readMore}
+                <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+              </Link>
+            </article>
           ))}
         </div>
       </div>

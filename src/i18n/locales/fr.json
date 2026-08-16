@@ -61,7 +61,7 @@
     "pageTitle": "Nos Services",
     "pageSubtitle": "Solutions logistiques complètes pour soutenir l'expansion de votre entreprise mondiale. Nous fournissons des services complets de l'entreposage au transport et à la livraison.",
     "fba": {
-      "title": "Service FBA Last Mile",
+      "title": "Rendez-vous FBA et dernier kilomètre",
       "description": "Service complet de dernière mile FBA incluant la collecte au port/entrepôt, le déchargement des conteneurs, le tri et la livraison planifiée aux entrepôts Amazon FBA.",
       "features": [
         "Collecte au port/entrepôt",
@@ -665,7 +665,7 @@
     "contactHint": "Des questions ? Notre équipe professionnelle est prête à vous servir",
     "otherSolutions": "Autres solutions",
     "fbaLastMile": {
-      "title": "Service FBA Last Mile",
+      "title": "Rendez-vous FBA et dernier kilomètre",
       "description": "Service complet de dernière mile FBA incluant la collecte au port/entrepôt, le déchargement des conteneurs, le tri et la livraison planifiée aux entrepôts Amazon FBA. Opérations standardisées, délais stables, contrôle total pour une entrée en entrepôt sûre et efficace.",
       "features": [
         "Collecte au port/entrepôt",
@@ -677,7 +677,7 @@
       ]
     },
     "truckFreight": {
-      "title": "Transport routier",
+      "title": "Coordination du transport routier",
       "description": "Service de camionnage couvrant les principales villes canadiennes et les entrepôts Amazon FBA, avec transport complet et partagé, livraison planifiée en entrepôt et distribution dernière mile. Lignes stables, délais contrôlés, idéal pour les envois volumineux et lourds.",
       "features": [
         "Couverture principales villes Canada",
@@ -689,7 +689,7 @@
       ]
     },
     "crossBorder": {
-      "title": "Logistique transfrontalière",
+      "title": "Coordination transfrontalière",
       "description": "Services de logistique transfrontalière entre le Canada et les États-Unis, incluant le fret routier et les services de colis.",
       "features": [
         "Expédition Canada-USA",
@@ -701,7 +701,7 @@
       ]
     },
     "amazonFba": {
-      "title": "Amazon FBA",
+      "title": "Préparation FBA",
       "description": "Services d'expédition FBA vers les centres de distribution, incluant la coordination des livraisons et la préparation FBA.",
       "features": [
         "Tarifs FBA compétitifs",
@@ -713,7 +713,7 @@
       ]
     },
     "express": {
-      "title": "Service express",
+      "title": "Messagerie express et accélérée",
       "description": "Service de messagerie internationale du Canada vers la Chine pour documents et colis, avec dédouanement mature et délais stables. Collecte à domicile, suivi complet et livraison dernière mile disponibles pour besoins personnels et commerciaux.",
       "features": [
         "Expédition directe vers la Chine",
@@ -737,7 +737,7 @@
       ]
     },
     "dropshipping": {
-      "title": "Dropshipping en entrepôt",
+      "title": "Exécution en dropshipping",
       "description": "Service de dropshipping depuis un entrepôt local avec expédition directe, traitement des commandes, préparation, livraison du dernier kilomètre et retours.",
       "features": [
         "Entrepôt local",

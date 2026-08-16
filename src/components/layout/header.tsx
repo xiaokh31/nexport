@@ -41,6 +41,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { getSiteConfig, solutionConfigs } from "@/config/site-config";
+import { getSolutionUiContent } from "@/config/marketing-content";
 import { useAdminAccess } from "@/hooks/use-admin-access";
 import { useLocale } from "@/i18n/locale-context";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ import { LanguageSwitcher } from "./language-switcher";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const { data: session, status } = useSession();
   const isLoggedIn = status === "authenticated";
   const { profile: adminAccess } = useAdminAccess(session?.user?.id);
@@ -62,7 +63,7 @@ export function Header() {
       href: "/solutions",
     },
     ...solutionConfigs.map(({ key, slug }) => ({
-      title: (t.solutions?.[key] as { title: string } | undefined)?.title || key,
+      title: getSolutionUiContent(locale, key).title,
       href: `/solutions/${slug}`,
     })),
   ];

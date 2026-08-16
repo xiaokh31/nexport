@@ -1,86 +1,50 @@
 "use client";
 
-import { Shield, Clock, Globe, Headphones, Award, Zap } from "lucide-react";
+import { Check, CornerDownRight } from "lucide-react";
+import { getMarketingCopy } from "@/config/marketing-content";
 import { useLocale } from "@/i18n/locale-context";
 
-const featureIcons = [
-  Shield,
-  Clock,
-  Globe,
-  Headphones,
-  Award,
-  Zap,
-];
-
-export function FeaturesSection() {
-  const { t } = useLocale();
-
-  // 动态获取 features 翻译
-  const features = [
-    {
-      icon: Shield,
-      title: t.features.safe?.title || "安全可靠",
-      description: t.features.safe?.description || "全程保险保障，货物安全无忧",
-    },
-    {
-      icon: Clock,
-      title: t.features.timely?.title || "时效稳定",
-      description: t.features.timely?.description || "多渠道时效保证，准时交付",
-    },
-    {
-      icon: Globe,
-      title: t.features.global?.title || "全球覆盖",
-      description: t.features.global?.description || "覆盖北美、欧洲、亚洲多个地区",
-    },
-    {
-      icon: Headphones,
-      title: t.features.service?.title || "专业服务",
-      description: t.features.service?.description || "7x24小时客服支持，实时跟踪",
-    },
-    {
-      icon: Award,
-      title: t.features.quality?.title || "品质保证",
-      description: t.features.quality?.description || "严格的质量管控体系",
-    },
-    {
-      icon: Zap,
-      title: t.features.efficient?.title || "高效处理",
-      description: t.features.efficient?.description || "高效处理，快速出库",
-    },
-  ];
+export function CapabilitiesSection() {
+  const { locale } = useLocale();
+  const copy = getMarketingCopy(locale);
 
   return (
-    <section className="py-16 md:py-24 bg-muted/30">
-      <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            {t.features.title}
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {t.features.subtitle}
+    <section className="bg-concrete py-16 md:py-24" aria-labelledby="capabilities-title">
+      <div className="container grid gap-12 lg:grid-cols-2 lg:gap-20">
+        <div>
+          <p className="font-utility text-xs font-semibold uppercase tracking-[0.18em] text-steel-blue">
+            {copy.capabilities.eyebrow}
           </p>
+          <h2 id="capabilities-title" className="mt-5 font-display text-4xl font-bold md:text-5xl">
+            {copy.capabilities.title}
+          </h2>
+          <p className="mt-5 max-w-xl leading-7 text-muted-foreground">{copy.capabilities.description}</p>
+          <ul className="mt-8 border-y-2 border-dock-navy">
+            {copy.capabilities.items.map((item) => (
+              <li key={item} className="flex gap-3 border-b border-border py-4 last:border-b-0">
+                <Check className="mt-0.5 size-5 shrink-0 text-steel-blue" aria-hidden="true" />
+                <span className="font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-            return (
-              <div
-                key={feature.title}
-                className="flex gap-4 p-6 bg-background rounded-xl hover:shadow-md transition-shadow"
-              >
-                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="border-l-4 border-signal-amber bg-paper-white p-6 md:p-9">
+          <p className="font-utility text-xs font-semibold uppercase tracking-[0.18em] text-steel-blue">
+            {copy.audience.eyebrow}
+          </p>
+          <h2 className="mt-5 font-display text-3xl font-bold md:text-4xl">{copy.audience.title}</h2>
+          <div className="mt-7 divide-y divide-border border-y border-border">
+            {copy.audience.items.map((item) => (
+              <article key={item.title} className="grid gap-3 py-5 sm:grid-cols-[1fr_2fr]">
+                <h3 className="flex gap-2 font-semibold">
+                  <CornerDownRight className="mt-0.5 size-4 shrink-0 text-signal-amber" aria-hidden="true" />
+                  {item.title}
+                </h3>
+                <p className="text-sm leading-7 text-muted-foreground">{item.description}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

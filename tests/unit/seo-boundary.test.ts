@@ -65,7 +65,7 @@ describe("SEO-001 source boundaries", () => {
     expect(solutionLayout).toContain("alternates: { canonical }");
     expect(solutionLayout).toContain("<BreadcrumbSchema");
     expect(solutionLayout).toContain("<ServiceSchema");
-    expect(solutionLayout).toContain('title="相关文章"');
+    expect(solutionLayout).toContain('context="related"');
     expect(solutionLayout).not.toContain("providerName=");
     expect(solutionLayout).not.toContain("areaServed=");
   });
@@ -75,7 +75,7 @@ describe("SEO-001 source boundaries", () => {
     const robots = source("src/app/robots.ts");
 
     expect(home).toContain("listPublishedArticles");
-    expect(home).toContain('title="最新文章"');
+    expect(home).toContain('context="home"');
     for (const route of ["/api/", "/admin/", "/user/", "/dashboard/", "/login", "/register", "/verify-email"]) {
       expect(robots, route).toContain(`"${route}"`);
     }

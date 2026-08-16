@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone, type LucideIcon } from "lucide-react";
 import { getSiteConfig, solutionConfigs } from "@/config/site-config";
+import { getSolutionUiContent } from "@/config/marketing-content";
 import { useLocale } from "@/i18n/locale-context";
 import { isPlaceholderIdentityValue } from "@/lib/seo/structured-data";
 
@@ -16,7 +17,7 @@ interface ContactLink {
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const siteConfig = getSiteConfig(t);
   const quickLinks = [
     { title: t.nav.home, href: "/" },
@@ -97,7 +98,7 @@ export function Footer() {
                   href={`/solutions/${slug}`}
                   className="flex min-h-11 items-center text-sm text-paper-white/75 hover:text-paper-white hover:underline"
                 >
-                  {(t.solutions?.[key] as { title: string } | undefined)?.title || key}
+                  {getSolutionUiContent(locale, key).title}
                 </Link>
               ))}
             </nav>

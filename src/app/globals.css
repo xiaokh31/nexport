@@ -267,6 +267,19 @@
   .status-error {
     color: var(--destructive);
   }
+
+  .operation-stage {
+    opacity: 0;
+    transform: translateY(0.75rem);
+    animation: operation-stage-enter 420ms ease-out forwards;
+  }
+}
+
+@keyframes operation-stage-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (min-width: 120rem) {

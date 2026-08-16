@@ -1,5 +1,5 @@
 export { HeroSection } from "./hero-section";
-export { StatsSection } from "./stats-section";
+export { OperationsSection } from "./operations-section";
 export { SolutionsSection } from "./solutions-section";
 export { CTASection } from "./cta-section";
-export { FeaturesSection } from "./features-section";
+export { CapabilitiesSection } from "./features-section";

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArticleLinksSection } from "@/components/content/article-links-section";
+import { CTASection } from "@/components/marketing";
 import {
   BreadcrumbSchema,
   ServiceSchema,
 } from "@/components/seo/structured-data";
 import { publicEnv } from "@/config/env/public";
-import { defaultLocale, getDictionary } from "@/i18n";
+import { defaultLocale } from "@/i18n";
+import { getSolutionUiContent } from "@/config/marketing-content";
 import {
   getSolutionBySlug,
   solutionConfigs,
@@ -26,13 +28,8 @@ interface SolutionMetadataProps {
 function defaultSolutionContent(slug: string) {
   const config = getSolutionBySlug(slug);
   if (!config) return null;
-  const dictionary = getDictionary(defaultLocale);
-  const content = dictionary.solutions?.[config.key] as {
-    title?: string;
-    description?: string;
-  } | undefined;
-  if (!content?.title || !content.description) return null;
-  return { config, title: content.title, description: content.description };
+  const content = getSolutionUiContent(defaultLocale, config.key);
+  return { config, title: content.title, description: content.summary };
 }
 
 export function generateStaticParams() {
@@ -54,13 +51,11 @@ export async function generateMetadata({ params }: SolutionMetadataProps): Promi
       url: canonical,
       title: solution.title,
       description: solution.description,
-      images: [{ url: solution.config.image, alt: solution.title }],
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title: solution.title,
       description: solution.description,
-      images: [solution.config.image],
     },
   };
 }
@@ -103,10 +98,10 @@ export default async function SolutionDetailLayout({
       />
       {children}
       <ArticleLinksSection
-        title="相关文章"
-        description={`查看与${solution.title}相关的已发布内容。`}
+        context="related"
         articles={related.articles}
       />
+      <CTASection serviceType={solution.config.serviceType} />
     </>
   );
 }

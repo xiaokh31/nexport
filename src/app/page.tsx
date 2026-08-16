@@ -1,8 +1,8 @@
 import {
   HeroSection,
-  StatsSection,
+  OperationsSection,
   SolutionsSection,
-  FeaturesSection,
+  CapabilitiesSection,
   CTASection,
 } from "@/components/marketing";
 import { ArticleLinksSection } from "@/components/content/article-links-section";
@@ -18,12 +18,11 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection />
-      <StatsSection />
+      <OperationsSection />
       <SolutionsSection />
-      <FeaturesSection />
+      <CapabilitiesSection />
       <ArticleLinksSection
-        title="最新文章"
-        description="从服务公告到行业趋势，查看最新已发布内容。"
+        context="home"
         articles={latestArticles.articles}
       />
       <CTASection />

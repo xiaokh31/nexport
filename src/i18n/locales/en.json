@@ -61,7 +61,7 @@
     "pageTitle": "Our Services",
     "pageSubtitle": "Comprehensive cross-border logistics solutions to support your global business expansion. We provide one-stop services from warehousing, transportation to delivery.",
     "fba": {
-      "title": "FBA Last Mile Service",
+      "title": "FBA Appointment & Last Mile",
       "description": "One-stop last mile service from port/warehouse pickup, deconsolidation, sorting to scheduled delivery to Amazon FBA warehouses. Standardized operations, reliable transit times, full visibility.",
       "features": [
         "Port/Warehouse Pickup",
@@ -665,7 +665,7 @@
     "contactHint": "Any questions? Our professional team is ready to serve you",
     "otherSolutions": "Other Solutions",
     "fbaLastMile": {
-      "title": "FBA Last Mile Service",
+      "title": "FBA Appointment & Last Mile",
       "description": "One-stop last mile service from port/warehouse pickup, deconsolidation, sorting to scheduled delivery to Amazon FBA warehouses. Standardized operations, reliable transit times, full visibility, helping your goods safely and efficiently enter the warehouse.",
       "features": [
         "Port/Warehouse Pickup",
@@ -677,7 +677,7 @@
       ]
     },
     "truckFreight": {
-      "title": "Truck Freight",
+      "title": "Truck Freight Coordination",
       "description": "Truck delivery service covering major Canadian cities and Amazon FBA warehouses. Full truckload and LTL options, appointment delivery and last mile service. Stable routes, reliable transit times, suitable for heavy cargo and bulk warehouse deliveries.",
       "features": [
         "Major Canadian Cities",
@@ -689,7 +689,7 @@
       ]
     },
     "crossBorder": {
-      "title": "Cross-Border Logistics",
+      "title": "Cross-Border Coordination",
       "description": "Complete cross-border logistics services between Canada and the US, including truck freight and parcel services for a range of shipment sizes.",
       "features": [
         "Canada-US Shipping",
@@ -701,7 +701,7 @@
       ]
     },
     "amazonFba": {
-      "title": "Amazon FBA",
+      "title": "FBA Preparation",
       "description": "FBA shipping services for delivering products to fulfillment centers, including delivery coordination and FBA preparation support.",
       "features": [
         "Competitive FBA Rates",
@@ -713,7 +713,7 @@
       ]
     },
     "express": {
-      "title": "Express Service",
+      "title": "Express & Expedited Shipping",
       "description": "International express service from Canada direct to China, supporting documents and parcel delivery. Mature customs clearance process, stable transit times. Door pickup, full tracking and last mile delivery available, meeting personal and business needs.",
       "features": [
         "Canada to China Direct",
@@ -737,7 +737,7 @@
       ]
     },
     "dropshipping": {
-      "title": "Warehouse Dropshipping Service",
+      "title": "Dropshipping Fulfillment",
       "description": "Direct shipping from a local warehouse, supporting dropshipping and fast dispatch. Full-service support includes warehousing, order processing, pick-pack, last mile delivery and returns.",
       "features": [
         "Local Warehouse",

@@ -1,4 +1,4 @@
 🚚 Nexport 开发（截至 2026-08-15）
-Progress: 已完成 19 个任务：FND-001、CLN-001～004、DATA-001～002、TEST-001、SEC-001～003、RBAC-001、SAFE-001、NOTIF-001、AUTH-001、QUOTE-001、ARTICLE-001、SEO-001、UI-001。UI 基础已完成 Dock Navy/Steel Blue/Concrete/Signal Amber/Pallet Kraft/Paper White 与语义状态/sidebar token、离线稳定字体回退、全局间距/边框/焦点/reduced-motion、skip link、单一语言切换器、320–1920 响应式 Header、具名移动 Sheet、占位资料安全隐藏 Footer、44px 基础控件及前后台 workspace sidebar，并补齐对比度单元边界和 Playwright 响应式/键盘验收用例；L0 门禁通过。
-Plans: 下一任务为 UI-002（首页与解决方案重构），完成后进入 UI-003（询价与新闻页面重构）。
-Problems: node_modules 与 Playwright 浏览器尚未安装；RBAC/SAFE/NOTIF/AUTH/QUOTE/ARTICLE/SEO/UI 新增的 Vitest、隔离 PostgreSQL 与 Playwright API/UI 用例，以及 Prisma、lint、typecheck 的 L1/L2 运行态验证按计划延后到 QA；react-markdown/remark-gfm 已登记到 package.json，pnpm-lock.yaml 仍待 QA-001 统一刷新。
+Progress: 已完成 20 个任务：FND-001、CLN-001～004、DATA-001～002、TEST-001、SEC-001～003、RBAC-001、SAFE-001、NOTIF-001、AUTH-001、QUOTE-001、ARTICLE-001、SEO-001、UI-001～002。UI-002 已将首页重构为中性 Hero、入库接收→上架存储→拣配/增值→出库交接的真实作业轨道、按目的分组的八项方案、可确认能力/适用对象、最新已发布文章及询价资料 CTA；方案总览和八个详情统一覆盖适用需求、范围/排除项、顺序流程、询价资料、真实 FAQ、相关文章与 `serviceType` 预选询价，移除页面假统计、未确认服务图片/电话及旧 `/services` 站内入口，并补齐中英法安全内容契约、单元边界与 Playwright 响应式验收用例；UI-002 L0 源码门禁、语言 JSON、diff whitespace 与 LICENSE 校验通过。
+Plans: 下一项执行 UI-003（询价与新闻页面重构）。
+Problems: node_modules 与 Playwright 浏览器尚未安装；UI-002 的 typecheck 尝试因本地无 `tsc`（`pnpm exec tsc --noEmit` 返回 command not found）而未执行，RBAC/SAFE/NOTIF/AUTH/QUOTE/ARTICLE/SEO/UI 新增的 Vitest、隔离 PostgreSQL 与 Playwright API/UI 用例，以及 Prisma、lint、typecheck 的 L1/L2 运行态验证按计划延后到 QA；react-markdown/remark-gfm 已登记到 package.json，pnpm-lock.yaml 仍待 QA-001 统一刷新。

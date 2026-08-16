@@ -95,7 +95,7 @@ test("news, home, sitemap, and solution pages expose crawlable published links",
   expect(newsHtml).not.toContain("SEO-001 archived article");
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "最新文章" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "最新行业内容" })).toBeVisible();
   await expect(page.getByRole("link", { name: "SEO-001 published warehouse article" })).toBeVisible();
   await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0);
   const rootSchemas = await page.locator('script[type="application/ld+json"]').allTextContents();

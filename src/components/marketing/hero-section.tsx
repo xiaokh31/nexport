@@ -1,82 +1,72 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play } from "lucide-react";
+import { getMarketingCopy, getOperationStages } from "@/config/marketing-content";
 import { useLocale } from "@/i18n/locale-context";
 
 export function HeroSection() {
-  const { t } = useLocale();
+  const { locale } = useLocale();
+  const copy = getMarketingCopy(locale);
+  const stages = getOperationStages(locale);
 
   return (
-    <section className="relative min-h-[600px] md:min-h-[700px] overflow-hidden bg-gradient-to-br from-slate-950 via-slate-800 to-slate-700">
-
-      {/* 多层渐变遮罩 - 确保文字在任何视频帧下都清晰可见 */}
-      {/* 左侧深色渐变，保护文字区域 */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-black/10" />
-      {/* 底部渐变，增强层次感 */}
-      {/* <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" /> */}
-      {/* 整体暗化层，确保对比度 */}
-      {/* <div className="absolute inset-0 bg-black/0" /> */}
-      
-      {/* 内容区域 */}
-      <div className="container relative z-10 py-20 md:py-32 flex items-center min-h-[600px] md:min-h-[700px]">
-        <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
-          {/* Content */}
-          <div className="space-y-8">
-            {/* Badge - 半透明背景增强可见性 */}
-            <div className="inline-block px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium border border-white/30">
-              {t.hero.badge}
-            </div>
-            
-            {/* 标题 - 白色文字 + 文字阴影增强可读性 */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-              {t.hero.title1}
-              <span className="text-white drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)]"> {t.hero.title2} </span>
-              {t.hero.title3}
-            </h1>
-            
-            {/* 副标题 - 浅灰色文字 + 阴影 */}
-            <p className="text-lg md:text-xl text-gray-200 max-w-lg drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
-              {t.hero.subtitle}
-            </p>
-            
-            {/* 按钮组 */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" variant="outline" asChild className="text-white bg-transparent border-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                <Link href="/contact">
-                  {t.hero.cta}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="border-white/50 text-black hover:bg-white/10 hover:text-white backdrop-blur-sm">
-                <Link href="/services">
-                  {t.hero.learnMore}
-                </Link>
-              </Button>
-            </div>
-
-            {/* Trust Badges - 半透明背景卡片样式 */}
-            <div className="flex flex-wrap items-center gap-4 md:gap-8 pt-4">
-              <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20">
-                <div className="text-2xl font-bold text-white drop-shadow-md">—</div>
-                <div className="text-sm text-gray-300">{t.hero.customers}</div>
-              </div>
-              <div className="hidden md:block h-12 w-px bg-white/30" />
-              <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20">
-                <div className="text-2xl font-bold text-white drop-shadow-md">—</div>
-                <div className="text-sm text-gray-300">{t.hero.experience}</div>
-              </div>
-              <div className="hidden md:block h-12 w-px bg-white/30" />
-              <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20">
-                <div className="text-2xl font-bold text-white drop-shadow-md">—</div>
-                <div className="text-sm text-gray-300">{t.hero.delivery}</div>
-              </div>
-            </div>
+    <section className="relative isolate overflow-hidden border-b-4 border-signal-amber bg-dock-navy text-paper-white">
+      <div
+        aria-hidden="true"
+        className="absolute inset-y-0 right-0 hidden w-[44%] border-l border-paper-white/15 bg-[linear-gradient(90deg,transparent_49%,rgba(250,251,248,0.08)_50%,transparent_51%)] bg-[length:5rem_100%] lg:block"
+      />
+      <div className="container relative grid min-h-[42rem] items-stretch gap-12 py-16 md:py-24 lg:grid-cols-[minmax(0,1.05fr)_minmax(25rem,0.95fr)] lg:gap-16 lg:py-28">
+        <div className="flex max-w-3xl flex-col justify-center">
+          <p className="font-utility mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-signal-amber">
+            {copy.hero.eyebrow}
+          </p>
+          <h1 className="font-display text-5xl font-bold text-paper-white sm:text-6xl lg:text-7xl xl:text-[5.5rem]">
+            {copy.hero.title}
+          </h1>
+          <p className="mt-7 max-w-2xl text-base leading-8 text-paper-white/[0.78] md:text-lg">
+            {copy.hero.description}
+          </p>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Button size="lg" asChild className="bg-signal-amber text-dock-navy hover:bg-paper-white">
+              <Link href="/contact">
+                {copy.hero.primaryAction}
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="border-paper-white/60 bg-transparent text-paper-white hover:border-paper-white hover:bg-paper-white hover:text-dock-navy"
+            >
+              <Link href="/solutions">{copy.hero.secondaryAction}</Link>
+            </Button>
           </div>
+        </div>
 
-          {/* 右侧空白区域 - 保持布局平衡 */}
-          <div className="hidden lg:block" />
+        <div className="self-center border-2 border-paper-white/35 bg-dock-navy/80 p-3 sm:p-5" aria-label={copy.hero.visualLabel}>
+          <div className="flex items-center justify-between border-b border-paper-white/25 pb-3">
+            <span className="font-utility text-xs uppercase tracking-[0.16em] text-paper-white/70">
+              {copy.hero.visualLabel}
+            </span>
+            <span className="size-2 bg-signal-amber" aria-hidden="true" />
+          </div>
+          <ol className="mt-4 grid gap-3 sm:grid-cols-2">
+            {stages.map((stage) => (
+              <li key={stage.code} className="relative min-h-32 border border-paper-white/25 p-4">
+                <span className="font-utility text-[0.65rem] font-semibold tracking-[0.12em] text-signal-amber">
+                  {stage.code}
+                </span>
+                <p className="mt-7 font-display text-2xl font-bold text-paper-white">{stage.title}</p>
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-0 right-0 h-6 w-10 border-l border-t border-paper-white/25"
+                />
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>
