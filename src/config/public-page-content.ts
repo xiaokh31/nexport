@@ -1,0 +1,137 @@
+import type { Locale } from "@/i18n";
+
+const copyByLocale = {
+  zh: {
+    contact: {
+      eyebrow: "询价入口",
+      title: "提交货物与履约需求",
+      description: "填写服务类型、货物、线路和期望时间。资料会用于确认服务范围与后续沟通，不在页面中预设价格、时效或可执行范围。",
+      prepareTitle: "填写前建议准备",
+      prepareItems: [
+        "需要的服务与具体处理要求",
+        "起运地、目的地和期望时间",
+        "件数、箱数或托盘数",
+        "重量、尺寸与特殊处理说明",
+      ],
+      nextTitle: "提交后会发生什么",
+      nextItems: [
+        { title: "保存询价", description: "系统生成可引用的询价编号。" },
+        { title: "核对范围", description: "根据你提供的资料确认仍需补充的条件。" },
+        { title: "继续沟通", description: "通过你填写的联系方式衔接下一步。" },
+      ],
+      directTitle: "已配置的联系方式",
+      formTitle: "填写询价资料",
+      formDescription: "带 * 的字段为必填；其他资料可先填写已知部分。",
+    },
+    quoteForm: {
+      sections: {
+        contact: "联系人资料",
+        service: "服务与线路",
+        cargo: "货物资料",
+        details: "需求说明与验证",
+      },
+      required: "必填",
+      validationSummary: "请检查标记的字段，然后再次提交询价。",
+      submitFailure: "暂时无法提交询价。请检查网络后重试；已填写的内容仍保留在表单中。",
+      captchaUnavailable: "人机验证尚未配置，当前无法提交询价。",
+      submitting: "正在提交询价…",
+      submit: "提交询价",
+      successTitle: "询价已提交",
+      successDescription: "询价已保存。请保留下面的编号，后续沟通时可以引用。",
+      submitAnother: "提交另一条询价",
+      privacyPrefix: "提交即表示你知悉我们将按",
+      privacyLink: "隐私政策",
+      privacySuffix: "，并据此处理本次询价中提供的信息。具体法律条款以已发布政策为准。",
+    },
+  },
+  en: {
+    contact: {
+      eyebrow: "Quote intake",
+      title: "Share your cargo and fulfillment requirements",
+      description: "Provide the service type, cargo, lane, and requested timing. These inputs are used to confirm scope and next steps; pricing, timing, and feasibility are not assumed here.",
+      prepareTitle: "Prepare before you start",
+      prepareItems: [
+        "Required service and handling instructions",
+        "Origin, destination, and requested timing",
+        "Unit, carton, or pallet count",
+        "Weight, dimensions, and special handling",
+      ],
+      nextTitle: "What happens after submission",
+      nextItems: [
+        { title: "Save the inquiry", description: "The system creates a reference number you can cite." },
+        { title: "Review the scope", description: "Your inputs show which conditions still need confirmation." },
+        { title: "Continue the discussion", description: "The contact details you provide support the next step." },
+      ],
+      directTitle: "Configured contact details",
+      formTitle: "Enter quote information",
+      formDescription: "Fields marked * are required. Add the optional information you already know.",
+    },
+    quoteForm: {
+      sections: {
+        contact: "Contact information",
+        service: "Service and lane",
+        cargo: "Cargo information",
+        details: "Requirements and verification",
+      },
+      required: "required",
+      validationSummary: "Check the marked fields, then submit the quote again.",
+      submitFailure: "The quote could not be submitted. Check your connection and try again; your entries remain in the form.",
+      captchaUnavailable: "Human verification is not configured, so quotes cannot be submitted right now.",
+      submitting: "Submitting quote…",
+      submit: "Submit quote",
+      successTitle: "Quote submitted",
+      successDescription: "The inquiry has been saved. Keep the reference below for future communication.",
+      submitAnother: "Submit another quote",
+      privacyPrefix: "By submitting, you acknowledge that we process the information in this inquiry under the",
+      privacyLink: "Privacy Policy",
+      privacySuffix: ". The published policy provides the applicable terms.",
+    },
+  },
+  fr: {
+    contact: {
+      eyebrow: "Demande de devis",
+      title: "Décrivez la marchandise et les besoins d’exécution",
+      description: "Indiquez le service, la marchandise, l’itinéraire et le délai souhaité. Ces données servent à confirmer le périmètre et la suite; aucun tarif, délai ou faisabilité n’est présumé ici.",
+      prepareTitle: "À préparer avant de commencer",
+      prepareItems: [
+        "Service requis et consignes de traitement",
+        "Origine, destination et délai souhaité",
+        "Nombre d’unités, cartons ou palettes",
+        "Poids, dimensions et manutention spéciale",
+      ],
+      nextTitle: "Après l’envoi",
+      nextItems: [
+        { title: "Enregistrer la demande", description: "Le système crée une référence à conserver." },
+        { title: "Vérifier le périmètre", description: "Les données montrent les conditions restant à confirmer." },
+        { title: "Poursuivre l’échange", description: "Les coordonnées fournies permettent d’organiser la suite." },
+      ],
+      directTitle: "Coordonnées configurées",
+      formTitle: "Saisir les informations du devis",
+      formDescription: "Les champs marqués * sont obligatoires. Ajoutez les informations facultatives déjà connues.",
+    },
+    quoteForm: {
+      sections: {
+        contact: "Coordonnées",
+        service: "Service et itinéraire",
+        cargo: "Informations marchandise",
+        details: "Besoins et vérification",
+      },
+      required: "obligatoire",
+      validationSummary: "Vérifiez les champs signalés, puis envoyez de nouveau la demande.",
+      submitFailure: "La demande n’a pas pu être envoyée. Vérifiez la connexion et réessayez; les données saisies restent dans le formulaire.",
+      captchaUnavailable: "La vérification humaine n’est pas configurée; le devis ne peut pas être envoyé actuellement.",
+      submitting: "Envoi de la demande…",
+      submit: "Envoyer la demande",
+      successTitle: "Demande envoyée",
+      successDescription: "La demande a été enregistrée. Conservez la référence ci-dessous pour les échanges futurs.",
+      submitAnother: "Envoyer une autre demande",
+      privacyPrefix: "En envoyant, vous reconnaissez que les informations sont traitées selon la",
+      privacyLink: "Politique de confidentialité",
+      privacySuffix: ". Les conditions applicables figurent dans la politique publiée.",
+    },
+  },
+} as const;
+
+export function getPublicPageCopy(locale: Locale) {
+  return copyByLocale[locale];
+}

@@ -48,23 +48,23 @@ function omitMarkdownNode<T extends { node?: unknown }>({ node, ...props }: T): 
 const components: Components = {
   h1: (props) => (
     <h2
-      className="mt-10 scroll-mt-24 text-2xl font-bold tracking-tight"
+      className="mt-12 break-words border-b-2 border-dock-navy pb-3 font-display text-3xl font-bold tracking-tight"
       {...omitMarkdownNode(props)}
     />
   ),
   h2: (props) => (
     <h3
-      className="mt-8 scroll-mt-24 text-xl font-semibold tracking-tight"
+      className="mt-10 break-words text-2xl font-semibold tracking-tight"
       {...omitMarkdownNode(props)}
     />
   ),
   h3: (props) => (
-    <h4 className="mt-6 scroll-mt-24 text-lg font-semibold" {...omitMarkdownNode(props)} />
+    <h4 className="mt-8 break-words text-xl font-semibold" {...omitMarkdownNode(props)} />
   ),
-  h4: (props) => <h5 className="mt-5 font-semibold" {...omitMarkdownNode(props)} />,
-  h5: (props) => <h6 className="mt-5 font-semibold" {...omitMarkdownNode(props)} />,
-  h6: (props) => <h6 className="mt-5 font-semibold" {...omitMarkdownNode(props)} />,
-  p: (props) => <p className="my-4 break-words leading-7" {...omitMarkdownNode(props)} />,
+  h4: (props) => <h5 className="mt-7 break-words font-semibold" {...omitMarkdownNode(props)} />,
+  h5: (props) => <h6 className="mt-7 break-words font-semibold" {...omitMarkdownNode(props)} />,
+  h6: (props) => <h6 className="mt-7 break-words font-semibold" {...omitMarkdownNode(props)} />,
+  p: (props) => <p className="my-5 break-words leading-8 [overflow-wrap:anywhere]" {...omitMarkdownNode(props)} />,
   a: (componentProps) => {
     const { href, ...props } = omitMarkdownNode(componentProps);
     const safeHref = href && isAllowedMarkdownLink(href) ? href : undefined;
@@ -74,7 +74,7 @@ const components: Components = {
       <a
         {...props}
         href={safeHref}
-        className="break-all font-medium text-primary underline underline-offset-4"
+        className="break-all font-medium text-steel-blue underline underline-offset-4"
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
       />
@@ -93,13 +93,13 @@ const components: Components = {
         alt={alt || ""}
         loading="lazy"
         decoding="async"
-        className="my-6 h-auto max-w-full rounded-lg"
+        className="my-8 block h-auto max-w-full border-b-4 border-signal-amber"
       />
     );
   },
   blockquote: (props) => (
     <blockquote
-      className="my-6 border-l-4 border-border pl-4 text-muted-foreground"
+      className="my-8 border-l-4 border-signal-amber bg-concrete px-5 py-1 text-muted-foreground"
       {...omitMarkdownNode(props)}
     />
   ),
@@ -111,32 +111,42 @@ const components: Components = {
   ),
   pre: (props) => (
     <pre
-      className="my-6 max-w-full overflow-x-auto rounded-lg bg-muted p-4 text-sm"
+      tabIndex={0}
+      role="region"
+      aria-label="可横向滚动的代码块"
+      data-markdown-code
+      className="my-8 max-w-full overflow-x-auto border-l-4 border-steel-blue bg-dock-navy p-4 text-sm text-paper-white [&_code]:whitespace-pre [&_code]:break-normal [&_code]:bg-transparent [&_code]:p-0"
       {...omitMarkdownNode(props)}
     />
   ),
   code: (props) => (
     <code
-      className="break-words rounded bg-muted px-1.5 py-0.5 font-mono text-sm"
+      className="break-all bg-concrete px-1.5 py-0.5 font-utility text-sm"
       {...omitMarkdownNode(props)}
     />
   ),
   table: (props) => (
-    <div className="my-6 max-w-full overflow-x-auto rounded-md border">
+    <div
+      tabIndex={0}
+      role="region"
+      aria-label="可横向滚动的文章表格"
+      data-markdown-table
+      className="my-8 max-w-full overflow-x-auto border-2 border-dock-navy"
+    >
       <table
-        className="w-full min-w-max border-collapse text-sm"
+        className="w-full min-w-max border-collapse text-left text-sm"
         {...omitMarkdownNode(props)}
       />
     </div>
   ),
   th: (props) => (
     <th
-      className="border-b bg-muted px-4 py-2 text-left font-semibold"
+      className="border-b border-r bg-dock-navy px-4 py-3 text-left font-semibold text-paper-white"
       {...omitMarkdownNode(props)}
     />
   ),
   td: (props) => (
-    <td className="border-b px-4 py-2 align-top" {...omitMarkdownNode(props)} />
+    <td className="border-b border-r px-4 py-3 align-top" {...omitMarkdownNode(props)} />
   ),
 };
 
@@ -150,7 +160,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
   return (
     <div
       data-safe-markdown="true"
-      className={cn("min-w-0 max-w-full break-words text-foreground", className)}
+      className={cn("min-w-0 max-w-full break-words text-foreground [overflow-wrap:anywhere]", className)}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}

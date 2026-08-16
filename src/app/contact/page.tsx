@@ -1,107 +1,123 @@
 "use client";
 
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, MapPin, Phone, Check, ArrowDown, type LucideIcon } from "lucide-react";
 import { QuoteForm } from "@/components/forms";
+import { getPublicPageCopy } from "@/config/public-page-content";
 import { siteLinks } from "@/config/site-config";
 import { useLocale } from "@/i18n/locale-context";
+import { isPlaceholderIdentityValue } from "@/lib/seo/structured-data";
 
 export default function ContactPage() {
-  const { t } = useLocale();
-
-  const contactInfo = [
+  const { locale, t } = useLocale();
+  const copy = getPublicPageCopy(locale).contact;
+  const contactInfo: Array<{
+    icon: LucideIcon;
+    title: string;
+    content: string;
+    href: string;
+    external?: boolean;
+  }> = [
     {
       icon: Mail,
-      title: t.contact?.email || "邮箱",
+      title: t.contact.email,
       content: siteLinks.email,
       href: `mailto:${siteLinks.email}`,
     },
     {
       icon: Phone,
-      title: t.contact?.phone || "电话",
+      title: t.contact.phone,
       content: siteLinks.phone,
       href: `tel:${siteLinks.phone}`,
     },
     {
       icon: MapPin,
-      title: t.contact?.address || "地址",
+      title: t.contact.address,
       content: siteLinks.address,
       href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteLinks.address)}`,
-      isExternal: true,
+      external: true,
     },
-    {
-      icon: Clock,
-      title: t.contact?.workHours || "工作时间",
-      content: t.contact?.workHoursValue || "周一至周五 9:00 - 18:00 (EST)",
-    }
-  ];
+  ].filter((item) => !isPlaceholderIdentityValue(item.content));
+
   return (
     <>
-      {/* Hero */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/5 to-primary/10">
-        <div className="container">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              {t.contact?.title || "联系我们"}
+      <section className="border-b-4 border-signal-amber bg-dock-navy py-16 text-paper-white md:py-24">
+        <div className="container grid gap-8 lg:grid-cols-[0.65fr_1.35fr] lg:items-end">
+          <p className="font-utility text-xs font-semibold uppercase tracking-[0.18em] text-signal-amber">
+            {copy.eyebrow}
+          </p>
+          <div>
+            <h1 className="max-w-5xl font-display text-5xl font-bold text-paper-white md:text-6xl">
+              {copy.title}
             </h1>
-            <p className="text-lg text-muted-foreground">
-              {t.contact?.pageSubtitle || "无论您有任何物流需求或疑问，我们的专业团队随时为您服务。填写下方表单或直接联系我们，获取专属的物流解决方案。"}
-            </p>
+            <p className="mt-5 max-w-3xl leading-8 text-paper-white/75">{copy.description}</p>
           </div>
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="py-16 md:py-24">
-        <div className="container">
-          <div className="grid lg:grid-cols-3 gap-12">
-            {/* Contact Info */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6">{t.contact?.contactInfo || "联系方式"}</h2>
-              {contactInfo.map((info) => {
-                const Icon = info.icon;
-                return (
-                  <div key={info.title} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Icon className="h-5 w-5 text-primary" />
-                    </div>
+      <section className="bg-paper-white py-14 md:py-20">
+        <div className="container grid min-w-0 gap-12 lg:grid-cols-[0.62fr_1.38fr] lg:gap-16">
+          <aside className="min-w-0 lg:sticky lg:top-28 lg:self-start" aria-label={copy.prepareTitle}>
+            <section className="border-t-2 border-dock-navy py-6">
+              <h2 className="font-display text-3xl font-bold">{copy.prepareTitle}</h2>
+              <ul className="mt-6 space-y-4">
+                {copy.prepareItems.map((item) => (
+                  <li key={item} className="flex gap-3 text-sm leading-7">
+                    <Check className="mt-1 size-4 shrink-0 text-steel-blue" aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="border-t border-border py-6">
+              <h2 className="text-lg font-semibold">{copy.nextTitle}</h2>
+              <div className="mt-5 space-y-5">
+                {copy.nextItems.map((item, index) => (
+                  <article key={item.title} className="grid grid-cols-[1.5rem_1fr] gap-3">
+                    <ArrowDown className="mt-1 size-4 text-signal-amber" aria-hidden="true" />
                     <div>
-                      <h3 className="font-medium mb-1">{info.title}</h3>
-                      {info.href ? (
-                        <a
-                          href={info.href}
-                          className="text-muted-foreground hover:text-primary hover:underline"
-                          target={info.isExternal ? "_blank" : undefined}
-                          rel={info.isExternal ? "noopener noreferrer" : undefined}
-                        >
-                          {info.content}
-                        </a>
-                      ) : (
-                        <p className="text-muted-foreground">{info.content}</p>
-                      )}
+                      <h3 className="font-semibold">{item.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                      {index < copy.nextItems.length - 1 && <span className="mt-4 block h-5 border-l border-border" aria-hidden="true" />}
                     </div>
-                  </div>
-                );
-              })}
-
-
-              {/* Map Placeholder */}
-              <div className="mt-8 aspect-video rounded-xl bg-muted/50 flex items-center justify-center">
-                <MapPin className="h-12 w-12 text-muted-foreground/50" />
+                  </article>
+                ))}
               </div>
-            </div>
+            </section>
 
-            {/* Quote Form */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">{t.common?.getQuote || "获取报价"}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <QuoteForm />
-                </CardContent>
-              </Card>
+            {contactInfo.length > 0 && (
+              <section className="border-t border-border py-6">
+                <h2 className="text-lg font-semibold">{copy.directTitle}</h2>
+                <address className="mt-4 grid gap-2 not-italic">
+                  {contactInfo.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <a
+                        key={item.title}
+                        href={item.href}
+                        target={item.external ? "_blank" : undefined}
+                        rel={item.external ? "noopener noreferrer" : undefined}
+                        className="flex min-h-11 min-w-0 items-start gap-3 py-2 text-sm hover:underline"
+                      >
+                        <Icon className="mt-0.5 size-4 shrink-0 text-steel-blue" aria-hidden="true" />
+                        <span className="min-w-0 break-words">
+                          <span className="sr-only">{item.title}: </span>
+                          {item.content}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </address>
+              </section>
+            )}
+          </aside>
+
+          <div className="min-w-0 border-t-4 border-signal-amber bg-concrete p-4 sm:p-7 md:p-9">
+            <div className="border-b-2 border-dock-navy pb-6">
+              <h2 className="font-display text-3xl font-bold md:text-4xl">{copy.formTitle}</h2>
+              <p className="mt-3 text-sm leading-7 text-muted-foreground">{copy.formDescription}</p>
             </div>
+            <QuoteForm />
           </div>
         </div>
       </section>

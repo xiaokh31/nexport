@@ -75,7 +75,7 @@ export function CaptchaV2Checkbox({
   }, [resetKey]);
 
   return (
-    <div className="flex justify-center">
+    <div className="flex min-w-[304px] justify-center">
       <div ref={containerRef} />
     </div>
   );
@@ -83,7 +83,7 @@ export function CaptchaV2Checkbox({
 
 export function CaptchaUnavailable({ message }: { message: string }) {
   return (
-    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+    <div role="alert" aria-live="polite" className="border-l-4 border-destructive bg-paper-white p-3 text-sm text-destructive">
       {message}
     </div>
   );

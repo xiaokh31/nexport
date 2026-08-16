@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, User } from "lucide-react";
-import { ArticleSchema } from "@/components/seo/structured-data";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/content/safe-markdown";
+import { ArticleSchema } from "@/components/seo/structured-data";
+import { Button } from "@/components/ui/button";
 import { publicEnv } from "@/config/env/public";
 import { getPublishedArticleBySlug } from "@/lib/articles/public-service";
 import { isAllowedMarkdownImage } from "@/lib/content/markdown-policy";
@@ -68,17 +67,15 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   };
 }
 
-export default async function ArticleDetailPage({
-  params,
-}: ArticlePageProps) {
+export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const { slug } = await params;
   const article = await getPublishedArticleBySlug(slug);
-
   if (!article) notFound();
 
   const coverImage = article.coverImage && isAllowedMarkdownImage(article.coverImage)
     ? article.coverImage
     : null;
+  const displayAuthor = isPlaceholderIdentityValue(article.author) ? null : article.author;
   const articleUrl = new URL(`/news/${article.slug}`, publicEnv.siteUrl).toString();
   const structuredImage = coverImage
     ? new URL(coverImage, publicEnv.siteUrl).toString()
@@ -97,63 +94,67 @@ export default async function ArticleDetailPage({
         section={categories[article.category] || article.category}
         tags={article.tags}
       />
-      <section className="bg-gradient-to-br from-primary/5 to-primary/10 py-16 md:py-24">
-        <div className="container">
-          <div className="mx-auto max-w-3xl">
-            <Button variant="ghost" asChild className="mb-6">
-              <Link href="/news">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                返回新闻列表
-              </Link>
-            </Button>
 
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">
+      <header className="border-b-4 border-signal-amber bg-dock-navy py-12 text-paper-white md:py-20">
+        <div className="container">
+          <div className="mx-auto max-w-4xl">
+            <Link
+              href="/news"
+              className="inline-flex min-h-11 items-center text-sm text-paper-white/75 hover:text-paper-white hover:underline"
+            >
+              <ArrowLeft className="mr-2 size-4" aria-hidden="true" />
+              返回内容列表
+            </Link>
+
+            <div className="mt-7 flex flex-wrap items-center gap-3 font-utility text-[0.68rem] uppercase tracking-[0.1em] text-paper-white/70">
+              <span className="border-l-2 border-signal-amber pl-2 text-signal-amber">
                 {categories[article.category] || article.category}
-              </Badge>
+              </span>
               {article.tags.map((tag) => (
-                <Badge key={tag} variant="outline">
+                <span key={tag} className="max-w-full break-all border border-paper-white/25 px-2 py-1">
                   {tag}
-                </Badge>
+                </span>
               ))}
             </div>
 
-            <h1 className="mb-6 break-words text-3xl font-bold md:text-4xl">
+            <h1 className="mt-7 break-words font-display text-4xl font-bold text-paper-white sm:text-5xl md:text-6xl">
               {article.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-6 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {article.author}
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-paper-white/70">
+              {displayAuthor && (
+                <span className="flex min-w-0 items-center gap-2 break-all">
+                  <User className="size-4 shrink-0" aria-hidden="true" />
+                  {displayAuthor}
+                </span>
+              )}
+              <time className="flex items-center gap-2" dateTime={article.publishedAt!.toISOString()}>
+                <Calendar className="size-4" aria-hidden="true" />
                 {formatDate(article.publishedAt || article.createdAt)}
-              </div>
+              </time>
             </div>
           </div>
         </div>
-      </section>
+      </header>
 
       {coverImage && (
-        <section className="container py-8">
-          <div className="mx-auto max-w-4xl">
-            {/* The source is constrained to a same-origin path by the shared content policy. */}
+        <figure className="container py-8 md:py-10">
+          <div className="mx-auto max-w-5xl border-b-4 border-signal-amber bg-concrete p-2">
+            {/* The shared policy limits editorial images to same-origin paths. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={coverImage}
               alt={article.coverImageAlt || article.title}
-              className="h-auto w-full rounded-lg shadow-lg"
+              className="block h-auto max-h-[42rem] w-full object-contain"
             />
           </div>
-        </section>
+        </figure>
       )}
 
-      <section className="py-12 md:py-16">
+      <section className="py-10 md:py-16" aria-label="文章正文">
         <div className="container">
           <article className="mx-auto min-w-0 max-w-3xl">
-            <p className="mb-8 break-words border-b pb-8 text-lg text-muted-foreground">
+            <p className="mb-9 break-words border-l-4 border-signal-amber bg-concrete p-5 text-base leading-8 text-muted-foreground md:text-lg">
               {article.excerpt}
             </p>
             <MarkdownRenderer content={article.content} />
@@ -161,18 +162,18 @@ export default async function ArticleDetailPage({
         </div>
       </section>
 
-      <section className="border-t py-8">
+      <nav aria-label="文章导航" className="border-t-2 border-dock-navy py-8">
         <div className="container">
-          <div className="mx-auto flex max-w-3xl justify-between">
+          <div className="mx-auto max-w-3xl">
             <Button variant="outline" asChild>
               <Link href="/news">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                返回新闻列表
+                <ArrowLeft aria-hidden="true" />
+                返回内容列表
               </Link>
             </Button>
           </div>
         </div>
-      </section>
+      </nav>
     </>
   );
 }
