@@ -31,11 +31,12 @@ describe("safe content source boundaries", () => {
 
   it("keeps the news detail on the server content path", () => {
     const articlePage = source("src/app/news/[slug]/page.tsx");
+    const publicService = source("src/lib/articles/public-service.ts");
 
     expect(articlePage).not.toContain('"use client"');
-    expect(articlePage).toContain("prisma.article.findFirst");
-    expect(articlePage).toContain('status: "PUBLISHED"');
-    expect(articlePage).toContain("publishedAt: { not: null }");
+    expect(articlePage).toContain("getPublishedArticleBySlug");
+    expect(publicService).toContain('status: "PUBLISHED"');
+    expect(publicService).toContain("publishedAt: { not: null }");
   });
 
   it("protects saved Article previews on the server", () => {
@@ -72,7 +73,7 @@ describe("safe content source boundaries", () => {
   it("escapes structured data before using its intentional JSON script sink", () => {
     const structuredData = source("src/components/seo/structured-data.tsx");
 
-    expect(structuredData).toContain("serializeStructuredData(schema)");
-    expect(structuredData).not.toContain("__html: JSON.stringify(schema)");
+    expect(structuredData).toContain("serializeStructuredData(value)");
+    expect(structuredData).not.toContain("__html: JSON.stringify(value)");
   });
 });

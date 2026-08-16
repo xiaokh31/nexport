@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { solutionConfigs } from "@/config/site-config";
 import { requireCapability } from "@/lib/authorization";
 import {
   ARTICLE_ADMIN_SELECT,
@@ -72,7 +73,11 @@ function articleErrorResponse(error: unknown, action: string) {
 function revalidateArticle(slugs: string[], id?: string) {
   revalidatePath("/news");
   revalidatePath("/sitemap.xml");
+  revalidatePath("/");
   revalidatePath("/admin/articles");
+  for (const solution of solutionConfigs) {
+    revalidatePath(`/solutions/${solution.slug}`);
+  }
   for (const slug of new Set(slugs.filter(Boolean))) {
     revalidatePath(`/news/${slug}`);
   }

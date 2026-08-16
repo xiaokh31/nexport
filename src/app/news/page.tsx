@@ -1,158 +1,152 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { notFound } from "next/navigation";
+import { ArrowRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, Loader2 } from "lucide-react";
-import { useLocale } from "@/i18n/locale-context";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { publicEnv } from "@/config/env/public";
+import { articlePublicQuerySchema } from "@/lib/content/validation";
+import { listPublishedArticles } from "@/lib/articles/public-service";
+import { prisma } from "@/lib/prisma";
 
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  category: string;
-  author: string;
-  publishedAt: string | null;
-  createdAt: string;
+const categories = {
+  all: "全部",
+  company: "公司新闻",
+  industry: "行业资讯",
+  service: "服务公告",
+  policy: "政策解读",
+} as const;
+
+interface NewsPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default function NewsPage() {
-  const { t } = useLocale();
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
 
-  const newsCategories = t.news?.categories as Record<string, string> | undefined;
-  const categories: Record<string, string> = {
-    all: "全部",
-    company: newsCategories?.company || "公司新闻",
-    industry: newsCategories?.industry || "行业资讯",
-    service: newsCategories?.service || "服务公告",
-    policy: newsCategories?.policy || "政策解读",
+function parseSearchParams(params: Record<string, string | string[] | undefined>) {
+  const parsed = articlePublicQuerySchema.safeParse({
+    page: firstValue(params.page) || undefined,
+    limit: 10,
+    category: firstValue(params.category) || undefined,
+  });
+  if (!parsed.success || !Object.hasOwn(categories, parsed.data.category)) notFound();
+  return parsed.data;
+}
+
+function newsHref(page: number, category: string) {
+  const params = new URLSearchParams();
+  if (category !== "all") params.set("category", category);
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return query ? `/news?${query}` : "/news";
+}
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/Edmonton",
+  }).format(date);
+}
+
+export async function generateMetadata({ searchParams }: NewsPageProps): Promise<Metadata> {
+  const query = parseSearchParams(await searchParams);
+  const canonicalPath = newsHref(query.page, query.category);
+  const categoryLabel = categories[query.category as keyof typeof categories];
+  const title = query.category === "all" ? "新闻动态" : categoryLabel;
+  const pageSuffix = query.page > 1 ? `—第 ${query.page} 页` : "";
+
+  return {
+    title: `${title}${pageSuffix}`,
+    description: "了解最新物流服务公告、行业资讯与政策解读。",
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      type: "website",
+      url: `${publicEnv.siteUrl}${canonicalPath}`,
+      title: `${title}${pageSuffix}`,
+      description: "了解最新物流服务公告、行业资讯与政策解读。",
+    },
   };
+}
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: '10',
-        });
-        if (selectedCategory !== 'all') {
-          params.set('category', selectedCategory);
-        }
-        
-        const response = await fetch(`/api/articles?${params}`);
-        if (response.ok) {
-          const data = await response.json();
-          setArticles(data.articles);
-          setTotalPages(data.pages);
-        } else {
-          setError('获取文章列表失败');
-        }
-      } catch (err) {
-        setError('获取文章列表失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchArticles();
-  }, [page, selectedCategory]);
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+export default async function NewsPage({ searchParams }: NewsPageProps) {
+  const query = parseSearchParams(await searchParams);
+  const result = await listPublishedArticles(prisma, {
+    page: query.page,
+    limit: query.limit,
+    category: query.category === "all" ? undefined : query.category,
+  });
+  if (query.page > 1 && (result.pages === 0 || query.page > result.pages)) notFound();
 
   return (
     <>
-      {/* Hero */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/5 to-primary/10">
+      <section className="bg-gradient-to-br from-primary/5 to-primary/10 py-16 md:py-24">
         <div className="container">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              {t.news?.title || "新闻动态"}
-            </h1>
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="mb-6 text-4xl font-bold md:text-5xl">新闻动态</h1>
             <p className="text-lg text-muted-foreground">
-              {t.news?.subtitle || "了解公司的最新动态、行业资讯和政策解读"}
+              了解最新物流服务公告、行业资讯与政策解读
             </p>
           </div>
         </div>
       </section>
 
-      {/* Category Filter */}
-      <section className="py-8 border-b">
-        <div className="container">
-          <div className="flex flex-wrap gap-2 justify-center">
-            {Object.entries(categories).map(([key, label]) => (
-              <Button
-                key={key}
-                variant={selectedCategory === key ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedCategory(key);
-                  setPage(1);
-                }}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
+      <nav aria-label="新闻分类" className="border-b py-8">
+        <div className="container flex flex-wrap justify-center gap-2">
+          {Object.entries(categories).map(([key, label]) => (
+            <Button
+              key={key}
+              variant={query.category === key ? "default" : "outline"}
+              size="sm"
+              asChild
+            >
+              <Link href={newsHref(1, key)}>{label}</Link>
+            </Button>
+          ))}
         </div>
-      </section>
+      </nav>
 
-      {/* News List */}
       <section className="py-16 md:py-24">
         <div className="container">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-12 text-red-500">
-              {error}
-            </div>
-          ) : articles.length > 0 ? (
+          {result.articles.length > 0 ? (
             <>
-              <div className="grid md:grid-cols-2 gap-8">
-                {articles.map((article) => (
-                  <Card key={article.id} className="group hover:shadow-lg transition-shadow">
+              <div className="grid gap-8 md:grid-cols-2">
+                {result.articles.map((article) => (
+                  <Card key={article.id} className="group transition-shadow hover:shadow-lg">
                     <CardHeader>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                          {categories[article.category] || article.category}
+                      <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="rounded bg-primary/10 px-2 py-1 text-xs text-primary">
+                          {categories[article.category as keyof typeof categories] || article.category}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(article.publishedAt || article.createdAt)}
-                        </div>
+                          {formatDate(article.publishedAt!)}
+                        </span>
                       </div>
-                      <CardTitle className="group-hover:text-primary transition-colors">
-                        <Link href={`/news/${article.slug || article.id}`}>
-                          {article.title}
-                        </Link>
+                      <CardTitle className="transition-colors group-hover:text-primary">
+                        <h2 className="text-xl">
+                          <Link href={`/news/${article.slug}`}>{article.title}</Link>
+                        </h2>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <CardDescription className="line-clamp-2 mb-4">
+                      <CardDescription className="mb-4 line-clamp-2">
                         {article.excerpt}
                       </CardDescription>
-                      <Link 
-                        href={`/news/${article.slug || article.id}`}
+                      <Link
+                        href={`/news/${article.slug}`}
                         className="inline-flex items-center text-sm text-primary hover:underline"
                       >
-                        {t.common?.readMore || "阅读更多"}
+                        阅读更多
                         <ArrowRight className="ml-1 h-3 w-3" />
                       </Link>
                     </CardContent>
@@ -160,33 +154,32 @@ export default function NewsPage() {
                 ))}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-12">
-                  <Button
-                    variant="outline"
-                    disabled={page <= 1}
-                    onClick={() => setPage(p => p - 1)}
-                  >
-                    {t.common?.previous || "上一页"}
-                  </Button>
-                  <span className="flex items-center px-4">
-                    {page} / {totalPages}
+              {result.pages > 1 && (
+                <nav aria-label="新闻分页" className="mt-12 flex items-center justify-center gap-3">
+                  {query.page > 1 ? (
+                    <Button variant="outline" asChild>
+                      <Link rel="prev" href={newsHref(query.page - 1, query.category)}>
+                        上一页
+                      </Link>
+                    </Button>
+                  ) : <span />}
+                  <span className="px-2 text-sm text-muted-foreground">
+                    第 {query.page} / {result.pages} 页
                   </span>
-                  <Button
-                    variant="outline"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage(p => p + 1)}
-                  >
-                    {t.common?.next || "下一页"}
-                  </Button>
-                </div>
+                  {query.page < result.pages ? (
+                    <Button variant="outline" asChild>
+                      <Link rel="next" href={newsHref(query.page + 1, query.category)}>
+                        下一页
+                      </Link>
+                    </Button>
+                  ) : <span />}
+                </nav>
               )}
             </>
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <p className="text-lg">暂无文章</p>
-              <p className="text-sm mt-2">请稍后再来查看</p>
+            <div className="py-12 text-center text-muted-foreground">
+              <p className="text-lg">暂无已发布文章</p>
+              <p className="mt-2 text-sm">请稍后再来查看</p>
             </div>
           )}
         </div>

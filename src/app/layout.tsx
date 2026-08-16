@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header, Footer } from "@/components/layout";
 import { CookieConsent } from "@/components/cookie-consent";
-import { getSiteConfig } from "@/config/site-config";
 import { LocaleProvider } from "@/i18n/locale-context";
 
 import { getServerSession } from "next-auth";
@@ -11,8 +10,6 @@ import { authOptions } from "@/lib/auth";
 
 import Providers from './providers'
 
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { OrganizationSchema, WebsiteSchema, LocalBusinessSchema } from "@/components/seo/structured-data";
 import { publicEnv } from "@/config/env/public";
 import { serverEnv } from "@/config/env/server";
 
@@ -77,7 +74,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    alternateLocale: ["en_US", "fr_CA"],
     url: siteUrl,
     title: "Company Name | 专业跨境物流服务",
     description: "专业跨境物流服务商，提供FBA、卡派服务、跨境物流、仓储管理、一件代发和退货处理等物流解决方案。",
@@ -114,11 +110,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: siteUrl,
-    languages: {
-      "zh-CN": `${siteUrl}/zh`,
-      "en-US": `${siteUrl}/en`,
-      "fr-CA": `${siteUrl}/fr`,
-    },
   },
   manifest: "/manifest.json",
   category: "logistics",
@@ -137,10 +128,6 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <Providers session={session}>
-          {/* SEO结构化数据 */}
-          <OrganizationSchema />
-          <WebsiteSchema />
-          <LocalBusinessSchema />
           <LocaleProvider>
             <Header />
             <main className="flex-1">{children}</main>

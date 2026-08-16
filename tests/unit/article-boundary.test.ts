@@ -56,12 +56,14 @@ describe("ARTICLE-001 source boundaries", () => {
   it("keeps public reads published-only and saved previews server-protected", () => {
     const publicApi = source("src/app/api/articles/route.ts");
     const publicPage = source("src/app/news/[slug]/page.tsx");
+    const publicService = source("src/lib/articles/public-service.ts");
     const preview = source("src/app/admin/articles/[id]/preview/page.tsx");
 
-    for (const publicSource of [publicApi, publicPage]) {
+    for (const publicSource of [publicApi, publicService]) {
       expect(publicSource).toContain('status: "PUBLISHED"');
       expect(publicSource).toContain("publishedAt: { not: null }");
     }
+    expect(publicPage).toContain("getPublishedArticleBySlug");
     expect(preview).toContain("currentSessionActor()");
     expect(preview).toContain('hasCapability(actor, "articles.manage")');
     expect(preview).toContain("MarkdownRenderer");
