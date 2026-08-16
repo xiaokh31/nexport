@@ -12,14 +12,20 @@ import {
   Home,
   Bell,
   FileText,
-  LucideIcon,
+  type LucideIcon,
   Menu,
-  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useLocale } from "@/i18n/locale-context";
 import { useAdminAccessContext } from "@/components/admin/admin-access-context";
 import { canAccessModule, type AdminModule } from "@/lib/permissions";
@@ -89,10 +95,20 @@ export function AdminSidebar() {
   );
 
   // 导航内容组件
-  const NavContent = ({ onItemClick }: { onItemClick?: () => void }) => (
+  const NavContent = ({
+    onItemClick,
+    showHeading = true,
+  }: {
+    onItemClick?: () => void;
+    showHeading?: boolean;
+  }) => (
     <div className="p-4">
-      <h2 className="font-bold text-lg mb-4">{t.admin?.title || "管理后台"}</h2>
-      <nav className="space-y-1">
+      {showHeading && (
+        <h2 className="font-display mb-4 text-xl font-bold tracking-wide">
+          {t.admin?.title || "管理后台"}
+        </h2>
+      )}
+      <nav aria-label={t.admin?.title || "管理后台"} className="space-y-1">
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || 
@@ -103,10 +119,10 @@ export function AdminSidebar() {
               href={item.href}
               onClick={onItemClick}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                "flex min-h-11 items-center gap-3 rounded-sm border-l-2 px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
+                  ? "border-signal-amber bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "border-transparent text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -115,11 +131,11 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <Separator className="my-4" />
+      <Separator className="my-4 bg-sidebar-border" />
       <Link
         href="/"
         onClick={onItemClick}
-        className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted"
+        className="flex min-h-11 items-center gap-3 rounded-sm border-l-2 border-transparent px-3 py-2 text-sm text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <Home className="h-4 w-4" />
         {t.admin?.backToSite || "返回前台"}
@@ -129,22 +145,36 @@ export function AdminSidebar() {
 
   return (
     <>
-      {/* 移动端浮动菜单按钮 */}
-      <div className="lg:hidden fixed bottom-4 left-4 z-50">
+      <div className="fixed bottom-4 left-4 z-40 lg:hidden">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button size="icon" className="h-12 w-12 rounded-full shadow-lg">
+            <Button size="icon" aria-label="打开管理后台导航" className="shadow-lg">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <NavContent onItemClick={() => setMobileOpen(false)} />
+          <SheetContent
+            side="left"
+            closeLabel="关闭管理后台导航"
+            closeButtonClassName="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-foreground"
+            className="w-[min(88vw,18rem)] gap-0 border-r-2 border-signal-amber bg-sidebar p-0 text-sidebar-foreground"
+          >
+            <SheetHeader className="border-b border-sidebar-border p-4 pr-14 text-left">
+              <SheetTitle className="font-display text-xl text-sidebar-foreground">
+                {t.admin?.title || "管理后台"}
+              </SheetTitle>
+              <SheetDescription className="text-sidebar-foreground/70">
+                选择当前账户有权访问的管理模块。
+              </SheetDescription>
+            </SheetHeader>
+            <NavContent
+              showHeading={false}
+              onItemClick={() => setMobileOpen(false)}
+            />
           </SheetContent>
         </Sheet>
       </div>
 
-      {/* 桌面端侧边栏 */}
-      <aside className="hidden lg:block w-64 flex-shrink-0 bg-muted/30 min-h-[calc(100vh-4rem)]">
+      <aside className="hidden min-h-[calc(100svh-4.625rem)] w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block">
         <NavContent />
       </aside>
     </>

@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { UserSidebar } from "@/components/user/user-sidebar";
 
 export const metadata: Metadata = {
@@ -12,10 +12,12 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="container py-8">
-      <div className="flex gap-8">
+    <div className="container py-6 lg:py-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         <UserSidebar />
-        <main className="flex-1 min-w-0">{children}</main>
+        <section aria-label="用户工作区" className="min-w-0 flex-1">
+          {children}
+        </section>
       </div>
     </div>
   );

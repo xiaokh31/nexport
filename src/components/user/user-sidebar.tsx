@@ -42,11 +42,13 @@ export function UserSidebar() {
   ];
 
   return (
-    <aside className="w-64 flex-shrink-0">
-      <div className="sticky top-24 space-y-4">
-        <div className="p-4 bg-muted/30 rounded-lg">
-          <h2 className="font-semibold mb-4">{t.user.center}</h2>
-          <nav className="space-y-1">
+    <aside className="w-full flex-shrink-0 lg:w-64">
+      <div className="space-y-4 lg:sticky lg:top-24">
+        <div className="rounded-md border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
+          <h2 className="font-display mb-4 text-xl font-semibold tracking-wide">
+            {t.user.center}
+          </h2>
+          <nav aria-label={t.user.center} className="grid gap-1 sm:grid-cols-2 lg:block lg:space-y-1">
             {userNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -55,10 +57,10 @@ export function UserSidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                    "flex min-h-11 items-center gap-3 rounded-sm border-l-2 px-3 py-2 text-sm transition-colors",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      ? "border-signal-amber bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "border-transparent text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -67,10 +69,10 @@ export function UserSidebar() {
               );
             })}
           </nav>
-          <Separator className="my-4" />
+          <Separator className="my-4 bg-sidebar-border" />
           <Button
             variant="ghost"
-            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+            className="w-full justify-start text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             onClick={() => signOut({ callbackUrl: '/' })}
           >
             <LogOut className="h-4 w-4 mr-2" />

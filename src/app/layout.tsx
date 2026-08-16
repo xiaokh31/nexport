@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header, Footer } from "@/components/layout";
 import { CookieConsent } from "@/components/cookie-consent";
@@ -8,31 +7,20 @@ import { LocaleProvider } from "@/i18n/locale-context";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-import Providers from './providers'
+import Providers from "./providers";
 
 import { publicEnv } from "@/config/env/public";
 import { serverEnv } from "@/config/env/server";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 const siteUrl = publicEnv.siteUrl;
 
-// SEO优化的Viewport配置
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#FAFBF8" },
+    { media: "(prefers-color-scheme: dark)", color: "#102632" },
   ],
 };
 
@@ -120,17 +108,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // 获取服务端Session（必须传入authOptions以正确解析自定义字段如role）
   const session = await getServerSession(authOptions);
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
+      <body className="flex min-h-screen flex-col">
+        <a href="#main-content" className="skip-link">
+          跳到主要内容
+        </a>
         <Providers session={session}>
           <LocaleProvider>
             <Header />
-            <main className="flex-1">{children}</main>
+            <main id="main-content" tabIndex={-1} className="flex-1">
+              {children}
+            </main>
             <Footer />
             <CookieConsent />
           </LocaleProvider>

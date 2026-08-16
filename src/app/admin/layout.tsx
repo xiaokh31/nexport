@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminGuard } from "@/components/admin/admin-guard";
 
@@ -14,10 +14,14 @@ export default function AdminLayout({
 }) {
   return (
     <AdminGuard>
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className="flex min-h-[calc(100svh-4.625rem)] bg-concrete/55">
         <AdminSidebar />
-        {/* 移动端全屏，桌面端有左侧边距 */}
-        <main className="flex-1 p-4 lg:p-8 w-full overflow-x-auto">{children}</main>
+        <section
+          aria-label="管理工作区"
+          className="w-full min-w-0 flex-1 overflow-x-auto p-4 lg:p-8"
+        >
+          {children}
+        </section>
       </div>
     </AdminGuard>
   );

@@ -5,33 +5,41 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocale } from "@/i18n/locale-context";
-import { locales, localeNames, Locale } from "@/i18n";
+import { locales, localeNames, type Locale } from "@/i18n";
+import { cn } from "@/lib/utils";
 
-export function LanguageSwitcher() {
-  const { locale, setLocale } = useLocale();
+export function LanguageSwitcher({ className }: { className?: string }) {
+  const { locale, setLocale, t } = useLocale();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Globe className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn("gap-2", className)}
+          aria-label={`${t.common.switchLanguage}: ${localeNames[locale]}`}
+        >
+          <Globe className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">{localeNames[locale]}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {locales.map((loc) => (
-          <DropdownMenuItem
-            key={loc}
-            onClick={() => setLocale(loc)}
-            className={locale === loc ? "bg-accent" : ""}
-          >
-            {localeNames[loc]}
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent align="end" aria-label="选择界面语言">
+        <DropdownMenuRadioGroup
+          value={locale}
+          onValueChange={(value) => setLocale(value as Locale)}
+        >
+          {locales.map((loc) => (
+            <DropdownMenuRadioItem key={loc} value={loc}>
+              {localeNames[loc]}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

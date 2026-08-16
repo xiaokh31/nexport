@@ -2,10 +2,27 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { Menu, X, ChevronDown, Phone, Mail, User, LogOut, Settings, Bell, FileText, BarChart3 } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import {
+  BarChart3,
+  Bell,
+  ChevronDown,
+  FileText,
+  LogOut,
+  Menu,
+  Settings,
+  User,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -16,21 +33,18 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { getSiteConfig, solutionConfigs } from "@/config/site-config";
+import { useAdminAccess } from "@/hooks/use-admin-access";
+import { useLocale } from "@/i18n/locale-context";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "./language-switcher";
-import { useLocale } from "@/i18n/locale-context";
-import { useAdminAccess } from "@/hooks/use-admin-access";
-
-
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,176 +53,73 @@ export function Header() {
   const isLoggedIn = status === "authenticated";
   const { profile: adminAccess } = useAdminAccess(session?.user?.id);
   const adminPath = adminAccess?.defaultPath;
-  const isAdmin = Boolean(adminPath);
-  
+  const hasAdminAccess = Boolean(adminPath);
   const siteConfig = getSiteConfig(t);
 
-  // 使用 solutionConfigs 动态生成解决方案导航菜单
   const solutionNavItems = [
     {
       title: t.nav.allSolutions || "全部解决方案",
       href: "/solutions",
-      isHighlight: true,
     },
     ...solutionConfigs.map(({ key, slug }) => ({
       title: (t.solutions?.[key] as { title: string } | undefined)?.title || key,
       href: `/solutions/${slug}`,
     })),
   ];
-
-  // 从翻译文件动态获取导航项
   const mainNav = [
-    {
-      title: t.nav.home,
-      href: "/",
-    },
+    { title: t.nav.home, href: "/" },
     {
       title: t.nav.solutions || t.nav.services,
       href: "/solutions",
       children: solutionNavItems,
     },
-    {
-      title: t.nav.about,
-      href: "/about",
-    },
-    {
-      title: t.nav.news,
-      href: "/news",
-    },
-    {
-      title: t.nav.contact,
-      href: "/contact",
-    },
+    { title: t.nav.about, href: "/about" },
+    { title: t.nav.news, href: "/news" },
+    { title: t.nav.contact, href: "/contact" },
   ];
+  const accountLabel = session?.user?.name || t.user.center;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Top Bar */}
-      <div className="hidden md:block border-b bg-primary text-primary-foreground">
-        <div className="container flex h-10 items-center justify-between text-sm">
-          <div className="flex items-center gap-6">
-            <a href={`mailto:${siteConfig.links.email}`} className="flex items-center gap-2 hover:opacity-80">
-              <Mail className="h-4 w-4" />
-              {siteConfig.links.email}
-            </a>
-            <a href={`tel:${siteConfig.links.phone}`} className="flex items-center gap-2 hover:opacity-80">
-              <Phone className="h-4 w-4" />
-              {siteConfig.links.phone}
-            </a>
-          </div>
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-            {isLoggedIn ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 hover:opacity-80">
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={session?.user?.image || undefined} />
-                      <AvatarFallback className="bg-primary-foreground text-primary text-xs">
-                        {session?.user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">{session?.user?.name || t.user.center}</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>{session?.user?.email}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href={adminPath || "/admin"} className="cursor-pointer">
-                          <Settings className="mr-2 h-4 w-4" />
-                          {t.admin.title}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer">
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      {t.dashboard.title}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/user" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      {t.user.center}
-                    </Link>
-                  </DropdownMenuItem>
-                  {/* <DropdownMenuItem asChild>
-                    <Link href="/user/profile" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      {t.user.profile}
-                    </Link>
-                  </DropdownMenuItem> */}
-                  <DropdownMenuItem asChild>
-                    <Link href="/user/quotes" className="cursor-pointer">
-                      <FileText className="mr-2 h-4 w-4" />
-                      {t.user.myQuotes}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/user/notifications" className="cursor-pointer">
-                      <Bell className="mr-2 h-4 w-4" />
-                      {t.messages.notifications}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer text-red-600"
-                    onClick={() => signOut({ callbackUrl: '/' })}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {t.user.logout}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <>
-                <Link href="/login" className="hover:underline">
-                  {t.common.login}
-                </Link>
-                <span>/</span>
-                <Link href="/register" className="hover:underline">
-                  {t.common.register}
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Header */}
-      <div className="container flex h-16 items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-primary">{siteConfig.name}</span>
+    <header
+      data-site-header
+      className="sticky top-0 z-50 w-full border-b-2 border-signal-amber bg-dock-navy text-paper-white shadow-[0_8px_24px_rgba(16,38,50,0.12)]"
+    >
+      <div className="container flex min-h-18 items-center gap-2 py-2 sm:gap-3">
+        <Link
+          href="/"
+          className="mr-auto flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-paper-white"
+          aria-label={`${siteConfig.name}，${t.nav.home}`}
+        >
+          <span
+            aria-hidden="true"
+            className="relative grid size-9 shrink-0 place-items-center border border-paper-white/55"
+          >
+            <span className="h-5 w-3 border-x-2 border-signal-amber" />
+            <span className="absolute inset-x-1.5 bottom-1.5 border-b border-paper-white/70" />
+          </span>
+          <span className="font-display truncate text-xl font-bold tracking-wide text-paper-white sm:text-2xl">
+            {siteConfig.name}
+          </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden md:flex">
+        <NavigationMenu className="hidden xl:flex" aria-label="主要导航">
           <NavigationMenuList>
             {mainNav.map((item) =>
               item.children ? (
                 <NavigationMenuItem key={item.title}>
-                  <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
+                  <NavigationMenuTrigger className="bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus:bg-paper-white/10 focus:text-paper-white data-[state=open]:bg-paper-white/10 data-[state=open]:text-paper-white focus-visible:outline-paper-white">
+                    {item.title}
+                  </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                    <ul className="grid w-[32rem] grid-cols-2 gap-1 p-3">
                       {item.children.map((child) => (
-                        <li key={child.title}>
+                        <li key={child.href}>
                           <NavigationMenuLink asChild>
                             <Link
                               href={child.href}
-                              className={cn(
-                                "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                              )}
+                              className="min-h-11 rounded-sm border-l-2 border-transparent p-3 leading-snug hover:border-signal-amber hover:bg-accent focus:border-signal-amber focus:bg-accent"
                             >
-                              <div className="text-sm font-medium leading-none">
-                                {child.title}
-                              </div>
+                              <span className="text-sm font-medium">{child.title}</span>
                             </Link>
                           </NavigationMenuLink>
                         </li>
@@ -217,210 +128,195 @@ export function Header() {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               ) : (
-                <NavigationMenuItem key={item.title}>
-                  <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link href={item.href}>
+                <NavigationMenuItem key={item.href}>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        "bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus:bg-paper-white/10 focus:text-paper-white focus-visible:outline-paper-white",
+                      )}
+                    >
                       {item.title}
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
-              )
+              ),
             )}
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* CTA Button + Language Switcher */}
-        <div className="hidden md:flex items-center gap-2">
-          <LanguageSwitcher />
-          <Button asChild>
-            <Link href="/contact">{t.common.getQuote}</Link>
-          </Button>
-        </div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <LanguageSwitcher className="border-paper-white/20 text-paper-white hover:border-paper-white/60 hover:bg-paper-white/10 hover:text-paper-white" />
 
-        {/* 移动端右侧按钮区域 */}
-        <div className="flex md:hidden items-center gap-2">
-          {/* 移动端登录/用户入口 - 下拉菜单 */}
           {isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="focus:outline-none">
-                  <Avatar className="h-8 w-8 border-2 border-primary">
-                    <AvatarImage src={session?.user?.image || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {session?.user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                <Button
+                  variant="ghost"
+                  className="border-paper-white/20 px-2 text-paper-white hover:border-paper-white/60 hover:bg-paper-white/10 hover:text-paper-white"
+                  aria-label={`${t.user.center}：${accountLabel}`}
+                >
+                  <Avatar className="size-7">
+                    <AvatarImage
+                      src={session?.user?.image || undefined}
+                      alt={accountLabel}
+                    />
+                    <AvatarFallback className="bg-paper-white text-xs text-dock-navy">
+                      {accountLabel.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                </button>
+                  <span className="hidden 2xl:inline">{accountLabel}</span>
+                  <ChevronDown className="hidden size-4 2xl:block" aria-hidden="true" />
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>{session?.user?.name}</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="break-all">
+                  {session?.user?.email}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {isAdmin && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link href={adminPath || "/admin"} className="cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        {t.admin.title}
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
+                {hasAdminAccess && (
+                  <DropdownMenuItem asChild>
+                    <Link href={adminPath || "/admin"}>
+                      <Settings aria-hidden="true" />
+                      {t.admin.title}
+                    </Link>
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="cursor-pointer">
-                    <BarChart3 className="mr-2 h-4 w-4" />
+                  <Link href="/dashboard">
+                    <BarChart3 aria-hidden="true" />
                     {t.dashboard.title}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/user" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
+                  <Link href="/user">
+                    <User aria-hidden="true" />
                     {t.user.center}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/user/quotes">
+                    <FileText aria-hidden="true" />
+                    {t.user.myQuotes}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/user/notifications">
+                    <Bell aria-hidden="true" />
+                    {t.messages.notifications}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="cursor-pointer text-red-600"
-                  onClick={() => signOut({ callbackUrl: '/' })}
+                  variant="destructive"
+                  onClick={() => signOut({ callbackUrl: "/" })}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut aria-hidden="true" />
                   {t.user.logout}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/login">
-                <User className="h-4 w-4 mr-1" />
-                {t.common.login}
+            <Button
+              variant="ghost"
+              asChild
+              className="border-paper-white/20 px-2 text-paper-white hover:border-paper-white/60 hover:bg-paper-white/10 hover:text-paper-white sm:px-3"
+            >
+              <Link href="/login" aria-label={t.common.login}>
+                <User aria-hidden="true" />
+                <span className="hidden lg:inline">{t.common.login}</span>
               </Link>
             </Button>
           )}
-          
-          {/* 汉堡菜单按钮 */}
+
+          <Button asChild className="hidden xl:inline-flex">
+            <Link href="/contact">{t.common.getQuote}</Link>
+          </Button>
+
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">{t.common.openMenu}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="border-paper-white/20 text-paper-white hover:border-paper-white/60 hover:bg-paper-white/10 hover:text-paper-white xl:hidden"
+                aria-label={t.common.openMenu}
+              >
+                <Menu className="size-5" aria-hidden="true" />
               </Button>
             </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[400px] flex flex-col">
-            <nav className="flex flex-col gap-4 mt-8 flex-1 overflow-y-auto">
-              {/* 移动端语言切换 */}
-              <div className="flex items-center justify-between pb-4 border-b">
-                <span className="text-sm font-medium text-muted-foreground">语言 / Language</span>
-                <LanguageSwitcher />
-              </div>
-              {mainNav.map((item) => (
-                <div key={item.title}>
-                  {item.children ? (
-                    <div className="space-y-2">
-                      <span className="font-medium">{item.title}</span>
-                      <div className="pl-4 space-y-2">
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.title}
-                            href={child.href}
-                            className="block text-muted-foreground hover:text-foreground"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            {child.title}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className="font-medium hover:text-primary"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {item.title}
-                    </Link>
-                  )}
-                </div>
-              ))}
-              <div className="pt-4 space-y-2">
-                <Button asChild className="w-full">
-                  <Link href="/contact" onClick={() => setIsOpen(false)}>
-                    {t.common.getQuote}
-                  </Link>
-                </Button>
-                {isLoggedIn ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={session?.user?.image || undefined} />
-                        <AvatarFallback>{session?.user?.name?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <div className="text-sm">
-                        <div className="font-medium">{session?.user?.name}</div>
-                        <div className="text-muted-foreground text-xs">{session?.user?.email}</div>
-                      </div>
-                    </div>
-                    {isAdmin && (
-                      <Button variant="outline" asChild className="w-full justify-start">
-                        <Link href={adminPath || "/admin"} onClick={() => setIsOpen(false)}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          {t.admin.title}
+            <SheetContent
+              side="right"
+              closeLabel={t.common.closeMenu}
+              closeButtonClassName="text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus-visible:ring-paper-white"
+              className="w-[min(92vw,24rem)] gap-0 border-l-2 border-signal-amber bg-paper-white p-0"
+            >
+              <SheetHeader className="border-b bg-dock-navy px-5 py-5 pr-16 text-left text-paper-white">
+                <SheetTitle className="font-display text-xl text-paper-white">
+                  {t.common.navigation}
+                </SheetTitle>
+                <SheetDescription className="text-paper-white/75">
+                  {t.common.navigationDescription}
+                </SheetDescription>
+              </SheetHeader>
+
+              <nav
+                aria-label="移动端主要导航"
+                className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
+              >
+                {mainNav.map((item) => (
+                  <div key={item.href}>
+                    {item.children ? (
+                      <div className="border-b border-border pb-3">
+                        <Link
+                          href={item.href}
+                          className="flex min-h-11 items-center border-l-2 border-signal-amber px-3 font-semibold"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          {item.title}
                         </Link>
-                      </Button>
+                        <div className="grid gap-1 pl-3">
+                          {item.children.slice(1).map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className="flex min-h-11 items-center rounded-sm px-3 text-sm text-steel-blue hover:bg-concrete hover:text-dock-navy"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              {child.title}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className="flex min-h-11 items-center rounded-sm px-3 font-medium hover:bg-concrete"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {item.title}
+                      </Link>
                     )}
-                    <Button variant="outline" asChild className="w-full justify-start">
-                      <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                        <BarChart3 className="mr-2 h-4 w-4" />
-                        {t.dashboard.title}
-                      </Link>
-                    </Button>
-                    <Button variant="outline" asChild className="w-full justify-start">
-                      <Link href="/user" onClick={() => setIsOpen(false)}>
-                        <User className="mr-2 h-4 w-4" />
-                        {t.user.center}
-                      </Link>
-                    </Button>
-                    {/* <Button variant="outline" asChild className="w-full justify-start">
-                      <Link href="/user/profile" onClick={() => setIsOpen(false)}>
-                        <User className="mr-2 h-4 w-4" />
-                        {t.user.profile}
-                      </Link>
-                    </Button> */}
-                    <Button variant="outline" asChild className="w-full justify-start">
-                      <Link href="/user/quotes" onClick={() => setIsOpen(false)}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        {t.user.myQuotes}
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-red-600 hover:text-red-600"
-                      onClick={() => {
-                        setIsOpen(false);
-                        signOut({ callbackUrl: '/' });
-                      }}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      {t.user.logout}
-                    </Button>
                   </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button variant="outline" asChild className="flex-1">
-                      <Link href="/login" onClick={() => setIsOpen(false)}>
-                        {t.common.login}
-                      </Link>
-                    </Button>
-                    <Button variant="outline" asChild className="flex-1">
+                ))}
+
+                <div className="mt-auto space-y-2 border-t pt-4">
+                  <Button asChild className="w-full">
+                    <Link href="/contact" onClick={() => setIsOpen(false)}>
+                      {t.common.getQuote}
+                    </Link>
+                  </Button>
+                  {!isLoggedIn && (
+                    <Button variant="outline" asChild className="w-full">
                       <Link href="/register" onClick={() => setIsOpen(false)}>
                         {t.common.register}
                       </Link>
                     </Button>
-                  </div>
-                )}
-              </div>
-            </nav>
-          </SheetContent>
-        </Sheet>
+                  )}
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
