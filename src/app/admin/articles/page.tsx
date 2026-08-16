@@ -111,7 +111,7 @@ export default function ArticlesPage() {
 
   if (error) {
     return (
-      <div className="container py-8 text-center text-red-500">
+      <div role="alert" className="border-l-4 border-destructive bg-destructive/5 p-5 text-destructive">
         {error}
       </div>
     );
@@ -119,7 +119,7 @@ export default function ArticlesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 border-b-2 border-dock-navy pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t.admin.articles}</h1>
           <p className="text-muted-foreground">{t.admin.articleManagement}</p>
@@ -134,9 +134,9 @@ export default function ArticlesPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t.admin.articleList}</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t.admin.searchArticle}
@@ -152,12 +152,13 @@ export default function ArticlesPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin" />
+            <div role="status" aria-live="polite" aria-busy="true" className="flex items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+              <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin" />
+              {t.common.loading}
             </div>
           ) : (
             <>
-              <Table>
+              <Table containerLabel={t.admin.articleList} className={articles.length ? "min-w-[48rem]" : "min-w-full"}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t.admin.articleTitle}</TableHead>
@@ -189,6 +190,7 @@ export default function ArticlesPage() {
                                 variant="ghost" 
                                 size="icon"
                                 onClick={() => window.open(`/admin/articles/${article.id}/preview`, '_blank', 'noopener,noreferrer')}
+                                aria-label={`预览文章：${article.title}`}
                                 title="预览"
                               >
                                 <Eye className="h-4 w-4" />
@@ -197,6 +199,7 @@ export default function ArticlesPage() {
                                 variant="ghost" 
                                 size="icon"
                                 onClick={() => router.push(`/admin/articles/${article.id}`)}
+                                aria-label={`编辑文章：${article.title}`}
                                 title="编辑"
                               >
                                 <Edit className="h-4 w-4" />
@@ -206,6 +209,7 @@ export default function ArticlesPage() {
                                 size="icon" 
                                 className="text-red-500"
                                 onClick={() => deleteArticle(article.id)}
+                                aria-label={`删除文章：${article.title}`}
                                 title="删除"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -217,8 +221,9 @@ export default function ArticlesPage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        {t.messages.noNotifications}
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <p>当前筛选下没有文章。</p>
+                        <Button asChild className="mt-4"><Link href="/admin/articles/new">{t.admin.newArticle}</Link></Button>
                       </TableCell>
                     </TableRow>
                   )}
@@ -227,7 +232,7 @@ export default function ArticlesPage() {
               
               {/* 分页 */}
               {total > 0 && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-muted-foreground">
                     {t.common.loading === "Loading..." 
                       ? `Showing ${articles.length} of ${total} articles` 

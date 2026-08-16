@@ -14,7 +14,7 @@ export default function NewArticlePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 border-b-2 border-dock-navy pb-5">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/admin/articles" aria-label={t.admin.cancelArticleEdit}>
             <ArrowLeft className="h-4 w-4" />

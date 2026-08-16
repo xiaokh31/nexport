@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Locale, defaultLocale, getDictionary, locales } from "@/i18n";
+import { createContext, useCallback, useContext, useState, useEffect, type ReactNode } from "react";
+import { type Locale, defaultLocale, getDictionary, locales } from "@/i18n";
 
 type Dictionary = ReturnType<typeof getDictionary>;
 
@@ -31,22 +31,22 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         setLocaleState(savedLocale);
         setDictionary(getDictionary(savedLocale));
       }
-    } catch (e) {
+    } catch {
       // localStorage 可能在某些环境下不可用
     }
   }, []);
 
-  const setLocale = (newLocale: Locale) => {
+  const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     setDictionary(getDictionary(newLocale));
     try {
       localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
       // 更新 html lang 属性
       document.documentElement.lang = newLocale === "zh" ? "zh-CN" : newLocale;
-    } catch (e) {
+    } catch {
       // localStorage 可能在某些环境下不可用
     }
-  };
+  }, []);
 
   return (
     <LocaleContext.Provider value={{ locale, setLocale, t: dictionary, mounted }}>

@@ -128,6 +128,13 @@ export default function PagesManagementPage() {
       alert(validation.error.issues[0]?.message || "页面内容校验失败");
       return;
     }
+    if (
+      formData.status === "PUBLISHED" &&
+      editingPage?.status !== "PUBLISHED" &&
+      !window.confirm("确认发布此页面？保存后内容会立即通过公开路径访问。")
+    ) {
+      return;
+    }
 
     setSaving(true);
     try {
@@ -186,15 +193,16 @@ export default function PagesManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div role="status" aria-live="polite" aria-busy="true" className="flex h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
+        <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-primary" />
+        {t.common.loading}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 border-b-2 border-dock-navy pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t.admin?.pages?.title || "页面管理"}</h1>
           <p className="text-muted-foreground">
@@ -216,12 +224,13 @@ export default function PagesManagementPage() {
         </CardHeader>
         <CardContent>
           {pages.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="border border-dashed border-input bg-concrete/35 px-5 py-10 text-center text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>{t.admin?.pages?.noPages || "暂无页面，点击上方按钮创建"}</p>
+              <Button className="mt-4" onClick={() => handleOpenDialog()}>{t.admin?.pages?.addNew || "新建页面"}</Button>
             </div>
           ) : (
-            <Table>
+            <Table containerLabel={t.admin?.pages?.list || "页面列表"} className="min-w-[42rem]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t.admin?.pages?.slug || "标识"}</TableHead>
@@ -249,6 +258,7 @@ export default function PagesManagementPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={`预览页面：${page.title}`}
                           onClick={() => handlePreview(page)}
                         >
                           <Eye className="h-4 w-4" />
@@ -256,6 +266,7 @@ export default function PagesManagementPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={`编辑页面：${page.title}`}
                           onClick={() => handleOpenDialog(page)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -263,6 +274,7 @@ export default function PagesManagementPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label={`删除页面：${page.title}`}
                           onClick={() => handleDelete(page.id)}
                           className="text-destructive hover:text-destructive"
                         >
@@ -280,7 +292,7 @@ export default function PagesManagementPage() {
 
       {/* 编辑/创建对话框 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90svh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingPage ? "编辑页面" : "创建新页面"}
@@ -298,7 +310,7 @@ export default function PagesManagementPage() {
             </TabsList>
 
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>页面标识 (slug) *</Label>
                   <Input
@@ -315,7 +327,7 @@ export default function PagesManagementPage() {
                   <Label>状态</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(v) => setFormData({ ...formData, status: v as any })}
+                    onValueChange={(v) => setFormData({ ...formData, status: v as "DRAFT" | "PUBLISHED" })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -404,7 +416,7 @@ export default function PagesManagementPage() {
 
       {/* 预览对话框 */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90svh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{previewPage?.title}</DialogTitle>
             <DialogDescription>

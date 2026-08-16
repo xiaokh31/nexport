@@ -138,6 +138,12 @@ export default function QuotesManagePage() {
   const updateQuoteStatus = async (id: string, status: string) => {
     const currentQuote = quotes.find((quote) => quote.id === id);
     if (!currentQuote) return;
+    if (
+      ["ACCEPTED", "REJECTED", "CLOSED"].includes(status) &&
+      !window.confirm(`确认将询价 ${currentQuote.reference} 更新为“${statusMap[status]?.label || status}”？客户将看到新的状态。`)
+    ) {
+      return;
+    }
 
     const reasonRequired =
       (status === "CLOSED" && ["PENDING", "PROCESSING", "QUOTED"].includes(currentQuote.status)) ||
@@ -266,6 +272,9 @@ export default function QuotesManagePage() {
       alert("删除原因至少需要10个字符");
       return;
     }
+    if (!window.confirm(`确认删除询价 ${quote.reference}？此操作不可撤销。`)) {
+      return;
+    }
     setUpdating(true);
     try {
       const response = await fetch("/api/admin/quotes", {
@@ -291,7 +300,7 @@ export default function QuotesManagePage() {
 
   if (error) {
     return (
-      <div className="container py-8 text-center text-red-500">
+      <div role="alert" className="border-l-4 border-destructive bg-destructive/5 p-5 text-destructive">
         {error}
       </div>
     );
@@ -299,17 +308,17 @@ export default function QuotesManagePage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="border-b-2 border-dock-navy pb-5">
         <h1 className="text-2xl font-bold">询价管理</h1>
         <p className="text-muted-foreground">管理客户的询价请求</p>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <CardTitle>询价列表</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative w-64">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="搜索客户名称或邮箱..."
@@ -343,12 +352,13 @@ export default function QuotesManagePage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin" />
+            <div role="status" aria-live="polite" aria-busy="true" className="flex items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+              <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin" />
+              {t.common.loading}
             </div>
           ) : (
             <>
-              <Table>
+              <Table containerLabel="询价列表" className={quotes.length ? "min-w-[58rem]" : "min-w-full"}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>编号</TableHead>
@@ -385,6 +395,7 @@ export default function QuotesManagePage() {
                                 variant="ghost" 
                                 size="icon"
                                 onClick={() => viewDetail(quote)}
+                                aria-label={`查看询价：${quote.reference}`}
                                 title="查看详情"
                               >
                                 <Eye className="h-4 w-4" />
@@ -399,6 +410,7 @@ export default function QuotesManagePage() {
                                   size="icon" 
                                   className="text-blue-500"
                                   onClick={() => updateQuoteStatus(quote.id, "PROCESSING")}
+                                  aria-label={`开始处理询价：${quote.reference}`}
                                   title="开始处理"
                                 >
                                   <Send className="h-4 w-4" />
@@ -416,6 +428,7 @@ export default function QuotesManagePage() {
                                   onClick={() => canEditQuotePricing(actorRole, "PROCESSING")
                                     ? openQuoteDialog(quote)
                                     : updateQuoteStatus(quote.id, "QUOTED")}
+                                  aria-label={`提交报价：${quote.reference}`}
                                   title="提交报价"
                                 >
                                   <Send className="h-4 w-4" />
@@ -424,12 +437,12 @@ export default function QuotesManagePage() {
                               {actorRole && quote.status === "QUOTED" && (
                                 <>
                                   {canTransitionQuote(actorRole, "QUOTED", "ACCEPTED") && (
-                                    <Button variant="ghost" size="icon" className="text-green-500" onClick={() => updateQuoteStatus(quote.id, "ACCEPTED")} title="接受">
+                                    <Button variant="ghost" size="icon" className="text-green-500" onClick={() => updateQuoteStatus(quote.id, "ACCEPTED")} aria-label={`接受询价：${quote.reference}`} title="接受">
                                       <CheckCircle className="h-4 w-4" />
                                     </Button>
                                   )}
                                   {canTransitionQuote(actorRole, "QUOTED", "REJECTED") && (
-                                    <Button variant="ghost" size="icon" className="text-red-500" onClick={() => updateQuoteStatus(quote.id, "REJECTED")} title="拒绝">
+                                    <Button variant="ghost" size="icon" className="text-red-500" onClick={() => updateQuoteStatus(quote.id, "REJECTED")} aria-label={`拒绝询价：${quote.reference}`} title="拒绝">
                                       <XCircle className="h-4 w-4" />
                                     </Button>
                                   )}
@@ -442,8 +455,9 @@ export default function QuotesManagePage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        暂无询价记录
+                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                        <p>当前筛选下没有询价；请清除搜索词或状态筛选。</p>
+                        <Button variant="outline" className="mt-4" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setPage(1); }}>清除筛选</Button>
                       </TableCell>
                     </TableRow>
                   )}
@@ -452,7 +466,7 @@ export default function QuotesManagePage() {
               
               {/* 分页 */}
               {total > 0 && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-muted-foreground">
                     显示第 {(page - 1) * 10 + 1}-{Math.min(page * 10, total)} 条，共 {total} 条
                   </div>
@@ -483,7 +497,7 @@ export default function QuotesManagePage() {
 
       {/* 详情对话框 */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[88svh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>询价详情</DialogTitle>
             <DialogDescription>
@@ -492,7 +506,7 @@ export default function QuotesManagePage() {
           </DialogHeader>
           {selectedQuote && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="text-muted-foreground">客户名称</Label>
                   <p className="font-medium">{selectedQuote.name}</p>
@@ -552,7 +566,7 @@ export default function QuotesManagePage() {
                   </div>
                 )}
                 {(selectedQuote.pieceCount !== null || selectedQuote.cartonCount !== null || selectedQuote.palletCount !== null) && (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <Label className="text-muted-foreground">数量</Label>
                     <p className="font-medium">
                       件 {selectedQuote.pieceCount ?? "-"} / 箱 {selectedQuote.cartonCount ?? "-"} / 托 {selectedQuote.palletCount ?? "-"}
@@ -569,7 +583,7 @@ export default function QuotesManagePage() {
               {(selectedQuote.amount || selectedQuote.status === "QUOTED") && (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <h4 className="font-semibold text-green-700 mb-2">报价信息</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <Label className="text-muted-foreground">报价金额</Label>
                       <p className="font-bold text-green-600 text-lg">
@@ -626,7 +640,7 @@ export default function QuotesManagePage() {
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
                 <div>提交时间: {new Date(selectedQuote.createdAt).toLocaleString()}</div>
                 <div>更新时间: {new Date(selectedQuote.updatedAt).toLocaleString()}</div>
               </div>
@@ -696,7 +710,7 @@ export default function QuotesManagePage() {
 
       {/* 报价对话框 */}
       <Dialog open={showQuoteDialog} onOpenChange={setShowQuoteDialog}>
-        <DialogContent>
+        <DialogContent className="max-h-[88svh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>提交报价</DialogTitle>
             <DialogDescription>

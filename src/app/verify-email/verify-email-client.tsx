@@ -107,7 +107,7 @@ export function VerifyEmailClient() {
   const failed = ["EXPIRED", "USED", "INVALID", "ERROR"].includes(state);
 
   return (
-    <Card>
+    <Card className="rounded-none border-2 border-dock-navy border-t-4 border-t-signal-amber shadow-none">
       <CardHeader className="text-center">
         <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           {failed ? (
@@ -119,7 +119,9 @@ export function VerifyEmailClient() {
         <CardTitle>
           {state === "SUCCESS" ? t.auth.emailVerified : t.auth.verifyEmailTitle}
         </CardTitle>
-        <CardDescription>{stateMessage[state]}</CardDescription>
+        <CardDescription role={failed ? "alert" : "status"} aria-live={failed ? "assertive" : "polite"}>
+          {stateMessage[state]}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {token && state !== "SUCCESS" && !["EXPIRED", "USED", "INVALID"].includes(state) && (
@@ -149,7 +151,7 @@ export function VerifyEmailClient() {
                 placeholder={t.auth.emailPlaceholder}
               />
             </div>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            {formError && <p role="alert" aria-live="assertive" className="text-sm text-destructive">{formError}</p>}
             <Button
               type="button"
               variant="outline"

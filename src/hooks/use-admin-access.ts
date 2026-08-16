@@ -20,6 +20,15 @@ export function useAdminAccess(sessionUserId: string | undefined) {
     }
 
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      if (!controller.signal.aborted) {
+        setProfile(null);
+        setError("权限检查超时，请重试或返回用户中心");
+        setResolvedUserId(sessionUserId);
+        setLoading(false);
+        controller.abort();
+      }
+    }, 10_000);
     setLoading(true);
     setError(null);
 
@@ -46,13 +55,17 @@ export function useAdminAccess(sessionUserId: string | undefined) {
         }
       })
       .finally(() => {
+        window.clearTimeout(timeoutId);
         if (!controller.signal.aborted) {
           setResolvedUserId(sessionUserId);
           setLoading(false);
         }
       });
 
-    return () => controller.abort();
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [enabled, sessionUserId]);
 
   return {

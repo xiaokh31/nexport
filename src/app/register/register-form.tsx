@@ -65,7 +65,7 @@ export function RegisterForm() {
         sessionStorage.setItem("pending-verification-email", data.email.trim().toLowerCase());
         router.push("/verify-email?sent=true");
       } else {
-        setError(result.error || t.auth.registerFailed);
+        setError(response.status === 409 ? (result.error || t.auth.registerFailed) : t.auth.registerFailed);
       }
     } catch {
       setError(t.auth.registerFailed);
@@ -96,7 +96,7 @@ export function RegisterForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {error && (
-          <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+          <div role="alert" aria-live="assertive" className="border-l-4 border-destructive bg-destructive/5 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -108,7 +108,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>{t.auth.name} *</FormLabel>
               <FormControl>
-                <Input placeholder={t.auth.namePlaceholder} {...field} />
+                <Input autoComplete="name" maxLength={100} aria-required="true" placeholder={t.auth.namePlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -122,14 +122,14 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>{t.auth.email} *</FormLabel>
               <FormControl>
-                <Input type="email" placeholder={t.auth.emailPlaceholder} {...field} />
+                <Input type="email" autoComplete="email" maxLength={254} aria-required="true" placeholder={t.auth.emailPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="password"
@@ -137,7 +137,7 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel>{t.auth.password} *</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder={t.auth.passwordPlaceholder} {...field} />
+                  <Input type="password" autoComplete="new-password" aria-required="true" placeholder={t.auth.passwordPlaceholder} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -151,7 +151,7 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel>{t.auth.confirmPassword} *</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder={t.auth.confirmPasswordPlaceholder} {...field} />
+                  <Input type="password" autoComplete="new-password" aria-required="true" placeholder={t.auth.confirmPasswordPlaceholder} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -166,7 +166,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>{t.auth.company}</FormLabel>
               <FormControl>
-                <Input placeholder={t.auth.companyPlaceholder} {...field} />
+                <Input autoComplete="organization" maxLength={200} placeholder={t.auth.companyPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -180,7 +180,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>{t.auth.phone}</FormLabel>
               <FormControl>
-                <Input placeholder={t.auth.phonePlaceholder} {...field} />
+                <Input type="tel" autoComplete="tel" maxLength={32} placeholder={t.auth.phonePlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -188,7 +188,7 @@ export function RegisterForm() {
         />
 
         {/* CAPTCHA Verification */}
-        <div className="py-2">
+        <div className="max-w-full overflow-x-auto py-2" data-auth-captcha>
           {recaptchaSiteKey ? (
             <CaptchaV2Checkbox
               siteKey={recaptchaSiteKey}
@@ -212,7 +212,7 @@ export function RegisterForm() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t.auth.registering}
+              <span role="status" aria-live="polite">{t.auth.registering}</span>
             </>
           ) : (
             t.auth.register

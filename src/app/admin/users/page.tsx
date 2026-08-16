@@ -30,7 +30,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, MoreHorizontal, UserCog, Ban, Trash2, Loader2, Save, FileText } from "lucide-react";
+import { Search, MoreHorizontal, UserCog, Trash2, Loader2, Save, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -130,6 +130,9 @@ export default function UsersManagePage() {
   // 切换员工文章管理权限
   const toggleArticlePermission = async (user: User) => {
     const newValue = !user.canManageArticles;
+    if (!window.confirm(`确认${newValue ? "授予" : "撤销"} ${user.email} 的文章管理权限？`)) {
+      return;
+    }
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -152,6 +155,12 @@ export default function UsersManagePage() {
   // 保存用户信息
   const saveUser = async () => {
     if (!selectedUser) return;
+    const permissionsChanged =
+      selectedUser.role !== editForm.role ||
+      Boolean(selectedUser.canManageArticles) !== editForm.canManageArticles;
+    if (permissionsChanged && !window.confirm(`确认修改 ${selectedUser.email} 的角色或管理权限？`)) {
+      return;
+    }
     
     setSaving(true);
     try {
@@ -181,6 +190,10 @@ export default function UsersManagePage() {
 
   // 更新用户角色
   const updateUserRole = async (id: string, role: string) => {
+    const target = users.find((user) => user.id === id);
+    if (target && !window.confirm(`确认将 ${target.email} 的角色改为 ${roleMap[role]?.label || role}？`)) {
+      return;
+    }
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -225,7 +238,7 @@ export default function UsersManagePage() {
 
   if (error) {
     return (
-      <div className="container py-8 text-center text-red-500">
+      <div role="alert" className="border-l-4 border-destructive bg-destructive/5 p-5 text-destructive">
         {error}
       </div>
     );
@@ -233,17 +246,17 @@ export default function UsersManagePage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="border-b-2 border-dock-navy pb-5">
         <h1 className="text-2xl font-bold">用户管理</h1>
         <p className="text-muted-foreground">管理系统用户和权限</p>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <CardTitle>用户列表</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative w-64">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="搜索用户名或邮箱..."
@@ -275,12 +288,13 @@ export default function UsersManagePage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin" />
+            <div role="status" aria-live="polite" aria-busy="true" className="flex items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+              <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin" />
+              {t.common.loading}
             </div>
           ) : (
             <>
-              <Table>
+              <Table containerLabel="用户列表" className={users.length ? "min-w-[52rem]" : "min-w-full"}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>用户</TableHead>
@@ -339,6 +353,7 @@ export default function UsersManagePage() {
                             {user.role === 'STAFF' ? (
                               <div className="flex items-center gap-2">
                                 <Switch
+                                  aria-label={`${user.email} 文章管理权限`}
                                   checked={user.canManageArticles || false}
                                   onCheckedChange={() => toggleArticlePermission(user)}
                                 />
@@ -356,7 +371,7 @@ export default function UsersManagePage() {
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" aria-label={`打开 ${user.email} 的操作菜单`}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -380,8 +395,9 @@ export default function UsersManagePage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        暂无用户数据
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <p>当前筛选下没有用户；请清除搜索词或切换角色筛选。</p>
+                        <Button variant="outline" className="mt-4" onClick={() => { setSearchTerm(""); setRoleFilter("all"); setPage(1); }}>清除筛选</Button>
                       </TableCell>
                     </TableRow>
                   )}
@@ -390,7 +406,7 @@ export default function UsersManagePage() {
               
               {/* 分页 */}
               {total > 0 && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-muted-foreground">
                     显示第 {(page - 1) * 10 + 1}-{Math.min(page * 10, total)} 条，共 {total} 条
                   </div>
@@ -421,7 +437,7 @@ export default function UsersManagePage() {
 
       {/* 编辑用户对话框 */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="max-h-[88svh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>编辑用户信息</DialogTitle>
             <DialogDescription>

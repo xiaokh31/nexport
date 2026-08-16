@@ -117,6 +117,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               onClick={onItemClick}
               className={cn(
                 "flex min-h-11 items-center gap-3 rounded-sm border-l-2 px-3 py-2 text-sm transition-colors",
@@ -174,7 +175,7 @@ export function AdminSidebar() {
         </Sheet>
       </div>
 
-      <aside className="hidden min-h-[calc(100svh-4.625rem)] w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block">
+      <aside className="hidden min-h-[calc(100svh-4.625rem)] w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:sticky lg:top-[4.625rem] lg:block lg:h-[calc(100svh-4.625rem)] lg:self-start lg:overflow-y-auto">
         <NavContent />
       </aside>
     </>

@@ -122,6 +122,14 @@ export function ArticleEditorForm({
       return;
     }
 
+    if (
+      validation.data.status === "PUBLISHED" &&
+      initialValues.status !== "PUBLISHED" &&
+      !window.confirm("确认发布这篇文章？发布后内容会立即出现在公开新闻页面。")
+    ) {
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await fetch("/api/admin/articles", {
@@ -157,7 +165,7 @@ export function ArticleEditorForm({
   return (
     <>
       {serverError && (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        <div role="alert" aria-live="assertive" className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {serverError}
         </div>
       )}
@@ -423,7 +431,7 @@ export function ArticleEditorForm({
       </Form>
 
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[90svh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{previewValues.title || t.admin.untitledArticle}</DialogTitle>
             <DialogDescription>{t.admin.previewDescription}</DialogDescription>

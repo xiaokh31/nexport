@@ -4,15 +4,23 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  containerLabel = "Scrollable data table",
+  ...props
+}: React.ComponentProps<"table"> & { containerLabel?: string }) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      data-responsive-table
+      role="region"
+      aria-label={containerLabel}
+      tabIndex={0}
+      className="relative w-full overflow-x-auto border border-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dock-navy"
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full min-w-max caption-bottom text-sm", className)}
         {...props}
       />
     </div>

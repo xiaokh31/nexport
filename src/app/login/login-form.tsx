@@ -87,7 +87,7 @@ export function LoginForm() {
           );
           setEmailVerificationRequired(true);
         } else {
-          setError(result.error);
+          setError(t.auth.loginFailed);
         }
       } else {
         router.push("/dashboard");
@@ -122,7 +122,7 @@ export function LoginForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {error && (
-          <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+          <div role="alert" aria-live="assertive" className="border-l-4 border-destructive bg-destructive/5 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -134,7 +134,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>{t.auth.email}</FormLabel>
               <FormControl>
-                <Input type="email" placeholder={t.auth.emailPlaceholder} {...field} />
+                <Input type="email" autoComplete="email" maxLength={254} aria-required="true" placeholder={t.auth.emailPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -148,7 +148,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>{t.auth.password}</FormLabel>
               <FormControl>
-                <Input type="password" placeholder={t.auth.passwordPlaceholder} {...field} />
+                <Input type="password" autoComplete="current-password" aria-required="true" placeholder={t.auth.passwordPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -156,7 +156,7 @@ export function LoginForm() {
         />
 
         {/* CAPTCHA Verification */}
-        <div className="py-2">
+        <div className="max-w-full overflow-x-auto py-2" data-auth-captcha>
           {recaptchaSiteKey ? (
             <CaptchaV2Checkbox
               siteKey={recaptchaSiteKey}
@@ -180,7 +180,7 @@ export function LoginForm() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t.auth.loggingIn}
+              <span role="status" aria-live="polite">{t.auth.loggingIn}</span>
             </>
           ) : (
             t.auth.login

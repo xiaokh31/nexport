@@ -59,15 +59,16 @@ export default function EditArticlePage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div role="status" aria-live="polite" aria-busy="true" className="flex items-center justify-center gap-3 py-12 text-sm text-muted-foreground">
+        <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin" />
+        {t.common.loading}
       </div>
     );
   }
 
   if (!article) {
     return (
-      <div className="space-y-4 py-12 text-center">
+      <div role="alert" className="space-y-4 border-l-4 border-destructive bg-destructive/5 p-6 text-center">
         <p className="text-destructive">{error || t.admin.articleLoadError}</p>
         <Button variant="outline" asChild>
           <Link href="/admin/articles">{t.admin.backToArticleList}</Link>
@@ -78,7 +79,7 @@ export default function EditArticlePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 border-b-2 border-dock-navy pb-5">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/admin/articles" aria-label={t.admin.backToArticleList}>
             <ArrowLeft className="h-4 w-4" />

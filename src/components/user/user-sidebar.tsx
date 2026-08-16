@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { User, Key, FileText, Settings, LogOut, Bell } from "lucide-react";
+import { LayoutDashboard, User, Key, FileText, Settings, LogOut, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +14,11 @@ export function UserSidebar() {
   const { t } = useLocale();
 
   const userNavItems = [
+    {
+      title: t.dashboard.title,
+      href: "/dashboard",
+      icon: LayoutDashboard,
+    },
     {
       title: t.user.profile,
       href: "/user/profile",
@@ -56,6 +61,7 @@ export function UserSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex min-h-11 items-center gap-3 rounded-sm border-l-2 px-3 py-2 text-sm transition-colors",
                     isActive

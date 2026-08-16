@@ -4,7 +4,7 @@ import { AdminGuard } from "@/components/admin/admin-guard";
 
 export const metadata: Metadata = {
   title: "管理后台",
-  description: "Company Name 管理后台",
+  description: "账户授权的内容与运营工作区",
 };
 
 export default function AdminLayout({
@@ -18,7 +18,7 @@ export default function AdminLayout({
         <AdminSidebar />
         <section
           aria-label="管理工作区"
-          className="w-full min-w-0 flex-1 overflow-x-auto p-4 lg:p-8"
+          className="w-full min-w-0 flex-1 overflow-x-hidden p-4 lg:p-8"
         >
           {children}
         </section>

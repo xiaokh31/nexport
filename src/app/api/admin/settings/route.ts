@@ -3,20 +3,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireCapability } from '@/lib/authorization';
 
-// 默认设置值
-const defaultSettings: Record<string, string> = {
-  siteName: 'Company Name',
-  siteUrl: 'https://example.com',
-  siteDescription: '专业的跨境物流解决方案提供商',
-  contactEmail: 'contact@example.com',
-  contactPhone: '+1 (555) 000-0000',
-  contactAddress: 'Address to be configured',
-  sessionTimeout: '30',
-  maxLoginAttempts: '5',
-};
+const settingKeys = [
+  'siteName',
+  'siteUrl',
+  'siteDescription',
+  'contactEmail',
+  'contactPhone',
+  'contactAddress',
+] as const;
+
+// 未确认的公司资料保持为空，不以示例值伪装成已配置事实。
+const defaultSettings = Object.fromEntries(
+  settingKeys.map((key) => [key, '']),
+) as Record<(typeof settingKeys)[number], string>;
 
 // GET - 获取系统设置
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const authorization = await requireCapability('settings.manage');
     if (!authorization.authorized) return authorization.response;
@@ -31,7 +33,9 @@ export async function GET(request: NextRequest) {
     });
     
     // 合并默认值和数据库中的值
-    const mergedSettings = { ...defaultSettings, ...settingsMap };
+    const mergedSettings = Object.fromEntries(
+      settingKeys.map((key) => [key, settingsMap[key] ?? defaultSettings[key]]),
+    );
 
     return NextResponse.json({ settings: mergedSettings });
   } catch (error) {
@@ -50,7 +54,7 @@ export async function PUT(request: NextRequest) {
     if (!authorization.authorized) return authorization.response;
 
     const body = await request.json();
-    const { settings } = body;
+    const { settings } = body as { settings?: Record<string, unknown> };
     
     if (!settings || typeof settings !== 'object') {
       return NextResponse.json(
@@ -59,12 +63,20 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // 使用事务更新所有设置
-    const updates = Object.entries(settings).map(([key, value]) => 
+    const entries = settingKeys.map((key) => [key, settings[key]] as const);
+    if (entries.some(([, value]) => typeof value !== 'string' || value.length > 500)) {
+      return NextResponse.json(
+        { error: '设置字段必须是长度不超过500字符的文本' },
+        { status: 400 },
+      );
+    }
+
+    // 只更新界面实际支持的公开资料字段。
+    const updates = entries.map(([key, value]) =>
       prisma.setting.upsert({
         where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value) },
+        update: { value: value as string },
+        create: { key, value: value as string },
       })
     );
 
