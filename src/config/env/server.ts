@@ -18,7 +18,6 @@ const values = Object.freeze({
   ),
   resendApiKey: optionalEnvironmentValue(process.env.RESEND_API_KEY),
   emailFrom: optionalEnvironmentValue(process.env.EMAIL_FROM),
-  emailTo: optionalEnvironmentValue(process.env.EMAIL_TO),
   rateLimitSecret: optionalEnvironmentValue(process.env.RATE_LIMIT_SECRET),
   cronSecret: optionalEnvironmentValue(process.env.CRON_SECRET),
   trustedProxyHops: optionalEnvironmentValue(process.env.TRUSTED_PROXY_HOPS),
