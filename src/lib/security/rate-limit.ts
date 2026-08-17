@@ -86,7 +86,7 @@ export function createRateLimiter({
   secret: string;
   clock: Clock;
 }): RateLimiter {
-  return Object.freeze({
+  return Object.freeze<RateLimiter>({
     async consume(policy, subject) {
       if (!subject.length || subject.some((part) => !part)) {
         throw new Error("Rate-limit subjects must be non-empty.");

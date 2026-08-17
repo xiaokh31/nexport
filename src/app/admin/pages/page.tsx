@@ -157,7 +157,7 @@ export default function PagesManagementPage() {
         const error = await res.json();
         alert(error.error || "保存失败");
       }
-    } catch (error) {
+    } catch {
       alert("保存失败");
     } finally {
       setSaving(false);
@@ -177,7 +177,7 @@ export default function PagesManagementPage() {
       } else {
         alert("删除失败");
       }
-    } catch (error) {
+    } catch {
       alert("删除失败");
     }
   };

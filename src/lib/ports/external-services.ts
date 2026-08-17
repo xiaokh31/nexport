@@ -55,10 +55,10 @@ export interface EmailSender {
   send(request: EmailDeliveryRequest): Promise<EmailDeliveryResult>;
 }
 
-export const systemClock: Clock = Object.freeze({
+export const systemClock = Object.freeze<Clock>({
   now: () => new Date(),
 });
 
-export const cryptoRandomByteSource: RandomByteSource = Object.freeze({
-  bytes: (length) => randomBytes(length),
+export const cryptoRandomByteSource = Object.freeze<RandomByteSource>({
+  bytes: (length: number) => randomBytes(length),
 });

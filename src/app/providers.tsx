@@ -1,18 +1,14 @@
-// app/providers.tsx
-'use client' // 必须添加此指令
+"use client";
 
-import { SessionProvider } from 'next-auth/react'
+import type { Session } from "next-auth";
+import { SessionProvider } from "next-auth/react";
 
-export default function Providers({ 
-  children, 
-  session 
-}: { 
-  children: React.ReactNode
-  session?: any // 可根据你的认证类型进行更严格的类型定义
+export default function Providers({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session?: Session | null;
 }) {
-  return (
-    <SessionProvider session={session}>
-      {children}
-    </SessionProvider>
-  )
+  return <SessionProvider session={session}>{children}</SessionProvider>;
 }

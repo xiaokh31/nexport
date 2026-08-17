@@ -1,10 +1,10 @@
 // 管理后台统计数据 API
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireCapability } from '@/lib/authorization';
 
 // GET - 获取统计数据
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const authorization = await requireCapability('admin.overview');
     if (!authorization.authorized) return authorization.response;

@@ -37,81 +37,35 @@ interface NavItem {
   module: AdminModule;
 }
 
-export function AdminSidebar() {
-  const pathname = usePathname();
-  const { t } = useLocale();
-  const { subject } = useAdminAccessContext();
-  const [mobileOpen, setMobileOpen] = useState(false);
+interface AdminNavContentProps {
+  items: NavItem[];
+  pathname: string;
+  label: string;
+  backLabel: string;
+  onItemClick?: () => void;
+  showHeading?: boolean;
+}
 
-  // 定义所有管理模块
-  const allNavItems: NavItem[] = [
-    {
-      title: t.admin?.overview || "概览",
-      href: "/admin",
-      icon: LayoutDashboard,
-      module: 'overview',
-    },
-    {
-      title: t.admin?.articles || "文章管理",
-      href: "/admin/articles",
-      icon: Newspaper,
-      module: 'articles',
-    },
-    {
-      title: t.admin?.quotes || "询价管理",
-      href: "/admin/quotes",
-      icon: MessageSquare,
-      module: 'quotes',
-    },
-    {
-      title: t.admin?.users || "用户管理",
-      href: "/admin/users",
-      icon: Users,
-      module: 'users',
-    },
-    {
-      title: t.admin?.messages || "通知管理",
-      href: "/admin/messages",
-      icon: Bell,
-      module: 'messages',
-    },
-    {
-      title: t.admin?.pages?.title || "页面管理",
-      href: "/admin/pages",
-      icon: FileText,
-      module: 'pages',
-    },
-    {
-      title: t.admin?.settings || "系统设置",
-      href: "/admin/settings",
-      icon: Settings,
-      module: 'settings',
-    },
-  ];
-
-  // 根据用户角色过滤可访问的菜单项
-  const filteredNavItems = allNavItems.filter((item) =>
-    canAccessModule(subject, item.module),
-  );
-
-  // 导航内容组件
-  const NavContent = ({
-    onItemClick,
-    showHeading = true,
-  }: {
-    onItemClick?: () => void;
-    showHeading?: boolean;
-  }) => (
+function AdminNavContent({
+  items,
+  pathname,
+  label,
+  backLabel,
+  onItemClick,
+  showHeading = true,
+}: AdminNavContentProps) {
+  return (
     <div className="p-4">
       {showHeading && (
         <h2 className="font-display mb-4 text-xl font-bold tracking-wide">
-          {t.admin?.title || "管理后台"}
+          {label}
         </h2>
       )}
-      <nav aria-label={t.admin?.title || "管理后台"} className="space-y-1">
-        {filteredNavItems.map((item) => {
+      <nav aria-label={label} className="space-y-1">
+        {items.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href ||
+          const isActive =
+            pathname === item.href ||
             (item.href !== "/admin" && pathname.startsWith(item.href));
           return (
             <Link
@@ -123,7 +77,7 @@ export function AdminSidebar() {
                 "flex min-h-11 items-center gap-3 rounded-sm border-l-2 px-3 py-2 text-sm transition-colors",
                 isActive
                   ? "border-signal-amber bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "border-transparent text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  : "border-transparent text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -139,10 +93,70 @@ export function AdminSidebar() {
         className="flex min-h-11 items-center gap-3 rounded-sm border-l-2 border-transparent px-3 py-2 text-sm text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <Home className="h-4 w-4" />
-        {t.admin?.backToSite || "返回前台"}
+        {backLabel}
       </Link>
     </div>
   );
+}
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+  const { t } = useLocale();
+  const { subject } = useAdminAccessContext();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // 定义所有管理模块
+  const allNavItems: NavItem[] = [
+    {
+      title: t.admin?.overview || "概览",
+      href: "/admin",
+      icon: LayoutDashboard,
+      module: "overview",
+    },
+    {
+      title: t.admin?.articles || "文章管理",
+      href: "/admin/articles",
+      icon: Newspaper,
+      module: "articles",
+    },
+    {
+      title: t.admin?.quotes || "询价管理",
+      href: "/admin/quotes",
+      icon: MessageSquare,
+      module: "quotes",
+    },
+    {
+      title: t.admin?.users || "用户管理",
+      href: "/admin/users",
+      icon: Users,
+      module: "users",
+    },
+    {
+      title: t.admin?.messages || "通知管理",
+      href: "/admin/messages",
+      icon: Bell,
+      module: "messages",
+    },
+    {
+      title: t.admin?.pages?.title || "页面管理",
+      href: "/admin/pages",
+      icon: FileText,
+      module: "pages",
+    },
+    {
+      title: t.admin?.settings || "系统设置",
+      href: "/admin/settings",
+      icon: Settings,
+      module: "settings",
+    },
+  ];
+
+  // 根据用户角色过滤可访问的菜单项
+  const filteredNavItems = allNavItems.filter((item) =>
+    canAccessModule(subject, item.module),
+  );
+  const adminLabel = t.admin?.title || "管理后台";
+  const backLabel = t.admin?.backToSite || "返回前台";
 
   return (
     <>
@@ -167,7 +181,11 @@ export function AdminSidebar() {
                 选择当前账户有权访问的管理模块。
               </SheetDescription>
             </SheetHeader>
-            <NavContent
+            <AdminNavContent
+              items={filteredNavItems}
+              pathname={pathname}
+              label={adminLabel}
+              backLabel={backLabel}
               showHeading={false}
               onItemClick={() => setMobileOpen(false)}
             />
@@ -176,7 +194,12 @@ export function AdminSidebar() {
       </div>
 
       <aside className="hidden min-h-[calc(100svh-4.625rem)] w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:sticky lg:top-[4.625rem] lg:block lg:h-[calc(100svh-4.625rem)] lg:self-start lg:overflow-y-auto">
-        <NavContent />
+        <AdminNavContent
+          items={filteredNavItems}
+          pathname={pathname}
+          label={adminLabel}
+          backLabel={backLabel}
+        />
       </aside>
     </>
   );

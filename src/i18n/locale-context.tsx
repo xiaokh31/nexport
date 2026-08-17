@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { type Locale, defaultLocale, getDictionary, locales } from "@/i18n";
 
 type Dictionary = ReturnType<typeof getDictionary>;
@@ -40,12 +47,16 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const savedLocale = readStoredLocale();
-    if (savedLocale) {
-      setLocaleState(savedLocale);
-      setDictionary(getDictionary(savedLocale));
-    }
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+      const savedLocale = readStoredLocale();
+      if (savedLocale) {
+        setLocaleState(savedLocale);
+        setDictionary(getDictionary(savedLocale));
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {

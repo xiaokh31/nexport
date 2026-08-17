@@ -97,7 +97,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials, request) {
         try {
           return authenticateCredentials(credentials, {
-            ...createServerProtection(request.headers),
+            ...createServerProtection(request.headers ?? {}),
             findUserByEmail: (email) => prisma.user.findUnique({ where: { email } }),
             verifyPassword: (password, passwordHash) => bcrypt.compare(password, passwordHash),
           });

@@ -113,7 +113,8 @@ export async function processEmailOutbox(input: {
         lockedAt: record.lockedAt,
         lastError: `${AMBIGUOUS_ERROR_PREFIX}PROVIDER_WINDOW_EXPIRED`,
       });
-      updated ? summary.manualReview++ : summary.staleCompletions++;
+      if (updated) summary.manualReview++;
+      else summary.staleCompletions++;
       logger.warn("email_outbox_manual_review", {
         outboxId: record.id,
         eventKey: record.eventKey,
@@ -168,7 +169,8 @@ export async function processEmailOutbox(input: {
         sentAt: input.clock.now(),
         providerMessageId: result.providerMessageId,
       });
-      updated ? summary.sent++ : summary.staleCompletions++;
+      if (updated) summary.sent++;
+      else summary.staleCompletions++;
       logger.info("email_outbox_sent", {
         outboxId: record.id,
         eventKey: record.eventKey,
@@ -189,7 +191,8 @@ export async function processEmailOutbox(input: {
         lockedAt: record.lockedAt,
         lastError: `${AMBIGUOUS_ERROR_PREFIX}PROVIDER_WINDOW_EXPIRED`,
       });
-      updated ? summary.manualReview++ : summary.staleCompletions++;
+      if (updated) summary.manualReview++;
+      else summary.staleCompletions++;
       continue;
     }
 
@@ -199,7 +202,8 @@ export async function processEmailOutbox(input: {
         lockedAt: record.lockedAt,
         lastError,
       });
-      updated ? summary.failed++ : summary.staleCompletions++;
+      if (updated) summary.failed++;
+      else summary.staleCompletions++;
       continue;
     }
 
@@ -209,7 +213,8 @@ export async function processEmailOutbox(input: {
         lockedAt: record.lockedAt,
         lastError: `MAX_ATTEMPTS:${lastError}`,
       });
-      updated ? summary.failed++ : summary.staleCompletions++;
+      if (updated) summary.failed++;
+      else summary.staleCompletions++;
       continue;
     }
 
@@ -221,7 +226,8 @@ export async function processEmailOutbox(input: {
       ),
       lastError,
     });
-    updated ? summary.retried++ : summary.staleCompletions++;
+    if (updated) summary.retried++;
+    else summary.staleCompletions++;
   }
 
   return summary;

@@ -124,7 +124,7 @@ export default function QuotesManagePage() {
           const errorData = await response.json();
           setError(errorData.error?.message || (typeof errorData.error === "string" ? errorData.error : "获取询价列表失败"));
         }
-      } catch (err) {
+      } catch {
         setError("获取询价列表失败");
       } finally {
         setLoading(false);
@@ -174,7 +174,7 @@ export default function QuotesManagePage() {
         const errorData = await response.json();
         alert(errorData.error?.message || (typeof errorData.error === "string" ? errorData.error : "更新状态失败"));
       }
-    } catch (err) {
+    } catch {
       alert("更新状态失败");
     } finally {
       setUpdating(false);
@@ -230,7 +230,7 @@ export default function QuotesManagePage() {
         const errorData = await response.json();
         alert(errorData.error?.message || (typeof errorData.error === "string" ? errorData.error : "提交报价失败"));
       }
-    } catch (err) {
+    } catch {
       alert("提交报价失败");
     } finally {
       setUpdating(false);

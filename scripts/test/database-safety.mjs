@@ -4,6 +4,8 @@ const DEFAULT_DATABASE_URL_TEST =
 const DEFAULT_PLAYWRIGHT_BASE_URL = "http://127.0.0.1:3100";
 const LOCAL_TEST_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 
+/** @typedef {Record<string, string | undefined>} TestEnvironment */
+
 export class UnsafeTestDatabaseError extends Error {
   constructor(message) {
     super(message);
@@ -14,6 +16,7 @@ export class UnsafeTestDatabaseError extends Error {
 /**
  * Resolve and validate the only database URL destructive test helpers may use.
  * Custom URLs require an explicit marker; the built-in default is local-only.
+ * @param {TestEnvironment} [environment]
  */
 export function resolveTestDatabaseSettings(environment = process.env) {
   const configuredUrl = environment.DATABASE_URL_TEST?.trim();
@@ -83,6 +86,7 @@ export function resolveTestDatabaseSettings(environment = process.env) {
   });
 }
 
+/** @param {TestEnvironment} [environment] */
 export function createTestProcessEnvironment(environment = process.env) {
   const settings = resolveTestDatabaseSettings(environment);
   const playwrightBaseUrl = resolvePlaywrightBaseUrl(environment);
@@ -110,6 +114,7 @@ export function createTestProcessEnvironment(environment = process.env) {
   };
 }
 
+/** @param {TestEnvironment} [environment] */
 export function resolvePlaywrightBaseUrl(environment = process.env) {
   const configured = environment.PLAYWRIGHT_BASE_URL?.trim() ||
     DEFAULT_PLAYWRIGHT_BASE_URL;
@@ -139,6 +144,7 @@ export function resolvePlaywrightBaseUrl(environment = process.env) {
   return url.origin;
 }
 
+/** @param {TestEnvironment} [environment] */
 export function assertTestRuntime(environment = process.env) {
   if (environment.NODE_ENV !== "test") {
     throw new UnsafeTestDatabaseError(

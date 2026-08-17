@@ -43,8 +43,10 @@ export function createQuoteSubmissionFingerprint(
 }
 
 export type SubmitQuoteResult =
-  | { outcome: "CREATED" | "REPLAYED"; reference: string; status: string }
-  | { outcome: "SUBMISSION_KEY_CONFLICT" | "REFERENCE_UNAVAILABLE" };
+  | { outcome: "CREATED"; reference: string; status: string }
+  | { outcome: "REPLAYED"; reference: string; status: string }
+  | { outcome: "SUBMISSION_KEY_CONFLICT" }
+  | { outcome: "REFERENCE_UNAVAILABLE" };
 
 export async function submitQuote(
   client: PrismaClient,

@@ -6,18 +6,11 @@ import type { AdminAccessProfile } from "@/lib/permissions";
 export function useAdminAccess(sessionUserId: string | undefined) {
   const enabled = Boolean(sessionUserId);
   const [profile, setProfile] = useState<AdminAccessProfile | null>(null);
-  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [resolvedUserId, setResolvedUserId] = useState<string | undefined>();
 
   useEffect(() => {
-    if (!enabled) {
-      setProfile(null);
-      setLoading(false);
-      setError(null);
-      setResolvedUserId(undefined);
-      return;
-    }
+    if (!sessionUserId) return;
 
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
@@ -25,12 +18,9 @@ export function useAdminAccess(sessionUserId: string | undefined) {
         setProfile(null);
         setError("权限检查超时，请重试或返回用户中心");
         setResolvedUserId(sessionUserId);
-        setLoading(false);
         controller.abort();
       }
     }, 10_000);
-    setLoading(true);
-    setError(null);
 
     fetch("/api/admin/access", {
       cache: "no-store",
@@ -42,7 +32,10 @@ export function useAdminAccess(sessionUserId: string | undefined) {
         return (await response.json()) as AdminAccessProfile;
       })
       .then((nextProfile) => {
-        if (!controller.signal.aborted) setProfile(nextProfile);
+        if (!controller.signal.aborted) {
+          setProfile(nextProfile);
+          setError(null);
+        }
       })
       .catch((requestError: unknown) => {
         if (!controller.signal.aborted) {
@@ -58,7 +51,6 @@ export function useAdminAccess(sessionUserId: string | undefined) {
         window.clearTimeout(timeoutId);
         if (!controller.signal.aborted) {
           setResolvedUserId(sessionUserId);
-          setLoading(false);
         }
       });
 
@@ -66,11 +58,13 @@ export function useAdminAccess(sessionUserId: string | undefined) {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [enabled, sessionUserId]);
+  }, [sessionUserId]);
+
+  const resolved = enabled && resolvedUserId === sessionUserId;
 
   return {
-    profile,
-    loading: enabled && (loading || resolvedUserId !== sessionUserId),
-    error,
+    profile: resolved ? profile : null,
+    loading: enabled && !resolved,
+    error: resolved ? error : null,
   };
 }

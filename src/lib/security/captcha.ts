@@ -51,7 +51,7 @@ export function createGoogleCaptchaVerifier({
 }: GoogleCaptchaVerifierOptions): CaptchaVerifier {
   const normalizedExpectedHostname = normalizeHostname(expectedHostname);
 
-  return Object.freeze({
+  return Object.freeze<CaptchaVerifier>({
     async verify(request) {
       const token = request.token?.trim();
       if (!token) {

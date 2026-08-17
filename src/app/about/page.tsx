@@ -113,7 +113,7 @@ export default function AboutPage() {
           <div className="max-w-3xl mx-auto">
             <div className="relative">
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-primary/20" />
-              {milestones.map((milestone, index) => (
+              {milestones.map((milestone) => (
                 <div key={milestone.year} className="relative pl-12 pb-8 last:pb-0">
                   <div className="absolute left-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
                     {milestone.year.slice(-2)}

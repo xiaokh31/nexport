@@ -16,10 +16,10 @@ import { Label } from "@/components/ui/label";
 
 // Cookie 同意状态类型
 interface CookiePreferences {
-  necessary: boolean;    // 必要Cookie（始终开启）
-  analytics: boolean;    // 分析Cookie
-  marketing: boolean;    // 营销Cookie
-  preferences: boolean;  // 偏好Cookie
+  necessary: boolean; // 必要Cookie（始终开启）
+  analytics: boolean; // 分析Cookie
+  marketing: boolean; // 营销Cookie
+  preferences: boolean; // 偏好Cookie
 }
 
 const COOKIE_CONSENT_KEY = "site_cookie_consent";
@@ -39,19 +39,25 @@ export function CookieConsent() {
   useEffect(() => {
     // 检查是否已经同意Cookie
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!consent) {
-      // 延迟显示，避免影响首屏加载
-      const timer = setTimeout(() => {
+    const savedPreferences = consent
+      ? localStorage.getItem(COOKIE_PREFERENCES_KEY)
+      : null;
+    // 延迟显示，避免影响首屏加载；已保存的偏好在挂载后恢复。
+    const timer = window.setTimeout(() => {
+      if (!consent) {
         setIsVisible(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    } else {
-      // 加载已保存的偏好设置
-      const savedPreferences = localStorage.getItem(COOKIE_PREFERENCES_KEY);
-      if (savedPreferences) {
-        setPreferences(JSON.parse(savedPreferences));
+        return;
       }
-    }
+      if (savedPreferences) {
+        try {
+          setPreferences(JSON.parse(savedPreferences) as CookiePreferences);
+        } catch (error) {
+          console.warn("Unable to restore cookie preferences.", error);
+        }
+      }
+    }, consent ? 0 : 1500);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleAcceptAll = () => {

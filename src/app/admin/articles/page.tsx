@@ -75,7 +75,7 @@ export default function ArticlesPage() {
           const errorData = await response.json();
           setError(errorData.error || "获取文章列表失败");
         }
-      } catch (err) {
+      } catch {
         setError("获取文章列表失败");
       } finally {
         setLoading(false);
@@ -104,7 +104,7 @@ export default function ArticlesPage() {
         const errorData = await response.json();
         alert(errorData.error || "删除文章失败");
       }
-    } catch (err) {
+    } catch {
       alert("删除文章失败");
     }
   };

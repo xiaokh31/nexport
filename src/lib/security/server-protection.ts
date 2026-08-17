@@ -19,7 +19,7 @@ import {
 
 const prismaRateLimitStore = createPrismaRateLimitStore(prisma);
 
-const serverCaptchaVerifier: CaptchaVerifier = Object.freeze({
+const serverCaptchaVerifier = Object.freeze<CaptchaVerifier>({
   async verify(request) {
     if (!request.token?.trim()) {
       return { success: false, reason: "MISSING" };

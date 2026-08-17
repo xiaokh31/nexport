@@ -104,7 +104,7 @@ export default function UsersManagePage() {
           const errorData = await response.json();
           setError(errorData.error || "获取用户列表失败");
         }
-      } catch (err) {
+      } catch {
         setError("获取用户列表失败");
       } finally {
         setLoading(false);
@@ -141,13 +141,12 @@ export default function UsersManagePage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         setUsers(users.map(u => u.id === user.id ? { ...u, canManageArticles: newValue } : u));
       } else {
         const errorData = await response.json();
         alert(errorData.error || "更新权限失败");
       }
-    } catch (err) {
+    } catch {
       alert("更新权限失败");
     }
   };
@@ -181,7 +180,7 @@ export default function UsersManagePage() {
         const errorData = await response.json();
         alert(errorData.error || "保存失败");
       }
-    } catch (err) {
+    } catch {
       alert("保存失败");
     } finally {
       setSaving(false);
@@ -208,7 +207,7 @@ export default function UsersManagePage() {
         const errorData = await response.json();
         alert(errorData.error || "更新角色失败");
       }
-    } catch (err) {
+    } catch {
       alert("更新角色失败");
     }
   };
@@ -231,7 +230,7 @@ export default function UsersManagePage() {
         const errorData = await response.json();
         alert(errorData.error || "删除用户失败");
       }
-    } catch (err) {
+    } catch {
       alert("删除用户失败");
     }
   };

@@ -9,11 +9,11 @@ import { renderEmailVerificationHtml } from "@/lib/auth/email-verification-token
 export interface ResendError {
   message?: string;
   name?: string;
-  statusCode?: number;
+  statusCode?: number | null;
 }
 
 export function classifyResendError(error: ResendError): EmailDeliveryResult {
-  const statusCode = error.statusCode;
+  const statusCode = error.statusCode ?? undefined;
   const errorName = error.name?.toLowerCase();
   const concurrentIdempotentRequest = errorName === "concurrent_idempotent_requests";
   const retryable = concurrentIdempotentRequest ||

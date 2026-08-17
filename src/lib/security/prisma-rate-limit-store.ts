@@ -4,7 +4,7 @@ import type { RateLimitStore } from "@/lib/security/rate-limit";
 export function createPrismaRateLimitStore(
   client: Pick<PrismaClient, "rateLimitBucket">,
 ): RateLimitStore {
-  return Object.freeze({
+  return Object.freeze<RateLimitStore>({
     async increment(bucket) {
       const result = await client.rateLimitBucket.upsert({
         where: {

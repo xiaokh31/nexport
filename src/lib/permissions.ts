@@ -149,9 +149,9 @@ export async function authorizeCapability(
 
 export function canAccessModule(
   subject: CapabilitySubject,
-  module: AdminModule,
+  adminModule: AdminModule,
 ): boolean {
-  return hasCapability(subject, adminModuleCapabilities[module]);
+  return hasCapability(subject, adminModuleCapabilities[adminModule]);
 }
 
 export function canAccessAdmin(subject: CapabilitySubject): boolean {
@@ -159,12 +159,14 @@ export function canAccessAdmin(subject: CapabilitySubject): boolean {
 }
 
 export function getAccessibleModules(subject: CapabilitySubject): AdminModule[] {
-  return moduleLandingOrder.filter((module) => canAccessModule(subject, module));
+  return moduleLandingOrder.filter((adminModule) =>
+    canAccessModule(subject, adminModule),
+  );
 }
 
 export function getDefaultAdminPath(subject: CapabilitySubject): string | null {
-  const firstModule = moduleLandingOrder.find((module) =>
-    canAccessModule(subject, module),
+  const firstModule = moduleLandingOrder.find((adminModule) =>
+    canAccessModule(subject, adminModule),
   );
   return firstModule ? modulePathMap[firstModule] : null;
 }
@@ -184,6 +186,6 @@ export function canAccessPath(
   subject: CapabilitySubject,
   path: string,
 ): boolean {
-  const module = getModuleFromPath(path);
-  return module ? canAccessModule(subject, module) : false;
+  const adminModule = getModuleFromPath(path);
+  return adminModule ? canAccessModule(subject, adminModule) : false;
 }

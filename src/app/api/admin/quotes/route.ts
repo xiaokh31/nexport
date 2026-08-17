@@ -67,7 +67,7 @@ function apiError(
   status: number,
   code: string,
   message: string,
-  requestId = randomUUID(),
+  requestId: string = randomUUID(),
 ) {
   return NextResponse.json(
     { success: false, error: { code, message }, requestId },
