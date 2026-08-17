@@ -55,7 +55,9 @@ test("solution index and detail expose scope, process, inputs, FAQ, and a select
   }
   await expect(page.getByText("不默认包含", { exact: true })).toBeVisible();
   await expect(page.locator('a[href="/contact?service=WAREHOUSE"]')).toHaveCount(2);
-  await page.getByText("页面中的服务范围可以调整吗？", { exact: true }).click();
+  await page.locator("summary").filter({
+    hasText: "页面中的服务范围可以调整吗？",
+  }).click();
   await expect(page.getByText(/页面列出的是通用边界/)).toBeVisible();
 });
 

@@ -46,7 +46,9 @@ test("quote intake hides placeholder facts and exposes grouped, preselected fiel
   await expect(page.getByRole("group", { name: "货物资料" })).toBeVisible();
   await expect(page.getByRole("group", { name: "需求说明与验证" })).toBeVisible();
   await expect(page.getByLabel(/服务类型/)).toContainText("海外仓储与履约");
-  await expect(page.getByRole("link", { name: "隐私政策" })).toHaveAttribute("href", "/privacy");
+  await expect(
+    page.locator("#main-content").getByRole("link", { name: "隐私政策" }),
+  ).toHaveAttribute("href", "/privacy");
   await expect(page.getByRole("heading", { name: "已配置的联系方式" })).toHaveCount(0);
   await expect(page.locator("#main-content")).not.toContainText(
     /contact@example\.com|\+1 \(555\) 000-0000|Address to be configured|周一至周五 8:30/,

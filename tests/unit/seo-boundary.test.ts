@@ -8,7 +8,7 @@ function source(relativePath: string) {
 
 describe("SEO-001 source boundaries", () => {
   it("renders the news list and detail from published server data", () => {
-    const list = source("src/app/news/page.tsx");
+    const list = source("src/app/news/(list)/page.tsx");
     const detail = source("src/app/news/[slug]/page.tsx");
     const publicService = source("src/lib/articles/public-service.ts");
 

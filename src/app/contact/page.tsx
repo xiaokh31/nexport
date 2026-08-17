@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Mail, MapPin, Phone, Check, ArrowDown, type LucideIcon } from "lucide-react";
 import { QuoteForm } from "@/components/forms";
 import { getPublicPageCopy } from "@/config/public-page-content";
@@ -117,7 +118,15 @@ export default function ContactPage() {
               <h2 className="font-display text-3xl font-bold md:text-4xl">{copy.formTitle}</h2>
               <p className="mt-3 text-sm leading-7 text-muted-foreground">{copy.formDescription}</p>
             </div>
-            <QuoteForm />
+            <Suspense
+              fallback={(
+                <p role="status" aria-live="polite" className="mt-8 text-sm text-muted-foreground">
+                  正在准备询价表单…
+                </p>
+              )}
+            >
+              <QuoteForm />
+            </Suspense>
           </div>
         </div>
       </section>

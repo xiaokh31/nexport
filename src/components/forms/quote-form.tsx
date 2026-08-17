@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   useForm,
@@ -58,6 +59,7 @@ function FormSection({ legend, children }: { legend: string; children: ReactNode
 }
 
 export function QuoteForm() {
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successReference, setSuccessReference] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -69,6 +71,10 @@ export function QuoteForm() {
   const serviceOptions = getServiceTypeOptions(t);
   const recaptchaSiteKey = publicEnv.recaptchaSiteKey;
   const earliestRequestedDate = new Date().toISOString().slice(0, 10);
+  const requestedService = searchParams.get("service");
+  const initialServiceType = isServiceType(requestedService)
+    ? requestedService
+    : undefined;
 
   const form = useForm<QuoteFormValues>({
     resolver: zodResolver(quoteFormSchema),
@@ -78,7 +84,7 @@ export function QuoteForm() {
       email: "",
       phone: "",
       company: "",
-      serviceType: undefined,
+      serviceType: initialServiceType,
       origin: "",
       destination: "",
       cargoType: "",
@@ -96,13 +102,6 @@ export function QuoteForm() {
       captchaToken: undefined,
     },
   });
-
-  useEffect(() => {
-    const requestedService = new URLSearchParams(window.location.search).get("service");
-    if (isServiceType(requestedService)) {
-      form.setValue("serviceType", requestedService);
-    }
-  }, [form]);
 
   async function onSubmit(data: QuoteFormValues) {
     if (!captchaToken) {

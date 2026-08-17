@@ -57,11 +57,14 @@ describe("security source boundaries", () => {
   });
 
   it("contains no email domain management or SendGrid shell", () => {
-    const emailSource = source("src/lib/email.ts");
+    const emailSource = [
+      source("src/lib/email-template.ts"),
+      source("src/lib/notifications/resend-email-sender.ts"),
+    ].join("\n");
 
     expect(emailSource).not.toMatch(/\.domains\.(?:create|get|verify)\s*\(/);
     expect(emailSource).not.toMatch(/sendgrid/i);
-    expect(emailSource).toContain("resend.emails.send(message)");
+    expect(emailSource).toContain("resend.emails.send(");
   });
 
   it("contains no client-only CAPTCHA bypass or standalone verification endpoint", () => {
@@ -80,7 +83,7 @@ describe("security source boundaries", () => {
     const registrationSource = source("src/app/api/auth/register/route.ts");
 
     expect(authSource).toContain("captchaToken: { label:");
-    expect(authSource).toContain("createServerProtection(request.headers)");
+    expect(authSource).toContain("createServerProtection(request.headers ?? {})");
     expect(registrationSource).toContain("createServerProtection(request.headers)");
     expect(registrationSource.indexOf("captchaVerifier.verify"))
       .toBeLessThan(registrationSource.indexOf("prisma.user.findUnique"));

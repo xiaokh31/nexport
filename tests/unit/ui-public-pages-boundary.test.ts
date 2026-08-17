@@ -51,9 +51,9 @@ describe("UI-003 quote and news boundaries", () => {
   });
 
   it("keeps the news list server-rendered with current-filter, pagination, and directed empty semantics", () => {
-    const news = source("src/app/news/page.tsx");
-    const loading = source("src/app/news/loading.tsx");
-    const error = source("src/app/news/error.tsx");
+    const news = source("src/app/news/(list)/page.tsx");
+    const loading = source("src/app/news/(list)/loading.tsx");
+    const error = source("src/app/news/(list)/error.tsx");
 
     expect(news).not.toContain('"use client"');
     expect(news).toContain("listPublishedArticles");
@@ -61,7 +61,7 @@ describe("UI-003 quote and news boundaries", () => {
     expect(news).toContain('<Link rel="prev"');
     expect(news).toContain('<Link rel="next"');
     expect(news).toContain("该分类暂无已发布内容");
-    expect(news).toContain('href="/news"');
+    expect(news).toContain('query.category === "all" ? "/solutions" : "/news"');
     expect(loading).toContain('role="status"');
     expect(loading).toContain('aria-busy="true"');
     expect(error).toContain('role="alert"');

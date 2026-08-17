@@ -24,7 +24,9 @@ test("Google login stays hidden when its provider is not configured", async ({ p
   await page.goto("/login");
   await expect(page.getByRole("button", { name: /google/i })).toHaveCount(0);
   await expect(page.locator('button[type="submit"]')).toBeDisabled();
-  await expect(page.getByText(/verification is not configured/i)).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(
+    /人机验证服务未配置|verification is not configured/i,
+  );
 });
 
 test("external requests cannot create login history", async ({ request }) => {
