@@ -7,8 +7,23 @@ export const siteLinks = {
 };
 
 export const siteInfo = {
-  name: "Company Name",
-};
+  legalName: "ZNB Logistics Inc.",
+  displayName: "ZNB Logistics Inc.",
+  shortName: "ZNB",
+} as const;
+
+/**
+ * EMAIL_FROM owns the verified mailbox while the public display name remains
+ * part of the canonical brand configuration. This also repairs queued mail
+ * created before a sender display name was configured.
+ */
+export function getBrandedEmailFrom(value: string | null | undefined) {
+  const configuredFrom = value?.trim();
+  if (!configuredFrom) return null;
+  const bracketedAddress = configuredFrom.match(/<([^<>]+)>$/)?.[1]?.trim();
+  const address = bracketedAddress || configuredFrom;
+  return `${siteInfo.shortName} <${address}>`;
+}
 
 export const solutionConfigs = [
   { key: "fbaLastMile", serviceType: "FBA_LAST_MILE", slug: "fba-last-mile" },

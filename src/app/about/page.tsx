@@ -2,6 +2,7 @@
 
 import { CheckCircle, Users, Globe, Award, Target } from "lucide-react";
 import { CTASection } from "@/components/marketing";
+import { siteInfo } from "@/config/site-config";
 import { useLocale } from "@/i18n/locale-context";
 
 export default function AboutPage() {
@@ -26,8 +27,6 @@ export default function AboutPage() {
     },
   ];
 
-  const milestones = (t.about.milestones as Array<{ year: string; event: string }>) || [];
-
   const advantages = (t.about.advantages as string[]) || [];
   return (
     <>
@@ -40,7 +39,7 @@ export default function AboutPage() {
                 {t.about.badge}
               </div>
               <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                Company Name
+                {siteInfo.displayName}
               </h1>
               <p className="text-lg text-muted-foreground mb-6">
                 {t.about.intro}
@@ -99,31 +98,6 @@ export default function AboutPage() {
             </div>
             <div className="aspect-video rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
               <Award className="h-24 w-24 text-primary/30" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline */}
-      <section className="py-16 md:py-24 bg-muted/30">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">{t.about.historyTitle}</h2>
-          </div>
-          <div className="max-w-3xl mx-auto">
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-primary/20" />
-              {milestones.map((milestone) => (
-                <div key={milestone.year} className="relative pl-12 pb-8 last:pb-0">
-                  <div className="absolute left-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                    {milestone.year.slice(-2)}
-                  </div>
-                  <div className="pt-1">
-                    <div className="font-bold text-primary">{milestone.year}</div>
-                    <p className="text-muted-foreground">{milestone.event}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import type {
 } from "@/lib/ports/external-services";
 import { emailOutboxPayloadSchema } from "@/lib/notifications/outbox-payload";
 import { renderEmailVerificationHtml } from "@/lib/auth/email-verification-token";
+import { getBrandedEmailFrom } from "@/config/site-config";
 
 export interface ResendError {
   message?: string;
@@ -40,7 +41,7 @@ export class ResendEmailSender implements EmailSender {
   async send(request: EmailDeliveryRequest): Promise<EmailDeliveryResult> {
     const payload = emailOutboxPayloadSchema.safeParse(request.payload);
     const from = payload.success
-      ? payload.data.from || this.defaultFrom?.trim() || null
+      ? getBrandedEmailFrom(payload.data.from || this.defaultFrom)
       : null;
     if (!payload.success || !from) {
       return {

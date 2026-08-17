@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { Clock, RandomByteSource } from "@/lib/ports/external-services";
 import { escapeHtml } from "@/lib/email-template";
+import { siteInfo } from "@/config/site-config";
 
 export const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 export const EMAIL_VERIFICATION_ID_PATTERN = /^[A-Za-z0-9_-]{24}$/;
@@ -40,7 +41,7 @@ export function normalizeEmailVerificationLocale(
 }
 
 export function getEmailVerificationSubject(locale: EmailVerificationLocale) {
-  return copy[locale].subject;
+  return `${siteInfo.shortName} | ${copy[locale].subject}`;
 }
 
 export function deriveRawEmailVerificationToken(
@@ -104,6 +105,7 @@ export function createEmailVerificationHtmlTemplate(input: {
   const translations = copy[input.locale];
   const safeLink = escapeHtml(url.toString());
   return [
+    `<p><strong>${escapeHtml(siteInfo.shortName)}</strong></p>`,
     `<h1>${escapeHtml(translations.title)}</h1>`,
     `<p>${escapeHtml(translations.body)}</p>`,
     `<p><a href="${safeLink}">${escapeHtml(translations.action)}</a></p>`,

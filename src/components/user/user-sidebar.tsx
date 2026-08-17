@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useLocale } from "@/i18n/locale-context";
+import { siteInfo } from "@/config/site-config";
 
 export function UserSidebar() {
   const pathname = usePathname();
   const { t } = useLocale();
+  const userCenterLabel = `${siteInfo.shortName} ${t.user.center}`;
 
   const userNavItems = [
     {
@@ -51,9 +53,9 @@ export function UserSidebar() {
       <div className="space-y-4 lg:sticky lg:top-24">
         <div className="rounded-md border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
           <h2 className="font-display mb-4 text-xl font-semibold tracking-wide">
-            {t.user.center}
+            {userCenterLabel}
           </h2>
-          <nav aria-label={t.user.center} className="grid gap-1 sm:grid-cols-2 lg:block lg:space-y-1">
+          <nav aria-label={userCenterLabel} className="grid gap-1 sm:grid-cols-2 lg:block lg:space-y-1">
             {userNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;

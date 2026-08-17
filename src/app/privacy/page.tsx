@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLocale } from "@/i18n/locale-context";
 import { Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/content/safe-markdown";
+import { siteInfo } from "@/config/site-config";
 
 interface PageData {
   title: string;
@@ -55,54 +56,24 @@ export default function PrivacyPage() {
 
   const getDefaultContent = () => {
     if (locale === "en") {
-      return `# Privacy Policy
+      return `# Privacy Policy — Draft
 
-Welcome to Company Name. We respect your privacy and are committed to protecting your personal information.
+> This fallback for ${siteInfo.legalName} is provided for configuration review only. It has not been approved for publication and requires professional privacy and legal review.
 
-## Information Collection
-
-We collect information you provide directly to us, such as when you create an account, request a quote, or contact us.
-
-## Use of Information
-
-We use the information we collect to provide, maintain, and improve our services.
-
-## Contact Us
-
-If you have any questions about this Privacy Policy, please contact us at contact@example.com.`;
+No final privacy policy is currently published. The responsible reviewer must confirm the applicable jurisdictions, collected data, processing purposes, retention, disclosure, user rights, safeguards, and an approved contact channel before release.`;
     }
     if (locale === "fr") {
-      return `# Politique de Confidentialité
+      return `# Politique de confidentialité — Brouillon
 
-Bienvenue chez Company Name. Nous respectons votre vie privée et nous nous engageons à protéger vos informations personnelles.
+> Ce contenu de secours pour ${siteInfo.legalName} sert uniquement à la vérification de la configuration. Il n’est pas approuvé pour publication et doit faire l’objet d’un examen professionnel en matière de confidentialité et de droit.
 
-## Collecte d'Informations
-
-Nous collectons les informations que vous nous fournissez directement, comme lorsque vous créez un compte, demandez un devis ou nous contactez.
-
-## Utilisation des Informations
-
-Nous utilisons les informations collectées pour fournir, maintenir et améliorer nos services.
-
-## Contactez-nous
-
-Si vous avez des questions concernant cette politique de confidentialité, veuillez nous contacter à contact@example.com.`;
+Aucune politique de confidentialité définitive n’est actuellement publiée. Avant toute mise en ligne, le responsable doit confirmer les juridictions applicables, les données collectées, les finalités, la conservation, les divulgations, les droits, les mesures de protection et un moyen de contact approuvé.`;
     }
-    return `# 隐私政策
+    return `# 隐私政策（草案）
 
-欢迎使用 Company Name。我们尊重您的隐私，并致力于保护您的个人信息。
+> 本内容是 ${siteInfo.legalName} 的配置审阅 fallback，尚未获准发布，必须经过隐私与法律专业审核。
 
-## 信息收集
-
-我们收集您直接提供给我们的信息，例如当您创建账户、请求报价或联系我们时。
-
-## 信息使用
-
-我们使用收集的信息来提供、维护和改进我们的服务。
-
-## 联系我们
-
-如果您对本隐私政策有任何疑问，请通过 contact@example.com 联系我们。`;
+当前没有已定稿的隐私政策。正式发布前，负责人必须确认适用司法辖区、收集的数据、处理目的、保存期限、对外披露、用户权利、安全措施和经批准的联系渠道。`;
   };
 
   if (loading) {

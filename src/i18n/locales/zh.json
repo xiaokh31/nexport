@@ -48,7 +48,7 @@
   },
   "stats": {
     "title": "值得信赖的物流伙伴",
-    "subtitle": "多年来，我们凭借专业的服务和卓越的品质，赢得了众多客户的信赖",
+    "subtitle": "按实际货物、线路与处理要求确认服务范围",
     "customers": "服务客户",
     "orders": "日处理订单",
     "warehouse": "仓储面积",
@@ -144,33 +144,33 @@
     "call": "或拨打电话"
   },
   "about": {
-    "title": "关于 Company Name",
+    "title": "关于 ZNB Logistics Inc.",
     "badge": "关于我们",
-    "description": "我们是专业的跨境物流服务提供商，致力于为全球电商卖家提供高效、可靠、经济的物流解决方案。",
-    "intro": "Company Name 是一家专注于跨境电商物流的综合服务提供商。",
-    "introDetail": "我们致力于为全球跨境电商卖家提供从仓储、运输到配送的一站式物流解决方案，包括FBA、一件代发、退货换标、仓储管理等核心业务。凭借专业的团队、先进的设施和卓越的服务，我们已成为众多跨境电商卖家的信赖之选。",
-    "valuesTitle": "我们的使命与愿景",
+    "description": "ZNB Logistics Inc. 网站用于说明海外仓储、订单履约与运输衔接的服务边界并接收询价。",
+    "intro": "ZNB Logistics Inc. 网站围绕海外仓储、订单履约与运输衔接提供服务说明和询价入口。",
+    "introDetail": "具体服务能力、线路、操作条件、价格与时效均需根据实际货物资料逐项确认；页面不作固定承诺。",
+    "valuesTitle": "如何开始",
     "mission": {
-      "title": "使命",
-      "description": "为全球跨境电商卖家提供高效、可靠、经济的物流解决方案"
+      "title": "明确需求",
+      "description": "提供货物、数量、线路、时间和操作要求。"
     },
     "vision": {
-      "title": "愿景",
-      "description": "成为北美领先的跨境物流服务品牌"
+      "title": "确认边界",
+      "description": "分别确认仓储、履约、FBA 准备与交付或运输环节。"
     },
     "values": {
-      "title": "价值观",
-      "description": "客户至上、诚信经营、持续创新、追求卓越"
+      "title": "提交询价",
+      "description": "以询价结果确认可行性、范围、价格和时间。"
     },
-    "advantagesTitle": "我们的优势",
-    "advantagesSubtitle": "多年来，我们不断完善服务体系，打造核心竞争力，致力于为客户提供最优质的物流体验。",
+    "advantagesTitle": "询价前需确认的信息",
+    "advantagesSubtitle": "资料越完整，越便于核对所需作业和运输边界；页面不会预设仓库规模、覆盖地区或服务指标。",
     "advantages": [
-      "跨境物流专业能力",
-      "专业仓储运营",
-      "高效订单处理",
-      "客户导向服务",
-      "可靠配送管理",
-      "及时客户支持"
+      "货物类型与数量",
+      "起点与目的地",
+      "期望时间",
+      "包装与标签要求",
+      "装卸与交接条件",
+      "其他特殊处理要求"
     ],
     "historyTitle": "发展历程",
     "milestones": []
@@ -254,7 +254,7 @@
   },
   "admin": {
     "title": "管理后台",
-    "description": "Company Name 管理后台",
+    "description": "ZNB 管理后台",
     "welcome": "欢迎回来，管理员",
     "overview": "概览",
     "articles": "文章管理",
@@ -475,7 +475,7 @@
   },
   "auth": {
     "loginTitle": "登录",
-    "loginDescription": "登录您的 Company Name 账户",
+    "loginDescription": "登录您的 ZNB 账户",
     "welcomeBack": "欢迎回来",
     "loginHint": "登录您的账户以访问更多功能",
     "email": "邮箱",
@@ -490,7 +490,7 @@
     "noAccount": "还没有账户？",
     "registerNow": "立即注册",
     "registerTitle": "注册",
-    "registerDescription": "注册 Company Name 账户",
+    "registerDescription": "注册 ZNB 账户",
     "createAccount": "创建账户",
     "registerHint": "注册账户以享受更多服务",
     "name": "姓名",
@@ -620,7 +620,7 @@
   },
  "dashboard": {
     "title": "控制台",
-    "description": "欢迎使用 Company Name 客户控制台",
+    "description": "欢迎使用 ZNB 客户控制台",
     "pendingOrders": "待处理订单",
     "inTransit": "运输中",
     "pendingReturns": "待退货",

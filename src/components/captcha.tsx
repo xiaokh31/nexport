@@ -56,13 +56,13 @@ export function CaptchaV2Checkbox({
       script.src = "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit";
       script.async = true;
       script.defer = true;
-      script.dataset.nexportRecaptcha = "true";
+      script.dataset.siteRecaptcha = "true";
       script.onerror = () => callbacksRef.current.onError?.();
       document.head.appendChild(script);
     }
 
     return () => {
-      document.querySelector('script[data-nexport-recaptcha="true"]')?.remove();
+      document.querySelector('script[data-site-recaptcha="true"]')?.remove();
       window.onRecaptchaLoad = undefined;
       widgetIdRef.current = null;
     };

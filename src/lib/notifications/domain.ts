@@ -7,6 +7,7 @@ import {
 } from "@/lib/notifications/outbox-payload";
 import { normalizeNotificationLink } from "@/lib/notifications/link";
 import { createQuoteNotificationContent } from "@/lib/notifications/quote-content";
+import { siteInfo } from "@/config/site-config";
 
 const recipientSchema = z.string().trim().toLowerCase().email().max(254);
 const eventKeySchema = z.string().trim().min(1).max(512);
@@ -163,7 +164,7 @@ export async function createQuoteEventNotifications(
       version: 1,
       kind: "QUOTE_STATUS",
       from: input.emailFrom?.trim() || null,
-      subject: content.title,
+      subject: `${siteInfo.shortName} | ${content.title}`,
       html: content.emailHtml,
     },
   });

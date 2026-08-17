@@ -53,7 +53,7 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-4">
             <p className="font-display text-2xl font-bold tracking-wide">
-              {siteInfo.name}
+              {siteInfo.shortName}
             </p>
             <p className="max-w-sm text-sm leading-7 text-paper-white/75">
               海外仓储、订单履约与运输衔接。
@@ -133,7 +133,7 @@ export function Footer() {
       <div className="border-t border-paper-white/20">
         <div className="container flex flex-col gap-4 py-6 text-xs text-paper-white/65 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            &copy; {currentYear} {siteInfo.name}. {t.footer.rights}
+            &copy; {currentYear} {siteInfo.legalName}. {t.footer.rights}
           </p>
           <nav aria-label="法律信息" className="flex flex-wrap gap-x-6 gap-y-2">
             <Link href="/privacy" className="min-h-11 content-center hover:text-paper-white hover:underline">

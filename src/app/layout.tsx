@@ -11,6 +11,7 @@ import Providers from "./providers";
 
 import { publicEnv } from "@/config/env/public";
 import { serverEnv } from "@/config/env/server";
+import { siteInfo } from "@/config/site-config";
 
 const siteUrl = publicEnv.siteUrl;
 
@@ -27,8 +28,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Company Name | 海外仓储、订单履约与运输衔接",
-    template: `%s | Company Name`,
+    default: `${siteInfo.shortName} | 海外仓储、订单履约与运输衔接`,
+    template: `%s | ${siteInfo.shortName}`,
   },
   description: "面向跨境电商卖家、品牌方和物流伙伴，提供海外仓储、订单履约、FBA 准备与交付及运输需求询价入口。",
   keywords: [
@@ -45,9 +46,9 @@ export const metadata: Metadata = {
     "退货换标",
     "Returns and Relabeling"
   ],
-  authors: [{ name: "Company Name", url: siteUrl }],
-  creator: "Company Name",
-  publisher: "Company Name",
+  authors: [{ name: siteInfo.legalName, url: siteUrl }],
+  creator: siteInfo.legalName,
+  publisher: siteInfo.legalName,
   formatDetection: {
     email: false,
     address: false,
@@ -57,13 +58,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "zh_CN",
     url: siteUrl,
-    title: "Company Name | 海外仓储、订单履约与运输衔接",
+    title: `${siteInfo.shortName} | 海外仓储、订单履约与运输衔接`,
     description: "按仓储履约、FBA 准备与交付、运输衔接查看服务边界并提交询价。",
-    siteName: "Company Name",
+    siteName: siteInfo.shortName,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Company Name | 海外仓储、订单履约与运输衔接",
+    title: `${siteInfo.shortName} | 海外仓储、订单履约与运输衔接`,
     description: "按仓储履约、FBA 准备与交付、运输衔接查看服务边界并提交询价。",
   },
   robots: {
@@ -93,7 +94,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl,
   },
-  manifest: "/manifest.json",
+  manifest: "/manifest.webmanifest",
   category: "logistics",
 };
 

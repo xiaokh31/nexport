@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WorkspaceLoading, WorkspacePageHeader, WorkspacePanel } from "@/components/workspace/workspace-ui";
+import { siteInfo } from "@/config/site-config";
 
 interface Settings {
   siteName: string;
@@ -68,7 +69,7 @@ export default function SettingsPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "保存设置失败");
-      setSuccess("设置已保存");
+      setSuccess("资料已登记；保存不会自动修改公开站点。");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "保存设置失败");
     } finally {
@@ -83,13 +84,16 @@ export default function SettingsPage() {
       <WorkspacePageHeader
         eyebrow="后台工作台"
         title="系统设置"
-        description="维护会真实显示在站点上的名称、地址与联系方式；未接入运行时的安全参数不在此展示。"
+        description="登记待审核的站点资料；公开品牌和联系方式由代码配置管理，保存不会自动发布。"
         actions={<Button disabled={saving} onClick={() => void saveSettings()}>{saving ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Save aria-hidden="true" className="mr-2 h-4 w-4" />}{saving ? "保存中…" : "保存设置"}</Button>}
       />
       {error ? <div role="alert" aria-live="assertive" className="border-l-4 border-destructive bg-destructive/5 p-3 text-sm text-destructive">{error}</div> : null}
       {success ? <div role="status" aria-live="polite" className="border-l-4 border-success bg-success/5 p-3 text-sm text-success">{success}</div> : null}
+      <div role="note" className="border-l-4 border-signal-amber bg-signal-amber/10 p-4 text-sm text-dock-navy">
+        当前公开品牌固定为 {siteInfo.displayName}（简称 {siteInfo.shortName}）。此页面中的数据库记录不是公开 shell 的品牌来源。
+      </div>
 
-      <WorkspacePanel title="网站信息" description="这些字段应填写已确认、可公开的站点资料。" icon={Globe}>
+      <WorkspacePanel title="待审核网站资料" description="仅登记已确认资料；发布仍需更新经校验的代码/环境配置并重新构建。" icon={Globe}>
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2"><Label htmlFor="siteName">网站名称</Label><Input id="siteName" maxLength={200} value={settings.siteName} onChange={(event) => update("siteName", event.target.value)} /></div>
           <div className="space-y-2"><Label htmlFor="siteUrl">网站地址</Label><Input id="siteUrl" type="url" maxLength={500} value={settings.siteUrl} onChange={(event) => update("siteUrl", event.target.value)} /></div>

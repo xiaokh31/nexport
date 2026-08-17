@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { useLocale } from "@/i18n/locale-context";
 import { useAdminAccessContext } from "@/components/admin/admin-access-context";
+import { siteInfo } from "@/config/site-config";
 import { canAccessModule, type AdminModule } from "@/lib/permissions";
 
 interface NavItem {
@@ -155,7 +156,7 @@ export function AdminSidebar() {
   const filteredNavItems = allNavItems.filter((item) =>
     canAccessModule(subject, item.module),
   );
-  const adminLabel = t.admin?.title || "管理后台";
+  const adminLabel = `${siteInfo.shortName} ${t.admin?.title || "管理后台"}`;
   const backLabel = t.admin?.backToSite || "返回前台";
 
   return (
@@ -175,7 +176,7 @@ export function AdminSidebar() {
           >
             <SheetHeader className="border-b border-sidebar-border p-4 pr-14 text-left">
               <SheetTitle className="font-display text-xl text-sidebar-foreground">
-                {t.admin?.title || "管理后台"}
+                {adminLabel}
               </SheetTitle>
               <SheetDescription className="text-sidebar-foreground/70">
                 选择当前账户有权访问的管理模块。

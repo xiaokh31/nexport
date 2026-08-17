@@ -1,5 +1,6 @@
 import { getDictionary, type Locale, locales, defaultLocale } from "@/i18n";
 import { escapeHtml } from "@/lib/email-template";
+import { siteInfo } from "@/config/site-config";
 
 export interface QuoteNotificationContent {
   title: string;
@@ -41,6 +42,7 @@ export function createQuoteNotificationContent({
   }
 
   const emailHtml = [
+    `<p><strong>${escapeHtml(siteInfo.shortName)}</strong></p>`,
     `<h1>${escapeHtml(title)}</h1>`,
     `<p>${escapeHtml(content)}</p>`,
     `<p><strong>${escapeHtml(reference)}</strong></p>`,

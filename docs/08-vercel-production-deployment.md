@@ -1,6 +1,6 @@
 # ZNB Vercel Hobby 生产部署指南
 
-状态：可执行目标流程；首次生产发布前必须完成 `BRAND-001`、`VERCEL-001`、`QA-004` 并获得 `RELEASE-001` 明确授权  
+状态：可执行目标流程；`BRAND-001` 已完成，首次生产发布前仍须完成 `VERCEL-001`、`QA-004` 并获得 `RELEASE-001` 明确授权
 更新日期：2026-08-17  
 适用项目：`ZNB Logistics Inc.` 企业官网（网站简称 `ZNB`）
 
@@ -8,7 +8,7 @@
 
 项目的 Next.js App Router、Node runtime、Prisma/PostgreSQL 和 NextAuth 架构适合部署到 Vercel。它目前**不能直接视为生产就绪**，因为：
 
-- 公开源码仍有 `Company Name` 品牌占位，须执行 `BRAND-001`。
+- `BRAND-001` 已把 `ZNB Logistics Inc.` / `ZNB` 接入公开品牌；正式域名、Logo、联系方式和法律文本仍待确认。
 - Prisma 只读取 `DATABASE_URL`，尚无池化运行时连接与迁移直连 `DIRECT_URL` 的分离。
 - `/api/cron/email-outbox` 只导出 `POST`；供外部调度器使用的共享 `GET`、provider 配置、健康检查和告警尚未实现。
 - 正式域名、公开联系方式、Logo/OG、法律文本、托管 PostgreSQL 供应商/区域和生产外部服务尚未确认。

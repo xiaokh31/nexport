@@ -2,7 +2,7 @@
 
 这是一个面向海外仓储、订单履约、FBA 准备与交付及运输需求询价的企业网站。项目使用 Next.js App Router、React、TypeScript、Prisma、PostgreSQL、NextAuth、Tailwind CSS 和 Radix UI，包含公开站点、账户工作区、询价、通知、文章发布及按能力授权的管理后台。
 
-> 公司法定/展示名称已确认为 `ZNB Logistics Inc.`，网站简称为 `ZNB`。当前业务源码仍保留 `Company Name` 占位，须由 `BRAND-001` 完成精准替换；正式域名、联系方式、Logo、法律文本和可公开业务事实仍待确认。在完成 `BRAND-001`、`VERCEL-001`、`QA-004`，通过生产变更授权门（Go/No-Go），并在 `RELEASE-001` 内通过“解除保护/公开门”前，不得把当前版本作为正式企业网站发布。
+> 公司法定/展示名称 `ZNB Logistics Inc.` 与网站简称 `ZNB` 已由 `BRAND-001` 接入公开品牌语境。正式域名、联系方式、Logo、法律文本和可公开业务事实仍待确认。在完成 `VERCEL-001`、`QA-004`，通过生产变更授权门（Go/No-Go），并在 `RELEASE-001` 内通过“解除保护/公开门”前，不得把当前版本作为正式企业网站发布。
 
 ## 快速开始：从空数据库启动
 
@@ -205,7 +205,7 @@ API 和 UI 共享 `src/lib/permissions.ts` 中的唯一能力矩阵。`✓` 表�
 
 > Vercel 当前官方条款把 Hobby 限定为个人、非商业用途。本文档按项目方指定的 Hobby 技术方案制定，但在正式企业网站公开前，项目方仍须确认该用途获得 Vercel 允许；若不符合，需改用获准套餐或其他合规托管方案。这个条款确认不改变应用任务顺序。
 
-- 开发 Agent 先按 [`docs/05-agent-backlog.md`](docs/05-agent-backlog.md) 执行 `BRAND-001 → VERCEL-001 → QA-004`。
+- `BRAND-001` 已完成；开发 Agent 接下来按 [`docs/05-agent-backlog.md`](docs/05-agent-backlog.md) 串行执行 `VERCEL-001 → QA-004`。
 - 运维人员再按 [`docs/08-vercel-production-deployment.md`](docs/08-vercel-production-deployment.md) 通过生产变更授权门（Go/No-Go）并执行 `RELEASE-001`；该任务内还设有独立的“解除保护/公开门”。
 - 任何 Preview、自动化测试或迁移都不得连接生产客户数据库。
 - 数据库迁移是独立受控步骤，不进入 Vercel 的普通 install/build 命令；应用回滚也不会自动回滚数据库。
@@ -215,12 +215,12 @@ API 和 UI 共享 `src/lib/permissions.ts` 中的唯一能力矩阵。`✓` 表�
 以下事项目前仍是发布阻塞项，必须由项目使用方提供和审核：
 
 - [x] 公司法定/展示名称确认为 `ZNB Logistics Inc.`，网站简称确认为 `ZNB`。
-- [ ] 执行 `BRAND-001`，把已确认名称接入统一配置、公开页面、metadata、manifest、三语品牌上下文和法律页 fallback；不要误改客户表单中的“公司名称”字段。
+- [x] 执行 `BRAND-001`，把已确认名称接入统一配置、公开页面、metadata、manifest、三语品牌上下文和法律页 fallback；客户表单中的通用“公司名称”字段保持不变。
 - [ ] 确认 Logo、favicon、OG 图、正式域名和最终品牌资产。
 - [ ] 在 `src/config/site-config.ts` 更新已确认的邮箱、电话和地址；占位联系方式必须继续隐藏。
-- [ ] 在 `src/app/layout.tsx` 更新 title、description、author/publisher、Open Graph 和 Twitter 文案；有经过授权的 OG 图后再增加引用。
-- [ ] 在 `public/manifest.json` 更新名称、简称、描述和主题色。
-- [ ] 检查三份 `src/i18n/locales/*.json`、`src/app/about/page.tsx` 中作为品牌的 `Company Name` 和公司介绍；保留客户填写公司名称的通用字段语义。
+- [x] 在 `src/app/layout.tsx` 更新 title、description、author/publisher、Open Graph 和 Twitter 文案；有经过授权的 OG 图后再增加引用。
+- [x] 使用消费统一站点配置的 `src/app/manifest.ts` 生成 manifest 名称、简称、描述和主题色，不保留静态双写。
+- [x] 检查三份 `src/i18n/locales/*.json`、`src/app/about/page.tsx` 中的品牌语境并移除未证实主张；保留客户填写公司名称的通用字段语义。
 - [ ] 由业务负责人确认八类公开解决方案的范围、地区、限制和询价资料要求，不添加未经证实的价格、时效、仓库面积、客户数或订单量。
 - [ ] 由法律/隐私负责人审核并在后台发布 `privacy` 与 `terms` 页面；当前源码 fallback 只是占位文本，不能直接上线。
 - [ ] 确认可公开的联系渠道、营业时间、公司历史、仓库资料和授权图片；未确认的模块保持隐藏。

@@ -144,33 +144,33 @@
     "call": "Or call us at"
   },
   "about": {
-    "title": "About Company Name",
+    "title": "About ZNB Logistics Inc.",
     "badge": "About Us",
-    "description": "We are a professional cross-border logistics service provider committed to providing efficient, reliable, and cost-effective logistics solutions for global e-commerce sellers.",
-    "intro": "Company Name is a service provider focused on cross-border e-commerce logistics.",
-    "introDetail": "We are dedicated to providing global cross-border e-commerce sellers with one-stop logistics solutions from warehousing, transportation to delivery, including core services such as FBA, dropshipping, return processing and warehouse management. With a professional team, advanced facilities, and excellent service, we have become the trusted choice for many cross-border e-commerce sellers.",
-    "valuesTitle": "Our Mission & Vision",
+    "description": "The ZNB Logistics Inc. website describes service boundaries for warehousing, order fulfillment, and transportation coordination and accepts quote requests.",
+    "intro": "The ZNB Logistics Inc. website provides service information and a quote entry point for warehousing, order fulfillment, and transportation coordination.",
+    "introDetail": "Capabilities, lanes, operating conditions, pricing, and timing must be confirmed against the actual cargo information; this page makes no fixed commitment.",
+    "valuesTitle": "How to begin",
     "mission": {
-      "title": "Mission",
-      "description": "To provide efficient, reliable, and cost-effective logistics solutions for global cross-border e-commerce sellers"
+      "title": "Define the need",
+      "description": "Provide cargo, quantity, lane, requested timing, and handling requirements."
     },
     "vision": {
-      "title": "Vision",
-      "description": "To become the leading cross-border logistics service brand in North America"
+      "title": "Confirm boundaries",
+      "description": "Separate warehousing, fulfillment, FBA preparation and delivery, or transportation needs."
     },
     "values": {
-      "title": "Values",
-      "description": "Customer First, Integrity, Continuous Innovation, Excellence"
+      "title": "Request a quote",
+      "description": "Use the quote result to confirm feasibility, scope, pricing, and timing."
     },
-    "advantagesTitle": "Our Advantages",
-    "advantagesSubtitle": "Over the years, we have continuously improved our service system to build core competitiveness and provide customers with the best logistics experience.",
+    "advantagesTitle": "Information to confirm before quoting",
+    "advantagesSubtitle": "Complete details help define the operating and transportation boundaries. The site does not assume warehouse scale, service area, or performance metrics.",
     "advantages": [
-      "Cross-border Logistics Expertise",
-      "Professional Warehouse Operations",
-      "Efficient Order Processing",
-      "Customer-focused Service",
-      "Reliable Delivery Management",
-      "Responsive Customer Support"
+      "Cargo type and quantity",
+      "Origin and destination",
+      "Requested timing",
+      "Packaging and label requirements",
+      "Loading and handoff conditions",
+      "Other special handling needs"
     ],
     "historyTitle": "Our Journey",
     "milestones": []
@@ -254,7 +254,7 @@
   },
   "admin": {
     "title": "Admin Panel",
-    "description": "Company Name Admin Panel",
+    "description": "ZNB Admin Panel",
     "welcome": "Welcome back, Admin",
     "overview": "Overview",
     "articles": "Article Management",
@@ -475,7 +475,7 @@
   },
   "auth": {
     "loginTitle": "Login",
-    "loginDescription": "Login to your Company Name account",
+    "loginDescription": "Sign in to your ZNB account",
     "welcomeBack": "Welcome Back",
     "loginHint": "Login to your account for more features",
     "email": "Email",
@@ -490,7 +490,7 @@
     "noAccount": "Don't have an account?",
     "registerNow": "Register Now",
     "registerTitle": "Register",
-    "registerDescription": "Register a Company Name account",
+    "registerDescription": "Create a ZNB account",
     "createAccount": "Create Account",
     "registerHint": "Register an account to enjoy more services",
     "name": "Name",
@@ -620,7 +620,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "description": "Welcome to the Company Name Customer Dashboard",
+    "description": "Welcome to the ZNB customer dashboard",
     "pendingOrders": "Pending Orders",
     "inTransit": "In Transit",
     "pendingReturns": "Pending Returns",

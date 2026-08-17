@@ -87,7 +87,7 @@ export function Header() {
         <Link
           href="/"
           className="mr-auto flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-paper-white"
-          aria-label={`${siteInfo.name}，${t.nav.home}`}
+          aria-label={`${siteInfo.shortName}，${t.nav.home}`}
         >
           <span
             aria-hidden="true"
@@ -97,7 +97,7 @@ export function Header() {
             <span className="absolute inset-x-1.5 bottom-1.5 border-b border-paper-white/70" />
           </span>
           <span className="font-display truncate text-xl font-bold tracking-wide text-paper-white sm:text-2xl">
-            {siteInfo.name}
+            {siteInfo.shortName}
           </span>
         </Link>
 

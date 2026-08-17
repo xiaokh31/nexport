@@ -48,7 +48,7 @@
   },
   "stats": {
     "title": "Partenaire logistique de confiance",
-    "subtitle": "Au fil des ans, nous avons gagné la confiance de nombreux clients grâce à un service professionnel et une qualité excellente",
+    "subtitle": "Confirmer le périmètre selon la marchandise, l’itinéraire et les besoins de traitement",
     "customers": "Clients servis",
     "orders": "Commandes quotidiennes",
     "warehouse": "Espace d'entrepôt",
@@ -144,33 +144,33 @@
     "call": "Ou appelez-nous au"
   },
   "about": {
-    "title": "À propos de Company Name",
+    "title": "À propos de ZNB Logistics Inc.",
     "badge": "À propos de nous",
-    "description": "Nous sommes un fournisseur de services logistiques transfrontaliers professionnels engagés à fournir des solutions logistiques efficaces, fiables et rentables pour les vendeurs e-commerce mondiaux.",
-    "intro": "Company Name est un fournisseur de services axé sur la logistique e-commerce transfrontalière.",
-    "introDetail": "Nous nous consacrons à fournir aux vendeurs e-commerce transfrontaliers du monde entier des solutions logistiques complètes, de l'entreposage au transport et à la livraison, y compris des services de base tels que FBA, dropshipping, traitement des retours et gestion des stocks. Grâce à une équipe professionnelle, des installations avancées et un excellent service, nous sommes devenus le choix de confiance de nombreux vendeurs e-commerce.",
-    "valuesTitle": "Notre Mission et Vision",
+    "description": "Le site de ZNB Logistics Inc. décrit les limites des services d’entreposage, d’exécution des commandes et de coordination du transport, et reçoit les demandes de devis.",
+    "intro": "Le site de ZNB Logistics Inc. présente l’entreposage, l’exécution des commandes et la coordination du transport, avec un accès aux demandes de devis.",
+    "introDetail": "Les capacités, itinéraires, conditions opérationnelles, tarifs et délais doivent être confirmés selon la marchandise réelle ; cette page ne constitue pas un engagement fixe.",
+    "valuesTitle": "Comment commencer",
     "mission": {
-      "title": "Mission",
-      "description": "Fournir des solutions logistiques efficaces, fiables et rentables aux vendeurs e-commerce transfrontaliers du monde entier"
+      "title": "Définir le besoin",
+      "description": "Préciser la marchandise, la quantité, l’itinéraire, le délai souhaité et la manutention."
     },
     "vision": {
-      "title": "Vision",
-      "description": "Devenir la marque leader de services logistiques transfrontaliers en Amérique du Nord"
+      "title": "Confirmer les limites",
+      "description": "Distinguer l’entreposage, l’exécution, la préparation et livraison FBA, ou le transport."
     },
     "values": {
-      "title": "Valeurs",
-      "description": "Client d'abord, Intégrité, Innovation continue, Excellence"
+      "title": "Demander un devis",
+      "description": "Le devis confirme la faisabilité, le périmètre, le tarif et le délai."
     },
-    "advantagesTitle": "Nos Avantages",
-    "advantagesSubtitle": "Au fil des ans, nous avons continuellement amélioré notre système de service pour bâtir une compétitivité de base et offrir la meilleure expérience logistique.",
+    "advantagesTitle": "Informations à confirmer avant le devis",
+    "advantagesSubtitle": "Des données complètes facilitent la définition des opérations et du transport. Le site ne présume ni capacité d’entrepôt, ni zone, ni indicateur de performance.",
     "advantages": [
-      "Expertise en logistique transfrontalière",
-      "Opérations d'entrepôt professionnelles",
-      "Traitement efficace des commandes",
-      "Service axé sur le client",
-      "Gestion fiable des livraisons",
-      "Support client réactif"
+      "Type et quantité de marchandise",
+      "Origine et destination",
+      "Délai souhaité",
+      "Exigences d’emballage et d’étiquetage",
+      "Conditions de chargement et de remise",
+      "Autres besoins de manutention"
     ],
     "historyTitle": "Notre Parcours",
     "milestones": []
@@ -254,7 +254,7 @@
   },
   "admin": {
     "title": "Panneau d'administration",
-    "description": "Panneau d'administration Company Name",
+    "description": "Panneau d’administration ZNB",
     "welcome": "Bienvenue, Administrateur",
     "overview": "Aperçu",
     "articles": "Gestion des articles",
@@ -475,7 +475,7 @@
   },
   "auth": {
     "loginTitle": "Connexion",
-    "loginDescription": "Connectez-vous à votre compte Company Name",
+    "loginDescription": "Connectez-vous à votre compte ZNB",
     "welcomeBack": "Bon retour",
     "loginHint": "Connectez-vous pour accéder à plus de fonctionnalités",
     "email": "E-mail",
@@ -490,7 +490,7 @@
     "noAccount": "Pas de compte ?",
     "registerNow": "Inscrivez-vous",
     "registerTitle": "Inscription",
-    "registerDescription": "Créer un compte Company Name",
+    "registerDescription": "Créer un compte ZNB",
     "createAccount": "Créer un compte",
     "registerHint": "Inscrivez-vous pour profiter de plus de services",
     "name": "Nom",
@@ -620,7 +620,7 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "description": "Bienvenue sur le tableau de bord client Company Name",
+    "description": "Bienvenue sur le tableau de bord client ZNB",
     "pendingOrders": "Commandes en attente",
     "inTransit": "En transit",
     "pendingReturns": "Retours en attente",

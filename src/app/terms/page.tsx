@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLocale } from "@/i18n/locale-context";
 import { Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/content/safe-markdown";
+import { siteInfo } from "@/config/site-config";
 
 interface PageData {
   title: string;
@@ -55,66 +56,24 @@ export default function TermsPage() {
 
   const getDefaultContent = () => {
     if (locale === "en") {
-      return `# Terms of Service
+      return `# Terms of Service — Draft
 
-Welcome to Company Name. By using our services, you agree to these terms.
+> This fallback for ${siteInfo.legalName} is provided for configuration review only. It has not been approved for publication and requires professional legal review.
 
-## Service Description
-
-We provide cross-border e-commerce logistics services including FBA last mile, truck freight, warehousing, dropshipping, and returns handling.
-
-## User Responsibilities
-
-Users must provide accurate information when requesting quotes and using our services.
-
-## Limitation of Liability
-
-Our liability is limited to the extent permitted by applicable law.
-
-## Contact Us
-
-If you have any questions about these Terms, please contact us at contact@example.com.`;
+No final terms of service are currently published. The responsible reviewer must confirm the contracting entity, applicable services and jurisdictions, customer obligations, pricing and payment terms, liability, dispute process, termination, and an approved contact channel before release.`;
     }
     if (locale === "fr") {
-      return `# Conditions d'Utilisation
+      return `# Conditions d’utilisation — Brouillon
 
-Bienvenue chez Company Name. En utilisant nos services, vous acceptez ces conditions.
+> Ce contenu de secours pour ${siteInfo.legalName} sert uniquement à la vérification de la configuration. Il n’est pas approuvé pour publication et doit faire l’objet d’un examen juridique professionnel.
 
-## Description du Service
-
-Nous fournissons des services de logistique e-commerce transfrontalière, y compris le dernier kilomètre FBA, le fret routier, l'entreposage, le dropshipping et la gestion des retours.
-
-## Responsabilités de l'Utilisateur
-
-Les utilisateurs doivent fournir des informations exactes lors de la demande de devis et de l'utilisation de nos services.
-
-## Limitation de Responsabilité
-
-Notre responsabilité est limitée dans la mesure permise par la loi applicable.
-
-## Contactez-nous
-
-Si vous avez des questions concernant ces conditions, veuillez nous contacter à contact@example.com.`;
+Aucune condition d’utilisation définitive n’est actuellement publiée. Avant toute mise en ligne, le responsable doit confirmer l’entité contractante, les services et juridictions applicables, les obligations du client, les tarifs et paiements, la responsabilité, les litiges, la résiliation et un moyen de contact approuvé.`;
     }
-    return `# 服务条款
+    return `# 服务条款（草案）
 
-欢迎使用 Company Name。使用我们的服务即表示您同意以下条款。
+> 本内容是 ${siteInfo.legalName} 的配置审阅 fallback，尚未获准发布，必须经过法律专业审核。
 
-## 服务说明
-
-我们提供跨境电商物流服务，包括FBA、卡派服务、仓储管理、一件代发和退货换标等。
-
-## 用户责任
-
-用户在请求报价和使用我们的服务时必须提供准确的信息。
-
-## 责任限制
-
-我们的责任以适用法律允许的范围为限。
-
-## 联系我们
-
-如果您对本服务条款有任何疑问，请通过 contact@example.com 联系我们。`;
+当前没有已定稿的服务条款。正式发布前，负责人必须确认签约主体、适用服务和司法辖区、客户义务、价格与付款条款、责任边界、争议处理、终止规则和经批准的联系渠道。`;
   };
 
   if (loading) {

@@ -22,7 +22,7 @@ describe("email security", () => {
       message: malicious,
     });
 
-    expect(template.subject).toBe("新询价请求 - Attacker Bcc: victim@example.com");
+    expect(template.subject).toBe("ZNB | 新询价请求 - Attacker Bcc: victim@example.com");
     expect(template.subject).not.toMatch(/[\r\n]/);
     expect(template.html).not.toContain("<img");
     expect(template.html).not.toContain(malicious);

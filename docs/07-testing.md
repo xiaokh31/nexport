@@ -1,6 +1,6 @@
 # ZNB 本地开发与测试指南
 
-状态：当前仓库可执行基线；`BRAND-001` / `VERCEL-001` 完成后仍须由 `QA-004` 重跑  
+状态：当前仓库可执行基线；`BRAND-001` 已完成，`VERCEL-001` 完成后仍须由 `QA-004` 重跑
 更新日期：2026-08-17
 
 本指南是本地启动、自动化测试和发布前质量门禁的唯一操作入口。它不授权连接生产数据库、写入真实外部服务或执行生产部署。生产流程见 [`08-vercel-production-deployment.md`](08-vercel-production-deployment.md)。
@@ -83,7 +83,7 @@ pnpm exec prisma migrate deploy
 pnpm dev
 ```
 
-访问 <http://localhost:3000>，至少检查 `/`、`/solutions`、`/news`、`/login` 和 `/contact`。当前源码在 `BRAND-001` 前仍可能显示品牌占位，这是已登记任务，不是本地配置错误。
+访问 <http://localhost:3000>，至少检查 `/`、`/solutions`、`/news`、`/login` 和 `/contact`。公开品牌应显示 `ZNB`，法定语境应显示 `ZNB Logistics Inc.`；客户表单中的通用“公司名称”不是品牌占位。
 
 没有 reCAPTCHA 或 Resend 配置时应用可以启动，但注册、公开询价、验证邮件等受保护流程会按设计 fail closed；不能用伪 token、演示账户或临时 bypass 让它们通过。
 
