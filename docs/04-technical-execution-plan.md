@@ -1,7 +1,9 @@
 # 技术执行计划
 
-状态：开发前方案  
-日期：2026-08-13
+状态：原始方案已实施；2026-08-17 新增品牌与 Vercel 发布波次  
+日期：2026-08-17
+
+> 进度说明：Wave 0～7 已由 FND-001～QA-003 完成。新增 Wave 8～10 用于接入 `ZNB Logistics Inc.` / `ZNB`、Vercel 生产运行契约和发布验收；新增任务以 [`05-agent-backlog.md`](05-agent-backlog.md) 为准。
 
 ## 1. 执行原则
 
@@ -281,7 +283,7 @@ settings.manage
 - 解决方案详情使用 `generateMetadata` 和真实 canonical。
 - 文章详情生成 title、description、canonical、Open Graph 和 Article JSON-LD。
 - sitemap 查询已发布文章，并使用数据库时间；不对所有静态页写当前时间。
-- 公司身份未确定前暂停 Organization/LocalBusiness 输出，或只在配置通过完整性校验时渲染。
+- 公司名称已经确认，但正式域名、Logo、地址和联系资料未完整前继续暂停 Organization/LocalBusiness 输出；只在实体配置通过完整性校验时渲染。
 - 未实现真实 locale 路由前移除 `/zh`、`/en`、`/fr` alternates。
 - robots 继续阻止 `/admin`、`/user`、API 和认证页，验证规则与实际路由一致。
 - 发布页保证单一 H1、语义标题、图片 alt、可抓取分页和站内关联链接。
@@ -328,7 +330,9 @@ settings.manage
 创建可提交的 `.env.example`，并在 `.gitignore` 增加 `!.env.example`。至少记录：
 
 - `DATABASE_URL`
+- `DIRECT_URL`：Vercel 目标契约中只供 Prisma migration/admin 使用的直连 URL；不得进入浏览器或普通 Preview
 - `NEXTAUTH_SECRET`
+- `NEXTAUTH_URL`：生产 canonical origin；也可在验证 Vercel System Environment Variables 后采用 NextAuth 的平台自动识别策略
 - `NEXT_PUBLIC_SITE_URL`：唯一站点 URL；生产必须为绝对 HTTPS，开发允许 localhost；删除 `NEXT_PUBLIC_APP_URL`
 - 可选 `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`
 - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`、`RECAPTCHA_SECRET_KEY`
@@ -357,6 +361,12 @@ Wave 5  海外仓视觉与页面重构
 Wave 6  死代码/依赖/资产/文档清理
                │
 Wave 7  安装、数据库基线、自动化与全量验收
+               │
+Wave 8  ZNB 品牌语义接入
+               │
+Wave 9  Vercel Hobby / PostgreSQL / 外部调度生产契约
+               │
+Wave 10 隔离 Preview QA → 人工 Go/No-Go → 生产发布
 ```
 
 Wave 1–3 触碰 `schema.prisma`、baseline、`package.json`、`site-config.ts` 和三份 locale，是冲突热点，建议由一个集成 Agent 串行完成。Wave 4A 和 4B 可在接口契约冻结后并行；Wave 5 按页面文件分工，但全局 token、Header 和 Footer 仍由单一所有者维护。
@@ -404,8 +414,10 @@ Wave 1–3 触碰 `schema.prisma`、baseline、`package.json`、`site-config.ts`
 
 ## 11. 发布前配置门
 
-公司身份未确认不会阻塞代码重构，但会阻塞公开发布。上线前必须提供并审核：公司法定/展示名称、正式域名、联系资料、真实服务区域、公司介绍、隐私政策与条款、仓库素材及授权、Logo/图标、社交链接、可公开运营数据、合作伙伴授权。配置未通过时不得输出 LocalBusiness、假统计或合作 Logo。
+公司法定/展示名称已确认为 `ZNB Logistics Inc.`，网站简称为 `ZNB`。正式发布仍必须提供并审核：正式域名、联系资料、真实服务区域、公司介绍、隐私政策与条款、仓库素材及授权、Logo/图标、社交链接、可公开运营数据、合作伙伴授权，以及 AGPL-3.0 网络部署的源码提供机制。配置未通过时不得输出 LocalBusiness、假统计或合作 Logo。
 
-## 12. 本规划阶段未执行事项
+Vercel Hobby 发布还必须通过以下技术门禁：Production/Preview/Development 凭据和数据库隔离；运行时池化 `DATABASE_URL` 与迁移 `DIRECT_URL` 分离；迁移不进入普通 build；外部调度器使用受 Bearer 保护的 `GET` 调用 outbox 并保持幂等/租约；不把 Hobby 每天一次、小时级精度的原生 Cron 当作邮件主链路；函数区域与数据库区域经实际供应商确认；数据库备份、恢复和向后兼容迁移策略可执行。具体流程见 [`08-vercel-production-deployment.md`](08-vercel-production-deployment.md)。
 
-本轮没有修改业务源码、schema、migration 或依赖，没有安装 `node_modules`，没有运行 lint、typecheck、build 或数据库命令，也没有执行 Git。上述命令属于开发 backlog 的最终集成任务。
+## 12. 规划阶段与新增发布波次边界
+
+原规划阶段没有修改业务源码、schema、migration 或依赖，也没有执行 Git；其后 FND-001～QA-003 已完成实现与验证。本次 2026-08-17 修订只更新规划和运行指南，没有替 `BRAND-001`、`VERCEL-001`、`QA-004` 或 `RELEASE-001` 修改业务源码、Vercel 配置、数据库连接契约或外部平台状态。

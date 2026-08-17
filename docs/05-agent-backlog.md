@@ -1,18 +1,18 @@
 # 开发 Agent 任务清单
 
-状态：可领取，代码尚未实施  
-日期：2026-08-13
+状态：原始 27 项已完成；新增 4 项，当前仅 `BRAND-001` 可领取  
+日期：2026-08-17
 
 ## 1. 使用规则
 
-- 开发 Agent 必须先阅读 `docs/README.md` 和其余四份规划文档。
+- 开发 Agent 必须先阅读 `docs/README.md`、本任务清单，以及任务卡指向的运行指南。
 - 一次只执行一个任务或文档明确允许的同波次任务组；不得把整个 backlog 当作一次无检查的大改。
 - 每次开始时声明任务 ID、依赖是否完成、预计触碰文件和本次不处理的内容。
-- 公司身份内容保持占位，AGPL-3.0 保留，不执行 Git 操作。
+- 公司法定/展示名称已确认为 `ZNB Logistics Inc.`，网站简称为 `ZNB`；其余公司事实保持占位或隐藏。AGPL-3.0 保留，不执行 Git 操作。
 - 任务完成时报告：实际改动、偏离计划的原因、局部验证、剩余风险。
 - 共享热点 `schema.prisma`、`0_init/migration.sql`、`package.json`、`site-config.ts`、三份 locale 由同一集成 Agent 串行维护。
 
-验证分为三级：L0 是不依赖 `node_modules` 的 `rg`、JSON/Markdown/静态结构检查，每个任务必须执行；L1 是 Prisma、lint、typecheck 等依赖命令，依赖尚未重装时登记到 QA-001，不阻塞该任务移交；L2 是数据库、API 和浏览器验收，由 QA-002/003 执行。任务卡中的运行态验收默认属于 L2，不能因当下没有依赖而删除。
+原始 27 项曾按三级验证：L0 是不依赖 `node_modules` 的 `rg`、JSON/Markdown/静态结构检查；L1 是 Prisma、lint、typecheck；L2 是数据库、API 和浏览器验收。原波次允许把 L1/L2 延后到 QA-001～003，该规则现已结束。新增 `BRAND-001`、`VERCEL-001` 必须在各自任务内完成任务卡列出的局部门禁，不能回填或引用已完成的旧 QA；新增全量回归与隔离平台验收统一由 `QA-004` 执行。
 
 L0 的标准做法：用 `rg` 验证删除项和旧 key 无残留；用 Node 内置 `JSON.parse` 检查 `package.json`、manifest 和三份 locale；检查 schema 与 baseline 的模型/枚举名称集合；检查 Markdown 相对链接存在。L1 统一使用 `pnpm prisma:validate`、`pnpm lint`、`pnpm typecheck`，涉及构建时再运行 `pnpm build`。具体任务出现更严格命令时，以任务卡为准。
 
@@ -49,6 +49,10 @@ L0 的标准做法：用 `rg` 验证删除项和旧 key 无残留；用 Node 内
 | QA-001 | P0 | L | 所有实施任务 | 重装依赖和静态质量门禁 |
 | QA-002 | P0 | XL | QA-001、TEST-001 | 数据、安全、权限和核心流程测试 |
 | QA-003 | P1 | L | QA-002、UI-002~004 | 浏览器、响应式与无障碍验收 |
+| BRAND-001 | P0 | M | QA-003 | ZNB 公开品牌按语义接入，未知公司事实继续隐藏 |
+| VERCEL-001 | P0 | XL | BRAND-001 | Vercel Hobby、PostgreSQL、外部调度与环境契约就绪 |
+| QA-004 | P0 | L | BRAND-001、VERCEL-001 | 新发布波次全量门禁与隔离 Preview 验收 |
+| RELEASE-001 | P0 | M | QA-004 | 经人工授权完成首次生产发布与移交 |
 
 ## 3. Foundation 与删除任务
 
@@ -497,9 +501,115 @@ L0 的标准做法：用 `rg` 验证删除项和旧 key 无残留；用 Node 内
 
 验收：发现的问题回到对应任务修复，QA 任务本身不以跳过或备注“已知问题”宣布完成。
 
-## 10. 推荐执行批次
+## 10. 品牌与 Vercel 发布任务
 
-为减少上下文和冲突，推荐依次交给开发 Agent：
+### BRAND-001：接入 ZNB 公开品牌
+
+目标：把已经确认的法定/展示名称 `ZNB Logistics Inc.` 和网站简称 `ZNB` 接入公开品牌语境，同时继续隐藏所有未确认公司事实。本任务不是全局字符串替换，也不创建 Logo。
+
+主要范围：
+
+- 在 `src/config/site-config.ts` 建立清晰的 `legalName`、`displayName`/`shortName` 单一来源；简称用于 Header、工作区壳层和 manifest `short_name`，法定名用于法律页、publisher/author 等适用语境。
+- 用消费同一配置的 `src/app/manifest.ts` 替代静态 `public/manifest.json`，避免品牌双写；更新 `src/app/layout.tsx`、Header/Footer、登录/注册、用户中心、后台壳层、`src/app/about/page.tsx`、邮件展示名/模板，以及三份 locale 中明确表示本站品牌的文案。
+- 精准处理 privacy/terms fallback 的主体名称；法律文本仍须标注待专业审核，不能因有公司名就宣称可发布。
+- 清理 About 或营销文案中“领先”“众多客户”“先进设施”等未证实主张；域名、邮箱、电话、地址、营业时间、覆盖地区、仓库规模、历史、指标、合作伙伴和认证继续隐藏或使用不可发布占位。
+- 评估后台 Settings 与公开 shell 的 source of truth：要么接入同一经校验配置，要么修正文案，不能继续暗示后台修改已实时作用于静态公开品牌。
+- 更新只针对品牌语境的测试。客户询价表单中的“公司名称”、恶意输入 fixtures、`nexport-test-only`、Compose project、数据库名、内部测试协议和 package 内部标识不得因品牌替换而改动。
+- 正式 Logo、favicon、OG 图和品牌图形仍等待授权素材；只能使用文本 `ZNB`，不得自行推断或生成正式商标。
+
+验收：
+
+- 公开页面、metadata、由 `app/manifest.ts` 生成的 manifest、邮件和三语品牌上下文使用正确的 `ZNB Logistics Inc.` / `ZNB`，不再把品牌占位 `Company Name` 或内部项目名展示给访客；manifest 与站点配置有一致性测试。
+- 精准扫描区分“本站品牌”与“客户公司名称”；通用表单标签、负向安全 fixtures 和测试安全 marker 未被误改。
+- 不输出示例联系方式、虚构能力事实或不完整 Organization/LocalBusiness；正式域名和 Logo 未确认时相关实体继续受完整性门禁保护。
+- `pnpm lint`、`pnpm typecheck`、相关单元测试和使用迁移后隔离数据库的 `pnpm build` 全部通过。
+
+### VERCEL-001：Vercel 生产运行契约
+
+目标：按 [`08-vercel-production-deployment.md`](08-vercel-production-deployment.md) 把项目改造成符合 Vercel Hobby 技术限制的 Next.js 应用；邮件 outbox 使用外部调度器，不依赖 Hobby 原生 Cron 的及时性。本任务只准备代码、配置和可审计流程，不操作真实生产部署，也不替项目方确认 Vercel 使用资格。
+
+主要范围：
+
+- 将生产 Node 主版本固定为 Vercel 支持的 `24.x`，保留 `pnpm@10.27.0`；Install Command 使用 `pnpm install --frozen-lockfile`，Build Command 使用 `pnpm build`，迁移绝不进入 `postinstall` 或普通 build。
+- 为 Prisma 增加池化运行时 `DATABASE_URL` 与迁移/管理直连 `DIRECT_URL` 的明确契约，同步 `schema.prisma`、集中 env 校验、`.env.example`、README 和测试；增加受控 migration preflight/命令：runner 必须同时获得同环境的两个 URL，先以脱敏的 provider/host/port/database/user/region 摘要核对目标并执行 `prisma migrate status`，再经确认运行 deploy，不保存任何真实 URL。
+- 冻结 NextAuth URL 策略：生产使用 canonical `NEXTAUTH_URL`，或经测试启用 Vercel System Environment Variables；所有 Production/Preview/Development secret 分环境配置。
+- 把邮件 outbox 的核心处理提取为共享 handler；新增同等 Bearer 校验的 `GET`，可保留 `POST` 供人工调度。定义支持自定义 `Authorization: Bearer <CRON_SECRET>`、默认每 5 分钟调用的外部调度器契约、健康检查、失败告警和轮换流程；不得把 secret 写入 URL。
+- 不为邮件主链路配置高频 Vercel Cron：Hobby 最多每天一次且可能在指定小时内延迟，`*/5 * * * *` 会导致部署失败。若未来增加每天一次的原生 Cron，只能作为可选恢复扫描，并单独证明不会把验证/报价邮件延迟到次日。
+- 保留并验证数据库租约、幂等键、重复/重叠触发和模糊发送结果处理；新增未授权 401、缺配置 503、合法 GET、批量边界和重复触发测试。
+- 固定 Preview 模型：普通可信分支 Preview 只做受保护的页面/构建 smoke，不配置 OAuth/CAPTCHA/Resend/Cron secret；完整认证、询价、邮件和后台 QA 只在有固定 staging 域的隔离 **branch Preview deployment** 上执行。固定 staging 不是 Vercel Production environment，不注册平台 Cron；来自 fork 或其他不可信代码的构建不获得任何数据库/provider secret，也不自动部署到持有 secret 的项目。
+- 为 Preview/staging 增加 fail-safe 搜索隔离实现，例如只有 Production 显式 `SITE_INDEXING_ENABLED=true` 才允许索引；其余环境同时输出 `X-Robots-Tag: noindex, nofollow`、禁止 robots 抓取并避免 sitemap 暴露。覆盖 `src/app/layout.tsx`、`src/app/robots.ts`、必要的 headers/middleware/env 配置和自动化测试；noindex 不是访问控制，Preview 还必须启用 Vercel Deployment Protection。
+- 为受 Deployment Protection 的 staging/Production 记录双 header 运维契约：Vercel 使用 `x-vercel-protection-bypass`，应用 worker 继续使用 `Authorization: Bearer <CRON_SECRET>`；不得合并、记录或放入 query。VERCEL-001 只交付文档/测试边界，不创建真实 bypass secret。
+- 明确 Production、Preview、Development 的数据库和外部服务隔离。Preview 不得使用生产客户数据；固定 staging 使用独立数据库、OAuth/CAPTCHA/Resend/`CRON_SECRET` 和安全收件箱，没有这些已授权资源时只做普通 Preview smoke，不能增加 bypass。
+- 根据 Vercel 的真实请求头链建立并测试可信客户端 IP 策略；不得猜测 `TRUSTED_PROXY_HOPS`，也不得让所有访问长期归入同一个 `ip:unavailable` 限流桶。
+- 提供供应商无关的区域/连接/备份配置槽和决策模板，函数与数据库目标上优先共区；在供应商和数据驻留需求确定前不硬编码区域。实际供应商、区域、连接上限、备份/PITR/RPO/RTO 和责任人由 QA-004 外部 staging 准入及 RELEASE-001 Go/No-Go 记录，不阻塞本任务完成参数化代码。
+- 增加部署边界回归测试，确保 Preview/自动化不会迁移或读取生产库，Vercel 回滚不会被误写成数据库回滚；明确 secret rotation/revocation、人员离职交接和泄露响应。
+
+验收：
+
+- Vercel 配置、env schema、Prisma direct/pool 契约和指南一致；仓库中无真实 credential。
+- `GET /api/cron/email-outbox` 在合法 Bearer 下处理，缺失/错误 secret 返回 401，缺少 worker 配置返回 503；外部调度契约的 path、method、Bearer、超时、重试和每 5 分钟目标频率与 route 一致。
+- install/build 均无隐式 `prisma migrate deploy`；只有显式受控命令能够迁移，Preview 默认不能获得生产 `DIRECT_URL`。
+- migration preflight 在两个 URL 不同环境、目标不在 allowlist、缺备份确认或未确认时拒绝；管理员提升显示脱敏环境摘要并要求显式生产确认。
+- 普通 Preview、固定 staging 与 Production 的 canonical/auth/provider 模型已固定；非 Production 默认 noindex + Deployment Protection，不可信分支拿不到任何 secret。
+- 受保护部署的人工 worker 调用可同时通过 Vercel Authentication 和应用 Bearer 校验；缺少任一层凭据都不能被文档误判为 worker 故障。
+- Vercel Hobby、外部调度频率、函数/数据库区域、供应商连接参数和备份责任都有明确的必填决策模板、校验与 fail-safe；未确定值未被硬编码或伪装成现状。staging 所需实际值在 QA-004 前确认；生产外部 scheduler provider 只在生产变更授权门选定，不属于 VERCEL-001 的外部接入交付。
+- `pnpm prisma:generate`、`pnpm prisma:validate`、`pnpm lint`、`pnpm typecheck`、相关单元/集成测试和隔离数据库构建全部通过。
+
+### QA-004：Vercel 发布波次全量验收
+
+目标：在不接触生产客户数据的前提下，验证 BRAND-001 与 VERCEL-001 的可重复安装、数据库、构建、浏览器和 Vercel Preview/staging 行为。创建付费项目、数据库或外部 provider 属于外部写操作；必须由项目方预先 provision，或另行明确授权并确认费用/清理负责人，否则 QA-004 在“外部 staging 验收”处保持阻塞。
+
+执行顺序：
+
+1. 记录 Node、pnpm、Docker/PostgreSQL 版本；从 frozen lockfile 安装并检查 Vercel 构建日志实际使用 Node `24.x` 与 pnpm `10.27.0`。
+2. 按 [`07-testing.md`](07-testing.md) 执行 Prisma generate/validate、lint、typecheck、`pnpm test:all` 和使用迁移后隔离数据库的生产 build；明确记录 `test:all` 与静态/build 门禁是两组命令。
+3. 对一套全新的非生产托管 PostgreSQL，同时注入同环境的池化 `DATABASE_URL` 与直连 `DIRECT_URL`；先核对脱敏目标、运行 `prisma migrate status`，再执行 `prisma migrate deploy`。用池化 URL 完成构建和 smoke，验证 Preview 永不连接生产库。
+4. 普通可信分支 Preview 只做 Deployment Protection、页面/构建、noindex 和无 provider secret 验收；完整登录、注册、询价、用户中心、后台 RBAC、文章发布/SEO 只在固定域、隔离数据库和独立 provider 配置的 staging deployment 上验证。
+5. 在固定 staging 临时配置独立 `CRON_SECRET`、Resend 测试域和公司控制的安全收件箱，验证调度 **handler** 未授权 401、合法人工请求 200、重复/重叠调用、outbox 重试和测试邮件；验证结束按责任表保留或撤销 staging secret。QA-004 不把 Preview 人工请求冒充外部调度器自动触发证据；真实 Production schedule 在 RELEASE-001 验收。
+6. 精准审计公开 HTML、metadata、manifest 和邮件：品牌为 ZNB，未知公司事实未泄露，占位联系方式未展示；非 Production 有 app-level noindex/no-follow、robots 拒绝和 Deployment Protection。
+
+验收：全部自动化零跳过、静态门禁和 build 退出码为 0、隔离 Preview/staging smoke 有证据、资源/数据/secret 的所有者与清理结果已记录、无生产凭据/数据接触。真实外部 Production 调度明确留给 RELEASE-001；其他失败回到 BRAND-001 或 VERCEL-001 修复后重跑，不能以“已知问题”放行。
+
+### RELEASE-001：首次生产发布与运维移交
+
+目标：在 QA-004 通过且项目负责人明确授权后，按 [`08-vercel-production-deployment.md`](08-vercel-production-deployment.md) 执行首次生产迁移、Vercel 发布、域名切换和运维移交。本任务涉及外部平台与生产数据，开发 Agent 不得自行开始。
+
+生产变更授权门（Go/No-Go）前置：
+
+- Vercel Hobby 项目、Hobby 使用资格/风险负责人、托管 PostgreSQL、外部调度器、数据库区域/备份/恢复负责人已确认。若企业官网用途不符合 Vercel 当时条款，必须取得 Vercel 允许或改用合规套餐/平台后才能公开。
+- 正式域名及 canonical、DNS 权限、公开邮箱/电话/地址、隐私政策、服务条款、Logo/favicon/OG 图和所有业务声明已经公司审核；未提供的模块保持隐藏。
+- Resend 发件域验证完成；Google OAuth、reCAPTCHA 和搜索验证使用生产域名与独立生产凭据。
+- AGPL-3.0 网络部署的对应源码提供方式、第三方许可与隐私/日志保留方案经过负责人审核；与冻结 revision 对应的源码 URL/归档已在公网开放前发布，包含构建安装脚本和适用 notices，并已由未登录用户按约定入口验证。若尚未完成，Production 必须持续受 Deployment Protection 保护。
+- 生产 migration 备份、expand/contract 兼容性、代码回滚、数据库恢复决策人和维护窗口已经书面确认。
+
+执行与验收：
+
+- 生产 runner 同时获得同环境的 `DATABASE_URL` 与 `DIRECT_URL`；由两人核对脱敏 provider/project/region/database/user、备份 ID 与 `prisma migrate status` 后，再执行受控 `prisma migrate deploy`。不得用 `db push`，不得从普通 Preview 或 Vercel build 自动迁移。
+- 在解除任何 Production Deployment Protection 前发布并匿名验证与冻结 revision 对应的源码入口；随后绑定 canonical 域名并验证 HTTPS、apex/`www` 重定向、`.vercel.app` 重复内容策略、OAuth callback、CAPTCHA hostname、邮件 SPF/DKIM/DMARC 和搜索入口。
+- 在 Production Deployment Protection 下注册获批管理员账户后，使用不落日志的受控请求同时发送 `x-vercel-protection-bypass` 与 `Authorization: Bearer <CRON_SECRET>` header，人工触发 worker 送出验证邮件；完成验证后再执行幂等管理员提升。命令前显示脱敏目标并要求显式生产确认，不得创建演示账户或硬编码密码。
+- 验证真实外部调度器按约定频率自动调用并注入 Bearer；失败/重叠/积压可观察。QA-004 的人工 handler 测试不能替代本项；不得把 Hobby 每天一次的 Vercel Cron 当作邮件主调度器。
+- 完成公开页、认证、询价、用户隔离、RBAC、文章发布、邮件 outbox、robots/sitemap 和日志脱敏的生产 smoke。只使用公司批准的合成 smoke 账户/询价/文章，统一标记 release ID；发布负责人按数据保留规则关闭/归档/清理，并保留必要审计证据，不加载自动化 fixtures。
+- 所有保护态 smoke 与“解除保护/公开门”签字后才解除 Production Deployment Protection；记录部署 ID、migration 状态、外部 scheduler 状态、管理员、监控/告警、备份和回滚负责人，以及 staging/生产 smoke 数据清理结果、可访问的对应源码 URL/版本。代码回滚不声称撤销数据库或外部服务状态。
+
+### 权限边界
+
+`RELEASE-001` 是待授权的操作任务，不是本次规划授权。开发 Agent 可以完成 BRAND-001、VERCEL-001 和 QA-004 的本地工作；QA-004 所需的托管数据库、固定 staging、域名或 provider 也必须由项目方提供或另行授权。没有新明确授权，不得创建付费外部资源、创建 Vercel 项目、写入平台环境变量、修改 DNS、迁移生产数据库、初始化生产管理员或发布 Production。
+
+## 11. 按顺序执行任务
+
+原始 27 项已经完成，不重新领取。从当前状态开始，只按以下顺序串行执行：
+
+1. **BRAND-001**：接入 `ZNB Logistics Inc.` / `ZNB`，其余公司事实继续隐藏。
+2. **VERCEL-001**：实现 Vercel Hobby、Prisma direct/pool、Preview 隔离和外部邮件调度契约。
+3. **QA-004**：执行全量本地门禁、普通 Preview 和经授权固定 staging 验收。
+4. **人工生产变更授权门（Go/No-Go）**：确认 Hobby 使用资格、正式域名/公司资料、数据库、生产外部 scheduler provider、备份、AGPL 源码入口与生产授权；这不是可由 Agent 自动跳过的任务。
+5. **RELEASE-001**：仅在明确生产授权后执行迁移、部署、调度验收、域名切换和运维移交。
+
+依赖是硬顺序：后一个任务不得与前一个并行启动。若 Hobby 使用资格或生产外部 scheduler 未确认，停在生产变更授权门，不自行改用 Pro、也不带风险公开上线。RELEASE-001 内另有“解除保护/公开门”，用于保护态 smoke 后决定是否面向公网，不与前置授权门混称。
+
+### 已完成的历史批次
+
+原始实现曾按以下批次执行，保留用于追溯：
 
 1. **基础清理批次**：FND-001 → CLN-001 → CLN-002 → CLN-003 → CLN-004。
 2. **数据与安全批次**：DATA-001 → DATA-002 → TEST-001 → SEC-001 → SEC-002 → SEC-003 → RBAC-001 → SAFE-001。
@@ -507,8 +617,8 @@ L0 的标准做法：用 `rg` 验证删除项和旧 key 无残留；用 Node 内
 4. **视觉批次**：UI-001 → UI-002；UI-003 与 UI-004 在 UI-001 后按文件分工。
 5. **收尾批次**：HYG-001 → DOC-001 → QA-001 → QA-002 → QA-003。
 
-## 11. 可直接复用的 Agent 提示词模板
+## 12. 可直接复用的 Agent 提示词模板
 
 ```text
-阅读 docs/README.md 及 01–05 全部规划文档。只实施任务 [TASK-ID]，先检查其依赖并声明文件范围。不要修改未确定的公司信息，不要修改 AGPL-3.0 LICENSE，不执行任何 Git 操作。使用 apply_patch 修改文件，保护用户已有改动。完成后执行任务规定的局部校验，报告改动、验证结果、未解决项；不要顺手扩展到下一个任务。
+阅读 docs/README.md、01–08 规划与运行文档。只实施任务 [TASK-ID]，先检查其依赖并声明文件范围。已确认品牌仅为法定/展示名 “ZNB Logistics Inc.” 和简称 “ZNB”，部署套餐为 Vercel Hobby；邮件主调度使用外部 scheduler，不得配置高频 Vercel Cron。不要虚构其余公司信息，不要修改 AGPL-3.0 LICENSE，不执行任何 Git 操作。使用 apply_patch 修改文件，保护用户已有改动。完成后执行任务规定的局部校验，报告改动、验证结果、未解决项；不要顺手扩展到下一个任务。RELEASE-001 必须另有明确生产授权。
 ```

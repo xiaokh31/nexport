@@ -1,8 +1,8 @@
-# Nexport 海外仓与跨境履约网站
+# ZNB 海外仓与跨境履约网站
 
 这是一个面向海外仓储、订单履约、FBA 准备与交付及运输需求询价的企业网站。项目使用 Next.js App Router、React、TypeScript、Prisma、PostgreSQL、NextAuth、Tailwind CSS 和 Radix UI，包含公开站点、账户工作区、询价、通知、文章发布及按能力授权的管理后台。
 
-> 当前仓库仍使用 `Company Name`、示例联系方式和中性内容。它们不是已确认的公司事实；完成“上线前公司资料清单”之前不得部署为正式企业网站。
+> 公司法定/展示名称已确认为 `ZNB Logistics Inc.`，网站简称为 `ZNB`。当前业务源码仍保留 `Company Name` 占位，须由 `BRAND-001` 完成精准替换；正式域名、联系方式、Logo、法律文本和可公开业务事实仍待确认。在完成 `BRAND-001`、`VERCEL-001`、`QA-004`，通过生产变更授权门（Go/No-Go），并在 `RELEASE-001` 内通过“解除保护/公开门”前，不得把当前版本作为正式企业网站发布。
 
 ## 快速开始：从空数据库启动
 
@@ -133,7 +133,7 @@ pnpm test:e2e
 pnpm test:db:down
 ```
 
-完整门禁执行 `pnpm test:all`。它会重建空测试库、只部署 `0_init`、加载受控 fixtures、依次运行单元/集成/E2E，并在成功或失败后清理和关闭测试 project。详细安全契约见 [`docs/07-testing.md`](docs/07-testing.md)。
+自动化测试全流程执行 `pnpm test:all`。它会重建空测试库、只部署 `0_init`、加载受控 fixtures、依次运行单元/集成/E2E，并在成功或失败后清理和关闭测试 project。它**不包含** lint、typecheck 或生产构建；发布门禁还必须单独执行这些检查。完整步骤见 [`docs/07-testing.md`](docs/07-testing.md)。
 
 ## 初始化第一个管理员
 
@@ -150,7 +150,7 @@ pnpm admin:promote --email administrator@example.com
 
 命令幂等，只提升已验证账户，不创建用户或密码。每个环境分别执行一次。系统拒绝删除或降级最后一个 `ADMIN`，也拒绝管理员删除自己的账户。
 
-邮件调度器应定期向 `POST /api/cron/email-outbox?limit=25` 发送 `Authorization: Bearer <CRON_SECRET>`。`limit` 范围为 1～100。生产环境应监控 worker 的 401/503/500、重试积压、`FAILED` 和 `MANUAL_REVIEW` 记录；不要把 secret 放在 URL 或日志中。
+当前邮件调度器接口要求定期向 `POST /api/cron/email-outbox?limit=25` 发送 `Authorization: Bearer <CRON_SECRET>`。`limit` 范围为 1～100。目标部署使用 Vercel Hobby，其原生 Cron 最多每天一次，不能承担注册验证与报价邮件的及时处理；`VERCEL-001` 只实现共享 handler、受保护 `GET` 和外部调度契约，生产 provider 在生产变更授权门选定，并由 `RELEASE-001` 创建为默认每 5 分钟调用。生产环境还应监控 worker 的 401/503/500、重试积压、`FAILED` 和 `MANUAL_REVIEW` 记录；不要把 secret 放在 URL 或日志中。
 
 ## 服务类型契约
 
@@ -199,51 +199,43 @@ API 和 UI 共享 `src/lib/permissions.ts` 中的唯一能力矩阵。`✓` 表�
 - 解决方案页会把 `category="service"` 或 tags 匹配的文章作为相关内容；tag 可使用 solution key、slug、`ServiceType` 或其小写形式。
 - 删除为永久删除。操作前确认内容和 URL 不再需要，并保留必要的外部备份。
 
-## 部署注意事项
+## Vercel 生产部署
 
-推荐顺序：
+目标平台与套餐已确定为 Vercel Hobby。项目的 Next.js/Node 架构可以按 Hobby 技术限制部署，但当前仓库还不是可直接上线的发布包：Prisma 尚未区分池化运行时连接与迁移直连，邮件 worker 只有 `POST`，外部调度器也尚未选定或配置。
 
-```bash
-pnpm install --frozen-lockfile
-pnpm prisma:generate
-pnpm prisma:validate
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm exec prisma migrate deploy
-pnpm build
-pnpm start
-```
+> Vercel 当前官方条款把 Hobby 限定为个人、非商业用途。本文档按项目方指定的 Hobby 技术方案制定，但在正式企业网站公开前，项目方仍须确认该用途获得 Vercel 允许；若不符合，需改用获准套餐或其他合规托管方案。这个条款确认不改变应用任务顺序。
 
-- 构建和运行环境都需要有效的 `NEXT_PUBLIC_SITE_URL`；生产值必须是 HTTPS origin。
-- 构建使用的 `DATABASE_URL` 必须指向预期环境。迁移使用单独、最小权限的部署凭据更安全。
-- Google OAuth 的回调地址是 `<site-origin>/api/auth/callback/google`；OAuth 控制台、站点 origin 和部署域名必须一致。
-- reCAPTCHA 允许域名必须与 `NEXT_PUBLIC_SITE_URL` hostname 一致。缺少密钥时注册和询价不会自动放行。
-- `TRUSTED_PROXY_HOPS` 只能根据真实代理链设置；错误值可能导致限流身份混淆。直连或不确定时保持 `0`。
-- 为 PostgreSQL 配置备份、恢复演练、连接加密和最小权限；为应用、worker 和数据库日志设置脱敏与保留策略。
-- 发布后检查 `/robots.txt`、`/sitemap.xml`、OAuth、邮件验证、询价、用户数据隔离和管理权限。
+- 开发 Agent 先按 [`docs/05-agent-backlog.md`](docs/05-agent-backlog.md) 执行 `BRAND-001 → VERCEL-001 → QA-004`。
+- 运维人员再按 [`docs/08-vercel-production-deployment.md`](docs/08-vercel-production-deployment.md) 通过生产变更授权门（Go/No-Go）并执行 `RELEASE-001`；该任务内还设有独立的“解除保护/公开门”。
+- 任何 Preview、自动化测试或迁移都不得连接生产客户数据库。
+- 数据库迁移是独立受控步骤，不进入 Vercel 的普通 install/build 命令；应用回滚也不会自动回滚数据库。
 
 ## 上线前公司资料清单
 
 以下事项目前仍是发布阻塞项，必须由项目使用方提供和审核：
 
-- [ ] 确认公司法定/展示名称、Logo、favicon、品牌色和正式域名。
-- [ ] 在 `src/config/site-config.ts` 更新站点名称、邮箱、电话和地址。
+- [x] 公司法定/展示名称确认为 `ZNB Logistics Inc.`，网站简称确认为 `ZNB`。
+- [ ] 执行 `BRAND-001`，把已确认名称接入统一配置、公开页面、metadata、manifest、三语品牌上下文和法律页 fallback；不要误改客户表单中的“公司名称”字段。
+- [ ] 确认 Logo、favicon、OG 图、正式域名和最终品牌资产。
+- [ ] 在 `src/config/site-config.ts` 更新已确认的邮箱、电话和地址；占位联系方式必须继续隐藏。
 - [ ] 在 `src/app/layout.tsx` 更新 title、description、author/publisher、Open Graph 和 Twitter 文案；有经过授权的 OG 图后再增加引用。
 - [ ] 在 `public/manifest.json` 更新名称、简称、描述和主题色。
-- [ ] 检查三份 `src/i18n/locales/*.json`、`src/app/about/page.tsx` 中的 `Company Name` 和公司介绍。
+- [ ] 检查三份 `src/i18n/locales/*.json`、`src/app/about/page.tsx` 中作为品牌的 `Company Name` 和公司介绍；保留客户填写公司名称的通用字段语义。
 - [ ] 由业务负责人确认八类公开解决方案的范围、地区、限制和询价资料要求，不添加未经证实的价格、时效、仓库面积、客户数或订单量。
 - [ ] 由法律/隐私负责人审核并在后台发布 `privacy` 与 `terms` 页面；当前源码 fallback 只是占位文本，不能直接上线。
 - [ ] 确认可公开的联系渠道、营业时间、公司历史、仓库资料和授权图片；未确认的模块保持隐藏。
 - [ ] 不把承运商、平台或其他品牌展示为合作伙伴，除非已取得可证明的授权。
 - [ ] 验证发件域名、Google OAuth、reCAPTCHA、搜索引擎所有权和生产调度器。
 - [ ] 在后台“系统设置”填写六个已确认字段。注意：这些数据库设置当前不会覆盖公开 shell 的构建时静态配置，仍需同步更新上述源码并重新构建。
-- [ ] 完成 QA-001～003，并记录实际 Node/pnpm/PostgreSQL 版本、迁移结果和回滚负责人。
+- [x] 完成原始 QA-001～003，并记录本地 Node/pnpm/PostgreSQL 与自动化结果。
+- [ ] 完成 `VERCEL-001` 与 `QA-004`，确认 Vercel Hobby、托管 PostgreSQL、Preview 隔离、外部邮件调度器、备份和回滚契约。
+- [ ] 获得明确生产发布授权后执行 `RELEASE-001`，记录生产迁移、部署、管理员初始化和回滚负责人。
 
 ## 文档与许可证
 
 - [`docs/README.md`](docs/README.md)：设计、执行计划和任务导航
 - [`docs/06-task-progress.md`](docs/06-task-progress.md)：实时任务完成度
-- [`docs/07-testing.md`](docs/07-testing.md)：隔离数据库与自动化测试手册
+- [`docs/07-testing.md`](docs/07-testing.md)：本地开发、隔离数据库与完整测试指南
+- [`docs/08-vercel-production-deployment.md`](docs/08-vercel-production-deployment.md)：Vercel 生产部署、验收与回滚指南
 
 本项目使用 [GNU Affero General Public License v3.0](LICENSE)。通过网络向用户提供修改后的程序时，AGPL-3.0 通常涉及向这些用户提供对应源码的义务。具体适用范围、源码提供方式、第三方代码和部署流程必须由项目使用方自行进行法律与合规审核；本说明不是法律意见，也没有修改 `LICENSE` 正文。
