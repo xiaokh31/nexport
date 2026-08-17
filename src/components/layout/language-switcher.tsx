@@ -14,7 +14,22 @@ import { locales, localeNames, type Locale } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 export function LanguageSwitcher({ className }: { className?: string }) {
-  const { locale, setLocale, t } = useLocale();
+  const { locale, mounted, setLocale, t } = useLocale();
+
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn("gap-2", className)}
+        aria-label={`${t.common.switchLanguage}: ${localeNames[locale]}`}
+        disabled
+      >
+        <Globe className="h-4 w-4" aria-hidden="true" />
+        <span className="hidden sm:inline">{localeNames[locale]}</span>
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu>

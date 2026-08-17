@@ -85,14 +85,20 @@ describe("UI-001 foundation boundaries", () => {
   it("keeps one language switcher and gives the mobile navigation an accessible title", () => {
     const header = source("src/components/layout/header.tsx");
     const language = source("src/components/layout/language-switcher.tsx");
+    const localeContext = source("src/i18n/locale-context.tsx");
 
     expect(header.match(/<LanguageSwitcher/g)).toHaveLength(1);
     expect(header).toContain("<SheetTitle");
     expect(header).toContain("closeLabel={t.common.closeMenu}");
     expect(header).toContain('aria-label={t.common.openMenu}');
     expect(header).toContain('className="hidden xl:flex"');
+    expect(header).toContain("isLoggedIn && mounted");
+    expect(header).toContain("{mounted ? (");
     expect(language).toContain("DropdownMenuRadioGroup");
     expect(language).toContain("t.common.switchLanguage");
+    expect(language).toContain("if (!mounted)");
+    expect(localeContext).toContain("applyDocumentLanguage(savedLocale)");
+    expect(localeContext).toContain("applyDocumentLanguage(newLocale)");
   });
 
   it("does not expose placeholder contacts or unauthorized partner links in the shell", () => {
@@ -126,5 +132,14 @@ describe("UI-001 foundation boundaries", () => {
       expect(sidebar).toContain("border-signal-amber");
       expect(sidebar).toContain("min-h-11");
     }
+  });
+
+  it("keeps shared form label and description ids stable across hydration", () => {
+    const form = source("src/components/ui/form.tsx");
+
+    expect(form).toContain("form-field-${String(name)");
+    expect(form).not.toContain("React.useId()");
+    expect(form).toContain("htmlFor={formItemId}");
+    expect(form).toContain("aria-describedby=");
   });
 });

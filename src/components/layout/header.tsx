@@ -49,7 +49,7 @@ import { LanguageSwitcher } from "./language-switcher";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const { locale, t } = useLocale();
+  const { locale, mounted, t } = useLocale();
   const { data: session, status } = useSession();
   const isLoggedIn = status === "authenticated";
   const { profile: adminAccess } = useAdminAccess(session?.user?.id);
@@ -101,54 +101,71 @@ export function Header() {
           </span>
         </Link>
 
-        <NavigationMenu className="hidden xl:flex" aria-label="主要导航">
-          <NavigationMenuList>
-            {mainNav.map((item) =>
-              item.children ? (
-                <NavigationMenuItem key={item.title}>
-                  <NavigationMenuTrigger className="bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus:bg-paper-white/10 focus:text-paper-white data-[state=open]:bg-paper-white/10 data-[state=open]:text-paper-white focus-visible:outline-paper-white">
-                    {item.title}
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[32rem] grid-cols-2 gap-1 p-3">
-                      {item.children.map((child) => (
-                        <li key={child.href}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              href={child.href}
-                              className="min-h-11 rounded-sm border-l-2 border-transparent p-3 leading-snug hover:border-signal-amber hover:bg-accent focus:border-signal-amber focus:bg-accent"
-                            >
-                              <span className="text-sm font-medium">{child.title}</span>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              ) : (
-                <NavigationMenuItem key={item.href}>
-                  <NavigationMenuLink asChild>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        navigationMenuTriggerStyle(),
-                        "bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus:bg-paper-white/10 focus:text-paper-white focus-visible:outline-paper-white",
-                      )}
-                    >
+        {mounted ? (
+          <NavigationMenu className="hidden xl:flex" aria-label="主要导航">
+            <NavigationMenuList>
+              {mainNav.map((item) =>
+                item.children ? (
+                  <NavigationMenuItem key={item.title}>
+                    <NavigationMenuTrigger className="bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus:bg-paper-white/10 focus:text-paper-white data-[state=open]:bg-paper-white/10 data-[state=open]:text-paper-white focus-visible:outline-paper-white">
                       {item.title}
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ),
-            )}
-          </NavigationMenuList>
-        </NavigationMenu>
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[32rem] grid-cols-2 gap-1 p-3">
+                        {item.children.map((child) => (
+                          <li key={child.href}>
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href={child.href}
+                                className="min-h-11 rounded-sm border-l-2 border-transparent p-3 leading-snug hover:border-signal-amber hover:bg-accent focus:border-signal-amber focus:bg-accent"
+                              >
+                                <span className="text-sm font-medium">{child.title}</span>
+                              </Link>
+                            </NavigationMenuLink>
+                          </li>
+                        ))}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                ) : (
+                  <NavigationMenuItem key={item.href}>
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus:bg-paper-white/10 focus:text-paper-white focus-visible:outline-paper-white",
+                        )}
+                      >
+                        {item.title}
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ),
+              )}
+            </NavigationMenuList>
+          </NavigationMenu>
+        ) : (
+          <nav className="hidden items-center xl:flex" aria-label="主要导航">
+            {mainNav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  navigationMenuTriggerStyle(),
+                  "bg-transparent text-paper-white hover:bg-paper-white/10 hover:text-paper-white focus-visible:outline-paper-white",
+                )}
+              >
+                {item.title}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <LanguageSwitcher className="border-paper-white/20 text-paper-white hover:border-paper-white/60 hover:bg-paper-white/10 hover:text-paper-white" />
 
-          {isLoggedIn ? (
+          {isLoggedIn && mounted ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -216,6 +233,22 @@ export function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          ) : isLoggedIn ? (
+            <Button
+              variant="ghost"
+              asChild
+              className="border-paper-white/20 px-2 text-paper-white hover:border-paper-white/60 hover:bg-paper-white/10 hover:text-paper-white"
+            >
+              <Link href="/user" aria-label={`${t.user.center}：${accountLabel}`}>
+                <Avatar className="size-7">
+                  <AvatarImage src={session?.user?.image || undefined} alt={accountLabel} />
+                  <AvatarFallback className="bg-paper-white text-xs text-dock-navy">
+                    {accountLabel.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden 2xl:inline">{accountLabel}</span>
+              </Link>
+            </Button>
           ) : (
             <Button
               variant="ghost"
@@ -233,7 +266,7 @@ export function Header() {
             <Link href="/contact">{t.common.getQuote}</Link>
           </Button>
 
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          {mounted ? <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -315,7 +348,17 @@ export function Header() {
                 </div>
               </nav>
             </SheetContent>
-          </Sheet>
+          </Sheet> : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="border-paper-white/20 text-paper-white xl:hidden"
+              aria-label={t.common.openMenu}
+              disabled
+            >
+              <Menu className="size-5" aria-hidden="true" />
+            </Button>
+          )}
         </div>
       </div>
     </header>

@@ -41,6 +41,10 @@ function storeLocale(locale: Locale) {
   }
 }
 
+function applyDocumentLanguage(locale: Locale) {
+  document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
+}
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
   const [dictionary, setDictionary] = useState<Dictionary>(getDictionary(defaultLocale));
@@ -53,6 +57,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       if (savedLocale) {
         setLocaleState(savedLocale);
         setDictionary(getDictionary(savedLocale));
+        applyDocumentLanguage(savedLocale);
       }
     }, 0);
 
@@ -62,7 +67,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     setDictionary(getDictionary(newLocale));
-    document.documentElement.lang = newLocale === "zh" ? "zh-CN" : newLocale;
+    applyDocumentLanguage(newLocale);
     storeLocale(newLocale);
   }, []);
 
