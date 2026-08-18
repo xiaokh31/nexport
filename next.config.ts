@@ -1,6 +1,29 @@
 import type { NextConfig } from "next";
+import { getDeploymentPolicy } from "./src/config/deployment";
 
 const isProduction = process.env.NODE_ENV === "production";
+const { indexingEnabled } = getDeploymentPolicy();
+
+function productionHostRedirect() {
+  if (!indexingEnabled || !process.env.VERCEL_PROJECT_PRODUCTION_URL) return [];
+  try {
+    const canonicalUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "");
+    const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      .trim()
+      .toLowerCase();
+    if (!vercelProductionHost || canonicalUrl.hostname === vercelProductionHost) {
+      return [];
+    }
+    return [{
+      source: "/:path*",
+      has: [{ type: "host" as const, value: vercelProductionHost }],
+      destination: `${canonicalUrl.origin}/:path*`,
+      permanent: true,
+    }];
+  } catch {
+    return [];
+  }
+}
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -50,6 +73,14 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), geolocation=(), microphone=(), payment=(), usb=()",
           },
+          ...(!indexingEnabled
+            ? [
+                {
+                  key: "X-Robots-Tag",
+                  value: "noindex, nofollow",
+                },
+              ]
+            : []),
           ...(isProduction
             ? [
                 {
@@ -61,6 +92,10 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+
+  async redirects() {
+    return productionHostRedirect();
   },
 
   ...(isProduction && {

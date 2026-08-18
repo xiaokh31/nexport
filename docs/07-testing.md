@@ -1,6 +1,6 @@
 # ZNB 本地开发与测试指南
 
-状态：当前仓库可执行基线；`BRAND-001` 已完成，`VERCEL-001` 完成后仍须由 `QA-004` 重跑
+状态：当前仓库可执行基线；`BRAND-001`、`VERCEL-001` 已完成，仍须由 `QA-004` 重跑全量与隔离平台验收
 更新日期：2026-08-17
 
 本指南是本地启动、自动化测试和发布前质量门禁的唯一操作入口。它不授权连接生产数据库、写入真实外部服务或执行生产部署。生产流程见 [`08-vercel-production-deployment.md`](08-vercel-production-deployment.md)。
@@ -17,7 +17,7 @@
 
 ## 2. 前置条件
 
-- Node.js `>=20.9.0`；`VERCEL-001` 完成后以 `package.json` 固定的 Node `24.x` 为准。
+- Node.js `24.x`，以 `package.json#engines` 为准。
 - pnpm `10.27.0`，以 `package.json#packageManager` 为准。
 - Docker Desktop/Engine 已运行，`docker compose version` 可用。
 - 本机端口 `55432` 可供隔离 PostgreSQL 使用；E2E 时端口 `3100` 可用。
@@ -52,14 +52,24 @@ cp .env.example .env
 
 ```dotenv
 DATABASE_URL="postgresql://nexport:nexport_local_password@127.0.0.1:5432/nexport?schema=public"
+DIRECT_URL="postgresql://nexport:nexport_local_password@127.0.0.1:5432/nexport?schema=public"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3000"
+SITE_INDEXING_ENABLED="false"
 NEXTAUTH_SECRET="本地独立且至少32字节的值"
 RATE_LIMIT_SECRET="另一个本地独立且至少32字节的值"
 CRON_SECRET="第三个本地独立且至少32字节的值"
 TRUSTED_PROXY_HOPS="0"
+DATABASE_TARGET_ENVIRONMENT="development"
+DATABASE_TARGET_ID="local-development"
+DATABASE_PROVIDER="local-postgresql"
+DATABASE_REGION="local"
+DATABASE_ALLOWED_HOSTS="127.0.0.1"
+DATABASE_BACKUP_ID="not-applicable-for-empty-local-development"
+DATABASE_TARGET_CONFIRMATION="development:local-development"
 ```
 
-不要把 `.env`、真实 provider key 或生产 URL 写入仓库。`VERCEL-001` 将增加 `DIRECT_URL` / `NEXTAUTH_URL` 的目标契约；在该任务完成前，不要假称当前 schema 已支持 direct/pool 分离。
+不要把 `.env`、真实 provider key 或生产 URL 写入仓库。本地可以让池化/直连 URL 指向同一专用开发库；托管环境必须使用供应商各自的池化/直连 URL，并由受控命令验证同一目标。`NEXTAUTH_URL` 必须与该环境 `NEXT_PUBLIC_SITE_URL` 完全一致。
 
 ### 3.2 启动开发数据库
 
@@ -79,7 +89,8 @@ docker run --name nexport-postgres \
 
 ```bash
 pnpm prisma:generate
-pnpm exec prisma migrate deploy
+pnpm migration:status
+pnpm migration:deploy
 pnpm dev
 ```
 
@@ -104,7 +115,7 @@ DATABASE_URL_TEST="postgresql://nexport_test:nexport_test_password@127.0.0.1:554
 TEST_DATABASE_MARKER="nexport-test-only"
 ```
 
-`compose.test.yml` 使用独立 `nexport-test` Compose project、端口 `55432` 和 tmpfs 数据目录，不复用开发卷。`nexport-test-only` 是安全协议标识，不是公开品牌，`BRAND-001` 不应修改它。
+`compose.test.yml` 使用独立 `nexport-test` Compose project、端口 `55432` 和 tmpfs 数据目录，不复用开发卷。测试 runner 会把同一个安全 URL 注入 `DATABASE_URL` 与 `DIRECT_URL`，但不会读取或运行任何生产迁移目标元数据。`nexport-test-only` 是安全协议标识，不是公开品牌。
 
 绝对禁止：
 
@@ -175,7 +186,7 @@ pnpm test:all
 pnpm build
 ```
 
-需要记录每条命令的退出码、Node/pnpm 版本和测试计数。`pnpm build` 会生成 Prisma Client，并可能在构建阶段读取公开文章/页面，因此需要可连接且已应用 baseline 的数据库以及有效的 `NEXT_PUBLIC_SITE_URL`。不要为了构建成功而把生产数据库临时放进本地 `.env`。
+需要记录每条命令的退出码、Node/pnpm 版本和测试计数。整套本地门禁中的 Prisma validate/受控 migration 需要同目标 `DIRECT_URL`；`pnpm build` 本身只使用可连接且已应用 baseline 的池化 `DATABASE_URL` 和一致的 `NEXT_PUBLIC_SITE_URL` / `NEXTAUTH_URL`。本地构建保持 `SITE_INDEXING_ENABLED=false`；普通 Preview 构建还应明确移除 `DIRECT_URL` 并证明仍能通过，不能为了构建成功注入迁移或生产凭据。
 
 新增品牌/Vercel 任务的额外门禁：
 
@@ -203,7 +214,7 @@ pnpm build
 | Docker 无法连接 | 启动 Docker；确认 `docker compose version` 和 `docker ps` 正常，再重跑 `test:db:up` |
 | `55432` 被占用 | 找出并停止明确的占用者；不要把测试改到 5432；若自定义端口，仍须满足安全 guard 并同步 Compose/test env |
 | 数据库安全 guard 拒绝 | 核对 localhost、`*_test`、test 用户、非 5432、密码、`application_name` 和 marker；不要绕过检查 |
-| Prisma 提示表不存在 | 确认目标 URL 正确，执行 `pnpm prisma:generate` 和 `pnpm exec prisma migrate deploy` |
+| Prisma 提示表不存在 | 核对两个 URL、目标 allowlist 与备份/确认元数据，执行 `pnpm prisma:generate`、`pnpm migration:status` 和 `pnpm migration:deploy` |
 | Chromium 不存在 | 执行 `pnpm exec playwright install chromium` |
 | E2E 端口 3100 占用 | 停止明确的旧 dev/Playwright 进程后重跑；不要启用 `reuseExistingServer` 掩盖状态污染 |
 | E2E 失败后残留容器 | 执行 `pnpm test:db:down`，确认只操作 `nexport-test` project 后再重跑 |

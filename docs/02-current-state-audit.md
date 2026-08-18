@@ -3,7 +3,7 @@
 审计日期：2026-08-13  
 审计方式：只读检查源码、配置、Prisma schema 与单一 baseline migration；未安装依赖、未连接数据库、未运行应用、未执行 Git
 
-> 历史快照：本文件保留 2026-08-13 开发前审计证据，所列故障已由 FND-001～QA-003 处理，完成状态以 [`06-task-progress.md`](06-task-progress.md) 为准。2026-08-17 新确认公司法定/展示名称为 `ZNB Logistics Inc.`、网站简称为 `ZNB`、生产平台为 Vercel；`BRAND-001` 此后已完成，`VERCEL-001` 仍待执行，因此下文当时的占位描述不代表当前产品决策。
+> 历史快照：本文件保留 2026-08-13 开发前审计证据，所列故障已由 FND-001～QA-003 处理，完成状态以 [`06-task-progress.md`](06-task-progress.md) 为准。2026-08-17 新确认公司法定/展示名称为 `ZNB Logistics Inc.`、网站简称为 `ZNB`、生产平台为 Vercel；`BRAND-001`、`VERCEL-001` 此后已完成，因此下文当时的占位描述不代表当前产品决策。
 
 ## 1. 结论摘要
 

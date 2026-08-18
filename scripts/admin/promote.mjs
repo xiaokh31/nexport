@@ -1,5 +1,9 @@
 import { pathToFileURL } from "node:url";
 import path from "node:path";
+import {
+  formatDatabaseTargetSummary,
+  validateDatabaseTarget,
+} from "./database-target.mjs";
 
 export function parseEmailArgument(argv) {
   const inline = argv.find((argument) => argument.startsWith("--email="));
@@ -36,8 +40,13 @@ export async function promoteVerifiedUserToAdmin(prisma, email) {
 
 async function main() {
   const email = parseEmailArgument(process.argv.slice(2));
+  const target = validateDatabaseTarget(process.env, {
+    requireBackup: false,
+    requireProductionConfirmation: true,
+  });
+  console.info(formatDatabaseTargetSummary(target));
   const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({ datasourceUrl: process.env.DIRECT_URL });
 
   try {
     const result = await promoteVerifiedUserToAdmin(prisma, email);

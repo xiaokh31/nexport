@@ -2,13 +2,13 @@
 
 这是一个面向海外仓储、订单履约、FBA 准备与交付及运输需求询价的企业网站。项目使用 Next.js App Router、React、TypeScript、Prisma、PostgreSQL、NextAuth、Tailwind CSS 和 Radix UI，包含公开站点、账户工作区、询价、通知、文章发布及按能力授权的管理后台。
 
-> 公司法定/展示名称 `ZNB Logistics Inc.` 与网站简称 `ZNB` 已由 `BRAND-001` 接入公开品牌语境。正式域名、联系方式、Logo、法律文本和可公开业务事实仍待确认。在完成 `VERCEL-001`、`QA-004`，通过生产变更授权门（Go/No-Go），并在 `RELEASE-001` 内通过“解除保护/公开门”前，不得把当前版本作为正式企业网站发布。
+> 公司法定/展示名称 `ZNB Logistics Inc.` 与网站简称 `ZNB` 已由 `BRAND-001` 接入公开品牌语境。正式域名、联系方式、Logo、法律文本和可公开业务事实仍待确认。在完成 `QA-004`、通过生产变更授权门（Go/No-Go），并在 `RELEASE-001` 内通过“解除保护/公开门”前，不得把当前版本作为正式企业网站发布。
 
 ## 快速开始：从空数据库启动
 
 ### 1. 准备环境
 
-- Node.js `>=20.9.0`
+- Node.js `24.x`
 - pnpm `10.27.0`，版本以 `package.json#packageManager` 为准
 - PostgreSQL 16；也可以使用 Docker 启动本地 PostgreSQL
 - 运行集成测试或 E2E 时需要 Docker Compose v2
@@ -31,11 +31,21 @@ cp .env.example .env
 
 ```dotenv
 DATABASE_URL="postgresql://nexport:nexport_local_password@127.0.0.1:5432/nexport?schema=public"
+DIRECT_URL="postgresql://nexport:nexport_local_password@127.0.0.1:5432/nexport?schema=public"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3000"
+SITE_INDEXING_ENABLED="false"
 NEXTAUTH_SECRET="使用 openssl rand -hex 32 生成的独立值"
 RATE_LIMIT_SECRET="使用 openssl rand -hex 32 生成的另一个独立值"
 CRON_SECRET="使用 openssl rand -hex 32 生成的第三个独立值"
 TRUSTED_PROXY_HOPS="0"
+DATABASE_TARGET_ENVIRONMENT="development"
+DATABASE_TARGET_ID="local-development"
+DATABASE_PROVIDER="local-postgresql"
+DATABASE_REGION="local"
+DATABASE_ALLOWED_HOSTS="127.0.0.1"
+DATABASE_BACKUP_ID="not-applicable-for-empty-local-development"
+DATABASE_TARGET_CONFIRMATION="development:local-development"
 ```
 
 不要在多个 secret 之间复用同一个值，也不要提交 `.env`。没有 CAPTCHA 或邮件配置时，应用仍可启动，但注册、询价和验证邮件等受保护流程会按设计 fail closed。
@@ -44,7 +54,7 @@ TRUSTED_PROXY_HOPS="0"
 
 ### 3. 启动一个空 PostgreSQL
 
-如果已有 PostgreSQL，请创建空数据库和专用用户，并让 `DATABASE_URL` 指向它。使用 Docker 时可以运行：
+如果已有 PostgreSQL，请创建空数据库和专用用户，并让本地 `DATABASE_URL` 与 `DIRECT_URL` 指向它。使用 Docker 时可以运行：
 
 ```bash
 docker run --name nexport-postgres \
@@ -62,7 +72,8 @@ docker run --name nexport-postgres \
 
 ```bash
 pnpm prisma:generate
-pnpm exec prisma migrate deploy
+pnpm migration:status
+pnpm migration:deploy
 ```
 
 仓库当前只有 `prisma/migrations/0_init/migration.sql` 这一条 baseline。它能够直接部署到空 PostgreSQL，不需要 seed、演示账户或手工建表。
@@ -81,13 +92,17 @@ pnpm dev
 
 | 变量 | 要求 | 用途 |
 | --- | --- | --- |
-| `DATABASE_URL` | 启动、迁移和生产必填 | PostgreSQL 连接串；不要指向测试或共享错误环境 |
+| `DATABASE_URL` | 构建与运行必填 | PostgreSQL 池化连接串；每个环境独立，不要指向测试或其他环境 |
+| `DIRECT_URL` | 受控 migration/admin 必填 | 同一目标的直连串；不提供给普通 Preview，不进入浏览器 |
 | `NEXT_PUBLIC_SITE_URL` | 构建和运行必填 | 站点 origin；不能带路径、查询、凭据或 fragment，生产必须使用 HTTPS |
+| `NEXTAUTH_URL` | 认证运行时必填 | 与当前环境 `NEXT_PUBLIC_SITE_URL` 完全一致的 canonical origin |
+| `SITE_INDEXING_ENABLED` | 默认 `false` | 只有 Vercel Production 且显式为 `true` 才允许索引；其他环境 fail-safe noindex |
+| `DATABASE_TARGET_*` 等迁移元数据 | migration/admin 命令必填 | 环境、目标 ID、精确 host allowlist、供应商、区域、备份与显式确认；只输出脱敏摘要 |
 | `NEXTAUTH_SECRET` | 启用认证必填，至少 32 bytes | NextAuth 会话及邮箱验证签名 |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | 可选，但必须同时设置 | 启用 Google OAuth |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY` | 启用注册和公开询价必填 | 浏览器组件和服务端 reCAPTCHA 校验；hostname 必须匹配站点 origin |
 | `RATE_LIMIT_SECRET` | 注册、登录和询价必填，至少 32 bytes | 对限流键进行 HMAC；原始 IP 和邮箱不落库 |
-| `TRUSTED_PROXY_HOPS` | 默认 `0` | 可信反向代理跳数；必须是非负整数并与真实拓扑完全一致 |
+| `TRUSTED_PROXY_HOPS` | 非 Vercel 部署默认 `0` | 仅用于已验证的非 Vercel 代理链；Vercel 自动只信任 `x-vercel-forwarded-for` |
 | `RESEND_API_KEY` / `EMAIL_FROM` | 启用邮件 worker 必填 | 发送验证邮件和通知；`EMAIL_FROM` 应使用已验证发件域名 |
 | `CRON_SECRET` | 启用邮件 worker 必填，至少 32 bytes | 保护邮件 outbox worker 的 Bearer 请求 |
 | `*_SITE_VERIFICATION` | 可选 | Google、Bing、Baidu 和 Yandex 站点所有权验证 |
@@ -101,12 +116,14 @@ pnpm dev
 | --- | --- |
 | 生成 Prisma Client | `pnpm prisma:generate` |
 | 校验 schema | `pnpm prisma:validate` |
-| 向空库或部署环境应用已有迁移 | `pnpm exec prisma migrate deploy` |
+| 核对脱敏目标并查看迁移状态 | `pnpm migration:status` |
+| 经备份与目标确认后应用已有迁移 | `pnpm migration:deploy` |
 | 为明确的 schema 变更创建开发迁移 | `pnpm exec prisma migrate dev --name <change-name>` |
 | 本地查看数据 | `pnpm prisma:studio` |
 
 - `pnpm db:push` 只用于明确的一次性本地实验，不能代替受版本控制的迁移。
-- `pnpm start` 不会自动迁移数据库；部署流程必须先单独执行 `prisma migrate deploy`。
+- `pnpm start`、`pnpm build` 和 `postinstall` 都不会自动迁移数据库；部署流程必须先从受控 runner 单独执行 `pnpm migration:status` / `pnpm migration:deploy`。
+- 受控命令同时要求同环境 `DATABASE_URL` / `DIRECT_URL`、精确 `DATABASE_ALLOWED_HOSTS`、`DATABASE_TARGET_CONFIRMATION=<environment>:<target-id>` 和 `DATABASE_BACKUP_ID`。Production deploy 还要求 `PRODUCTION_CHANGE_CONFIRMATION=DEPLOY <target-id> TO PRODUCTION`。
 - `scripts/test/**` 具有破坏性清理能力，但只接受受守卫保护的本地 `_test` 数据库。不要给这些命令注入生产 `DATABASE_URL`。
 - 正式迁移前先备份数据库，并在与生产同版本的 PostgreSQL 上验证恢复路径。
 
@@ -142,7 +159,7 @@ pnpm test:db:down
 1. 配置 CAPTCHA、限流、Resend、`EMAIL_FROM`、`CRON_SECRET` 和 `NEXTAUTH_SECRET`。
 2. 在 `/register` 注册账户。
 3. 由调度器触发邮件 worker，用户通过邮件链接完成验证。
-4. 在目标环境的 `DATABASE_URL` 下运行：
+4. 在受控 runner 同时注入目标环境的两类数据库 URL 与目标元数据；命令会先显示不含密码/query 的环境摘要。Production 还必须提供显式生产确认，然后运行：
 
 ```bash
 pnpm admin:promote --email administrator@example.com
@@ -150,7 +167,7 @@ pnpm admin:promote --email administrator@example.com
 
 命令幂等，只提升已验证账户，不创建用户或密码。每个环境分别执行一次。系统拒绝删除或降级最后一个 `ADMIN`，也拒绝管理员删除自己的账户。
 
-当前邮件调度器接口要求定期向 `POST /api/cron/email-outbox?limit=25` 发送 `Authorization: Bearer <CRON_SECRET>`。`limit` 范围为 1～100。目标部署使用 Vercel Hobby，其原生 Cron 最多每天一次，不能承担注册验证与报价邮件的及时处理；`VERCEL-001` 只实现共享 handler、受保护 `GET` 和外部调度契约，生产 provider 在生产变更授权门选定，并由 `RELEASE-001` 创建为默认每 5 分钟调用。生产环境还应监控 worker 的 401/503/500、重试积压、`FAILED` 和 `MANUAL_REVIEW` 记录；不要把 secret 放在 URL 或日志中。
+外部邮件调度器必须每 5 分钟向 `GET /api/cron/email-outbox?limit=25` 发送 `Authorization: Bearer <CRON_SECRET>`；`POST` 仅保留为同一 handler 的人工兼容入口。`limit` 范围为 1～100，请求超时目标为 50 秒，网络错误和 429/500/503 才有限退避重试。目标部署使用 Vercel Hobby，仓库没有配置高频 Vercel Cron；生产 provider 在生产变更授权门选定，并由 `RELEASE-001` 创建。受 Deployment Protection 的请求还要单独发送 `x-vercel-protection-bypass`，不能与应用 Bearer 合并。监控 401/503/500、重试积压、`FAILED` 和 `MANUAL_REVIEW`；不要把任一 secret 放在 URL 或日志中。
 
 ## 服务类型契约
 
@@ -201,11 +218,11 @@ API 和 UI 共享 `src/lib/permissions.ts` 中的唯一能力矩阵。`✓` 表�
 
 ## Vercel 生产部署
 
-目标平台与套餐已确定为 Vercel Hobby。项目的 Next.js/Node 架构可以按 Hobby 技术限制部署，但当前仓库还不是可直接上线的发布包：Prisma 尚未区分池化运行时连接与迁移直连，邮件 worker 只有 `POST`，外部调度器也尚未选定或配置。
+目标平台与套餐已确定为 Vercel Hobby。`VERCEL-001` 已在代码中固定 Node/pnpm、Prisma 池化/直连、显式 NextAuth canonical、外部调度 GET、Preview noindex 和 Vercel 客户端 IP 边界；这只表示仓库具备部署契约，不表示真实 Vercel、数据库、域名或外部调度器已经创建，也不表示可以直接上线。
 
 > Vercel 当前官方条款把 Hobby 限定为个人、非商业用途。本文档按项目方指定的 Hobby 技术方案制定，但在正式企业网站公开前，项目方仍须确认该用途获得 Vercel 允许；若不符合，需改用获准套餐或其他合规托管方案。这个条款确认不改变应用任务顺序。
 
-- `BRAND-001` 已完成；开发 Agent 接下来按 [`docs/05-agent-backlog.md`](docs/05-agent-backlog.md) 串行执行 `VERCEL-001 → QA-004`。
+- `BRAND-001`、`VERCEL-001` 已完成；开发 Agent 接下来按 [`docs/05-agent-backlog.md`](docs/05-agent-backlog.md) 串行执行 `QA-004`。
 - 运维人员再按 [`docs/08-vercel-production-deployment.md`](docs/08-vercel-production-deployment.md) 通过生产变更授权门（Go/No-Go）并执行 `RELEASE-001`；该任务内还设有独立的“解除保护/公开门”。
 - 任何 Preview、自动化测试或迁移都不得连接生产客户数据库。
 - 数据库迁移是独立受控步骤，不进入 Vercel 的普通 install/build 命令；应用回滚也不会自动回滚数据库。
@@ -228,7 +245,8 @@ API 和 UI 共享 `src/lib/permissions.ts` 中的唯一能力矩阵。`✓` 表�
 - [ ] 验证发件域名、Google OAuth、reCAPTCHA、搜索引擎所有权和生产调度器。
 - [ ] 在后台“系统设置”填写六个已确认字段。注意：这些数据库设置当前不会覆盖公开 shell 的构建时静态配置，仍需同步更新上述源码并重新构建。
 - [x] 完成原始 QA-001～003，并记录本地 Node/pnpm/PostgreSQL 与自动化结果。
-- [ ] 完成 `VERCEL-001` 与 `QA-004`，确认 Vercel Hobby、托管 PostgreSQL、Preview 隔离、外部邮件调度器、备份和回滚契约。
+- [x] 完成 `VERCEL-001`，交付 Vercel Hobby 代码、受控迁移、Preview 隔离和外部邮件调度契约；未创建真实外部资源。
+- [ ] 完成 `QA-004`，在获准的隔离 Preview/staging 确认托管 PostgreSQL、Deployment Protection、provider 和回滚契约。
 - [ ] 获得明确生产发布授权后执行 `RELEASE-001`，记录生产迁移、部署、管理员初始化和回滚负责人。
 
 ## 文档与许可证

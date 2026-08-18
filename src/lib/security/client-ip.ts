@@ -4,6 +4,10 @@ export type HeaderSource =
   | Headers
   | Record<string, string | string[] | undefined>;
 
+export type ClientIpTrustPolicy =
+  | { source: "vercel" }
+  | { source: "trusted-proxy"; trustedProxyHops: number };
+
 function headerValue(headers: HeaderSource, name: string): string | null {
   if (headers instanceof Headers) return headers.get(name);
 
@@ -29,8 +33,15 @@ function normalizeIp(value: string): string | null {
 
 export function resolveTrustedClientIp(
   headers: HeaderSource,
-  trustedProxyHops: number,
+  policy: ClientIpTrustPolicy,
 ): string | null {
+  if (policy.source === "vercel") {
+    const vercelForwardedFor = headerValue(headers, "x-vercel-forwarded-for");
+    if (!vercelForwardedFor || vercelForwardedFor.includes(",")) return null;
+    return normalizeIp(vercelForwardedFor);
+  }
+
+  const { trustedProxyHops } = policy;
   if (!Number.isSafeInteger(trustedProxyHops) || trustedProxyHops <= 0) {
     return null;
   }

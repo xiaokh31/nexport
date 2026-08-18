@@ -12,8 +12,10 @@ import Providers from "./providers";
 import { publicEnv } from "@/config/env/public";
 import { serverEnv } from "@/config/env/server";
 import { siteInfo } from "@/config/site-config";
+import { getDeploymentPolicy } from "@/config/deployment";
 
 const siteUrl = publicEnv.siteUrl;
+const { indexingEnabled } = getDeploymentPolicy();
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -68,11 +70,11 @@ export const metadata: Metadata = {
     description: "按仓储履约、FBA 准备与交付、运输衔接查看服务边界并提交询价。",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: indexingEnabled,
+    follow: indexingEnabled,
     googleBot: {
-      index: true,
-      follow: true,
+      index: indexingEnabled,
+      follow: indexingEnabled,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,

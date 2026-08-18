@@ -5,6 +5,7 @@ import {
   requireCaptchaRuntimeConfig,
   requireRateLimitRuntimeConfig,
 } from "@/config/env/server";
+import { EnvironmentConfigurationError } from "@/config/env/shared";
 import type { CaptchaVerifier } from "@/lib/ports/external-services";
 import { systemClock } from "@/lib/ports/external-services";
 import { createGoogleCaptchaVerifier } from "@/lib/security/captcha";
@@ -36,6 +37,12 @@ const serverCaptchaVerifier = Object.freeze<CaptchaVerifier>({
 
 export function createServerProtection(headers: HeaderSource) {
   const rateLimitConfig = requireRateLimitRuntimeConfig();
+  const clientIp = resolveTrustedClientIp(headers, rateLimitConfig.clientIpPolicy);
+  if (process.env.NODE_ENV === "production" && !clientIp) {
+    throw new EnvironmentConfigurationError(
+      "Trusted client IP is unavailable for the production request.",
+    );
+  }
 
   return {
     captchaVerifier: serverCaptchaVerifier,
@@ -44,6 +51,6 @@ export function createServerProtection(headers: HeaderSource) {
       secret: rateLimitConfig.secret,
       clock: systemClock,
     }),
-    clientIp: resolveTrustedClientIp(headers, rateLimitConfig.trustedProxyHops),
+    clientIp,
   };
 }

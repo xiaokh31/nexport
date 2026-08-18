@@ -1,6 +1,6 @@
 # 规划文档导航
 
-状态：原始 27 项实现与 QA 已完成；新增品牌与 Vercel 发布波次待开发
+状态：原始 27 项实现与 QA、`BRAND-001`、`VERCEL-001` 已完成；下一项为 `QA-004`
 更新日期：2026-08-17
 
 这些文档记录项目范围、审计、目标设计、实施约束和任务进度。运行项目先阅读根目录 [`README.md`](../README.md)；本目录中的早期审计和执行计划保留决策背景，实际完成度以 [`06-task-progress.md`](06-task-progress.md) 为准。
@@ -20,7 +20,7 @@
 
 - 公司法定/展示名称 `ZNB Logistics Inc.` 与网站简称 `ZNB` 已由 `BRAND-001` 按语义接入公开品牌；客户填写的“公司名称”字段和内部测试标识保持不变。
 - Logo、域名、地址、电话、邮箱、营业时间、仓库面积、客户数、订单量、合作伙伴、公司历史和可公开服务事实仍未确定；开发 Agent 不得虚构。
-- 目标生产平台与套餐为 Vercel Hobby（项目方明确指定）。当前 `POST` 邮件 worker、单一 Prisma URL和 Hobby 无法高频运行 Cron 的限制，仍需由 `VERCEL-001` 改造成“Vercel Hobby + 外部邮件调度器”契约。
+- 目标生产平台与套餐为 Vercel Hobby（项目方明确指定）。`VERCEL-001` 已交付 Node/pnpm、Prisma 池化/直连、受保护 GET、外部 scheduler、Preview noindex 和可信客户端 IP 契约；未创建真实 Vercel、数据库或调度器资源。
 - Vercel 官方目前把 Hobby 限定为个人、非商业用途；技术方案按 Hobby 编写，但正式企业网站公开前必须由项目方确认使用资格或取得 Vercel 允许。文档不得把“技术可部署”写成“条款已满足”。
 - 普通 Preview、固定 staging 和 Production 是三种不同信任边界；创建付费外部资源、写入平台 secret 或连接托管数据库必须由项目方 provision 或另行明确授权，领取开发任务本身不构成授权。
 - 保留 AGPL-3.0 许可证及 `LICENSE` 原文。

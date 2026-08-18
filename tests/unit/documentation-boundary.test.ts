@@ -16,7 +16,18 @@ describe("DOC-001 operator documentation boundaries", () => {
     const documented = environmentKeys();
     const expected = [
       "DATABASE_URL",
+      "DIRECT_URL",
       "NEXT_PUBLIC_SITE_URL",
+      "NEXTAUTH_URL",
+      "SITE_INDEXING_ENABLED",
+      "DATABASE_TARGET_ENVIRONMENT",
+      "DATABASE_TARGET_ID",
+      "DATABASE_PROVIDER",
+      "DATABASE_REGION",
+      "DATABASE_ALLOWED_HOSTS",
+      "DATABASE_BACKUP_ID",
+      "DATABASE_TARGET_CONFIRMATION",
+      "PRODUCTION_CHANGE_CONFIRMATION",
       "DATABASE_URL_TEST",
       "TEST_DATABASE_MARKER",
       "TEST_POSTGRES_PORT",
@@ -43,10 +54,30 @@ describe("DOC-001 operator documentation boundaries", () => {
     const runtimeConfig = [
       source("src/config/env/public.ts"),
       source("src/config/env/server.ts"),
+      source("src/config/deployment.ts"),
       source("prisma/schema.prisma"),
     ].join("\n");
-    for (const key of expected.filter((key) => !key.includes("TEST") && key !== "PLAYWRIGHT_BASE_URL")) {
+    const commandOnlyKeys = new Set([
+      "DIRECT_URL",
+      "DATABASE_TARGET_ENVIRONMENT",
+      "DATABASE_TARGET_ID",
+      "DATABASE_PROVIDER",
+      "DATABASE_REGION",
+      "DATABASE_ALLOWED_HOSTS",
+      "DATABASE_BACKUP_ID",
+      "DATABASE_TARGET_CONFIRMATION",
+      "PRODUCTION_CHANGE_CONFIRMATION",
+    ]);
+    for (const key of expected.filter((key) =>
+      !key.includes("TEST") &&
+      key !== "PLAYWRIGHT_BASE_URL" &&
+      !commandOnlyKeys.has(key)
+    )) {
       expect(runtimeConfig, key).toContain(key);
+    }
+    const databaseTargetSource = source("scripts/admin/database-target.mjs");
+    for (const key of commandOnlyKeys) {
+      expect(databaseTargetSource, key).toContain(key);
     }
     expect(runtimeConfig).not.toContain("EMAIL_TO");
   });
@@ -58,7 +89,7 @@ describe("DOC-001 operator documentation boundaries", () => {
       "cp .env.example .env",
       "docker run --name nexport-postgres",
       "pnpm prisma:generate",
-      "pnpm exec prisma migrate deploy",
+      "pnpm migration:deploy",
       "pnpm dev",
       "pnpm lint",
       "pnpm typecheck",
@@ -66,7 +97,7 @@ describe("DOC-001 operator documentation boundaries", () => {
       "pnpm build",
       "pnpm start",
       "pnpm admin:promote --email",
-      "POST /api/cron/email-outbox",
+      "GET /api/cron/email-outbox",
     ]) {
       expect(readme, instruction).toContain(instruction);
     }

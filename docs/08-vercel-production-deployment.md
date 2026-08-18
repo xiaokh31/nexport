@@ -1,16 +1,17 @@
 # ZNB Vercel Hobby 生产部署指南
 
-状态：可执行目标流程；`BRAND-001` 已完成，首次生产发布前仍须完成 `VERCEL-001`、`QA-004` 并获得 `RELEASE-001` 明确授权
+状态：`BRAND-001`、`VERCEL-001` 已完成；首次生产发布前仍须完成 `QA-004` 并获得 `RELEASE-001` 明确授权
 更新日期：2026-08-17  
 适用项目：`ZNB Logistics Inc.` 企业官网（网站简称 `ZNB`）
 
 ## 1. 结论与当前边界
 
-项目的 Next.js App Router、Node runtime、Prisma/PostgreSQL 和 NextAuth 架构适合部署到 Vercel。它目前**不能直接视为生产就绪**，因为：
+项目的 Next.js App Router、Node runtime、Prisma/PostgreSQL 和 NextAuth 架构已经具备 Vercel 代码与运维契约，但目前**不能直接视为生产就绪**，因为：
 
 - `BRAND-001` 已把 `ZNB Logistics Inc.` / `ZNB` 接入公开品牌；正式域名、Logo、联系方式和法律文本仍待确认。
-- Prisma 只读取 `DATABASE_URL`，尚无池化运行时连接与迁移直连 `DIRECT_URL` 的分离。
-- `/api/cron/email-outbox` 只导出 `POST`；供外部调度器使用的共享 `GET`、provider 配置、健康检查和告警尚未实现。
+- Prisma 已由 `DATABASE_URL` 提供池化运行时连接，并由 `DIRECT_URL` 提供受控 migration/admin 直连；迁移 runner 会在执行前验证目标并显示脱敏摘要。
+- `/api/cron/email-outbox` 已通过共享 handler 导出受 Bearer 保护的 `GET` 与人工兼容 `POST`；外部 scheduler 的生产 provider 尚未选择或创建。
+- 只有 Vercel Production 且 `SITE_INDEXING_ENABLED=true` 才允许索引；其他环境由 metadata、`X-Robots-Tag`、robots 和 sitemap 四层 fail-safe 禁止索引，但仍必须启用 Deployment Protection 才构成访问控制。
 - 正式域名、公开联系方式、Logo/OG、法律文本、托管 PostgreSQL 供应商/区域和生产外部服务尚未确认。
 
 项目方已明确选择 **Vercel Hobby**，本文按 Hobby 的技术限制制定部署方案。但截至本指南日期，Vercel 的 [Hobby 说明](https://vercel.com/docs/plans/hobby)与[公平使用指南](https://vercel.com/docs/limits/fair-use-guidelines)仍限定为个人、非商业使用；ZNB 企业展示、获客和询价是否符合使用资格，必须在公开上线前由项目方确认或取得 Vercel 允许。本文不会把“技术可部署”误写为“使用条款已满足”。
@@ -71,7 +72,7 @@ RELEASE-001（生产迁移 → 部署 → 域名 → smoke → 运维移交）
 
 ## 5. Vercel 项目配置
 
-`VERCEL-001` 完成后，在 Vercel Dashboard 创建/连接项目并核对：
+代码已由 `package.json` 和 `vercel.json` 固定关键版本与命令。获得相应外部写授权后，在 Vercel Dashboard 创建/连接项目并核对：
 
 | 设置 | 值 |
 |---|---|
@@ -110,7 +111,7 @@ Hobby 额度用尽时项目可能暂停，函数最长执行时间也低于 Pro�
 
 Prisma 官方建议 serverless runtime 使用池化连接，并为 migration/管理使用直连 URL；具体参数以供应商生成的连接串为准。[Prisma 数据库连接](https://www.prisma.io/docs/postgres/database/connecting-to-your-database)、[Prisma 连接池](https://www.prisma.io/docs/postgres/database/connection-pooling)
 
-`VERCEL-001` 必须在 `prisma/schema.prisma` 增加 `directUrl = env("DIRECT_URL")`，并让 env 校验、`.env.example`、测试和显式 migration 命令保持一致。在完成该任务前，不要向当前项目注入一个未被 schema 使用的 `DIRECT_URL` 后宣称分离已生效。
+`prisma/schema.prisma` 已设置 `directUrl = env("DIRECT_URL")`；`.env.example`、受控 runner 和边界测试使用同一契约。应用 build/runtime 仍只把 `DATABASE_URL` 当作常规数据源，普通 Preview 不获得 `DIRECT_URL`。
 
 Prisma CLI 会解析同一 datasource；migration runner 必须**同时**获得同一个目标环境的池化 `DATABASE_URL` 和直连 `DIRECT_URL`。只注入 `DIRECT_URL` 不是可执行流程。受控 preflight 还必须验证两者指向同一供应商/项目/数据库，只输出脱敏的 provider、host、port、database、user、region 摘要，不输出密码或 query credential。
 
@@ -126,9 +127,10 @@ Vercel 环境变量按 [Production、Preview、Development 作用域](https://ve
 
 ### 6.3 Migration 规则
 
-- 生产只运行 `prisma migrate deploy`，不用 `migrate dev` 或 `db push`。
+- 生产只通过 `pnpm migration:deploy` 调用 Prisma deploy，不用 `migrate dev` 或 `db push`。
 - migration 由受控 CI/release runner 在构建前执行；同时注入同环境的 `DATABASE_URL` 与 `DIRECT_URL`，凭据来自 secret store，不把完整 URL 写入命令历史、文档或日志。
-- 执行人先核对脱敏目标摘要、备份 ID 和允许的环境标记，运行 `pnpm exec prisma migrate status`；生产再由第二人复核后执行 `pnpm exec prisma migrate deploy`。
+- runner 还要求 `DATABASE_TARGET_ENVIRONMENT`、`DATABASE_TARGET_ID`、`DATABASE_PROVIDER`、`DATABASE_REGION`、精确 host 列表 `DATABASE_ALLOWED_HOSTS`、`DATABASE_BACKUP_ID` 和精确的 `DATABASE_TARGET_CONFIRMATION=<environment>:<target-id>`。
+- 执行人先运行 `pnpm migration:status` 核对脱敏目标摘要和迁移状态；Production deploy 由第二人复核后设置 `PRODUCTION_CHANGE_CONFIRMATION=DEPLOY <target-id> TO PRODUCTION`，再运行 `pnpm migration:deploy`。runner 会先再次执行 status，然后才 deploy。
 - schema 变更采用 expand/contract：先部署向后兼容新增，再切代码，确认旧版本不再使用后另一次发布移除。
 - 每次迁移前确认自动备份/PITR 可用，并在隔离恢复库留存满足目标 RPO/RTO 的恢复证据；Vercel 应用回滚不等于数据库回滚。
 
@@ -146,15 +148,19 @@ Prisma 的生产命令说明见 [Prisma Migrate 部署指南](https://docs.prism
 | `NEXTAUTH_URL` | 与 canonical 完全一致 | 固定 staging origin | 不承担登录；若运行认证依赖则仍使用 staging origin | 不采用未设计的动态 callback |
 | `NEXTAUTH_SECRET` | 独立，至少 32 bytes | 独立，至少 32 bytes | 若构建/runtime 必需则用第三个低权限值 | 不跨环境复用 |
 | `SITE_INDEXING_ENABLED` | 仅审核后设为 `true` | `false` | `false` | VERCEL-001 新增；缺失必须按 false |
+| `DATABASE_TARGET_*` / `DATABASE_PROVIDER` / `DATABASE_REGION` / `DATABASE_ALLOWED_HOSTS` / `DATABASE_BACKUP_ID` | 仅生产 release runner | 仅 staging migration/admin runner | 不提供 | 目标 allowlist、备份和确认元数据；不含连接密码 |
+| `PRODUCTION_CHANGE_CONFIRMATION` | 仅生产变更窗口短期注入 | 留空 | 不提供 | 精确值 `DEPLOY <target-id> TO PRODUCTION`；不得永久复用 |
 | `GOOGLE_CLIENT_ID/SECRET` | 生产 OAuth client | 独立 staging client | 留空 | 必须同时配置 |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY` | 生产域名 key pair | staging 域 key pair | 留空 | 缺失时受保护流程 fail closed |
 | `RESEND_API_KEY` / `EMAIL_FROM` | 已验证生产发件域 | 独立测试域/账户 | 留空 | staging 只发公司控制的测试收件箱 |
 | `CRON_SECRET` | 独立且至少 32 bytes；同时配置到应用与外部 scheduler | 独立值，只用于人工 handler QA | 留空 | 外部 scheduler 必须以 Authorization header 发送 |
 | `RATE_LIMIT_SECRET` | 独立且至少 32 bytes | 独立值 | 独立低权限值 | HMAC 限流身份 |
-| `TRUSTED_PROXY_HOPS` | 由生产代理链测试确定 | 同拓扑单独验证 | 同拓扑单独验证 | 不猜值；错误设置会破坏限流身份 |
+| `TRUSTED_PROXY_HOPS` | `0`；Vercel 策略不读取它 | `0`；Vercel 策略不读取它 | `0` | 仅非 Vercel 部署使用，且必须以真实拓扑验证非零值 |
 | `*_SITE_VERIFICATION` | 可选生产值 | 留空 | 留空 | 搜索引擎所有权 |
 
-NextAuth v4 生产必须有 `NEXTAUTH_SECRET`；canonical URL 可显式使用 `NEXTAUTH_URL`，或在启用 Vercel System Environment Variables 后采用平台自动识别。项目基线优先显式 canonical，避免域名切换产生歧义。[NextAuth 部署说明](https://next-auth.js.org/deployment)
+本项目冻结为显式 canonical 策略：每个启用认证的环境都必须设置 `NEXTAUTH_URL`，且运行时要求它与 `NEXT_PUBLIC_SITE_URL` 的 origin 完全一致；生产必须为 HTTPS。不会在同一发布中混用平台推断 URL。[NextAuth 配置说明](https://next-auth.js.org/configuration/options#nextauth_url)
+
+Vercel runtime 的限流身份只读取平台生成的单值 `x-vercel-forwarded-for`，忽略可由客户端伪造的通用 `x-forwarded-for` / `x-real-ip`；头缺失或格式错误时，受保护入口按配置故障拒绝，而不是把所有请求长期合并为 `ip:unavailable`。只有非 Vercel 部署才按经过验证的 `TRUSTED_PROXY_HOPS` 从代理链右侧解析；非 Vercel Production 保持 `0` 会 fail closed。[Vercel 请求头说明](https://vercel.com/docs/headers/request-headers)
 
 生成 secret 时可在可信本机使用 `openssl rand -hex 32`，随后直接存入对应平台的加密环境变量；不要粘贴到聊天、终端录屏或工单。
 
@@ -175,7 +181,7 @@ NextAuth v4 生产必须有 `NEXTAUTH_SECRET`；canonical URL 可显式使用 `N
 1. 在 Vercel 添加 apex 与 `www`，选择其中一个作为 canonical，另一个做永久重定向。
 2. 按 Vercel 提示修改 DNS，验证后确认自动 HTTPS 正常。[Vercel 自定义域名](https://vercel.com/docs/domains/set-up-custom-domain)
 3. Production 的 `NEXT_PUBLIC_SITE_URL`、`NEXTAUTH_URL`、metadata、sitemap 和 robots 全部指向 canonical。
-4. `VERCEL-001` 为已确认的生产 `.vercel.app` host 实现永久重定向到 canonical；固定 staging 与普通 Preview 不重定向到生产，但必须启用 Deployment Protection，并由 `SITE_INDEXING_ENABLED=false` 输出 app-level `X-Robots-Tag: noindex, nofollow`、robots 拒绝和无 sitemap。不能只依赖平台默认 header。
+4. 当 Vercel Production、`SITE_INDEXING_ENABLED=true`、`NEXT_PUBLIC_SITE_URL` 和平台 `VERCEL_PROJECT_PRODUCTION_URL` 同时有效时，`next.config.ts` 把该生产 `.vercel.app` host 永久重定向到 canonical；固定 staging 与普通 Preview 不重定向到生产，但必须启用 Deployment Protection，并输出 app-level `X-Robots-Tag: noindex, nofollow`、robots 拒绝和空 sitemap。不能只依赖平台默认 header。
 
 ### 8.2 Google OAuth
 
@@ -208,12 +214,15 @@ Hobby 原生 Cron 只允许每天一次，且可能在指定小时内任意时�
 | Frequency | 默认每 5 分钟；上线前按邮件 SLA、Hobby 额度和 outbox 压测确认 |
 | Header | `Authorization: Bearer <CRON_SECRET>` |
 | Transport | 只允许 HTTPS；禁止把 secret 放入 URL |
+| Timeout | 50 秒，在 Vercel 函数 `maxDuration=60` 前结束 |
 | Concurrency | 同一任务最多一个主动调用；重复/重叠仍由数据库租约和幂等保护 |
 | Success | HTTP 200 且 JSON summary 可解析 |
-| Failure | 对网络/5xx 有限退避；401/403 立即告警并停止盲目重试；不自动修改 secret |
+| Failure | 只对网络错误和 429/500/503 有限退避；400/401/403 立即告警并停止盲目重试；不自动修改 secret |
 | Observability | scheduler 执行历史 + Vercel Runtime Logs + outbox 积压/失败告警 |
 
 外部 provider 必须支持自定义 Authorization header、HTTPS、失败历史、超时和禁用/恢复；还要记录账户所有者、免费额度/费用、数据区域、状态页、凭据轮换和退出方案。VERCEL-001 只实现此契约，QA-004 只人工验证 handler；生产 provider 在生产变更授权门选定，并由 RELEASE-001 创建，开发 Agent 不自行开户。
+
+若目标 deployment 启用了 Deployment Protection，人工 QA/运维请求必须同时携带两个彼此独立的 header：`x-vercel-protection-bypass: <bypass-secret>` 先通过平台保护，`Authorization: Bearer <CRON_SECRET>` 再通过应用鉴权。缺少前者产生 Vercel 保护响应，不应误判为 worker 故障；缺少后者才由应用返回 401。两个 secret 均不得进入 query、日志或截图。[Vercel 自动化 bypass](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection)
 
 ### 9.2 两层验收
 
@@ -241,7 +250,7 @@ Hobby 原生 Cron 只允许每天一次，且可能在指定小时内任意时�
 1. 完成 BRAND-001 与 VERCEL-001。
 2. 按 [`07-testing.md`](07-testing.md) 跑 frozen install、Prisma generate/validate、lint、typecheck、`test:all`、build。
 3. 由项目方 provision 或明确授权创建固定 staging、非生产托管 PostgreSQL、Resend/OAuth/CAPTCHA 等测试 provider 和公司控制的安全收件箱；记录费用、所有者、到期/清理人。QA-004 不需要创建生产外部 scheduler；没有 staging 资源授权即停在这里，不由 Agent 自行开户。
-4. staging migration runner 同时注入池化 `DATABASE_URL` 和直连 `DIRECT_URL`；核对脱敏目标、运行 `pnpm exec prisma migrate status`，再执行 `pnpm exec prisma migrate deploy`。
+4. staging migration runner 同时注入池化 `DATABASE_URL`、直连 `DIRECT_URL` 和目标/allowlist/备份确认元数据；运行 `pnpm migration:status` 核对脱敏目标，再执行 `pnpm migration:deploy`。
 5. 普通可信分支 Preview 只验收 Deployment Protection、构建/页面、无 provider secret 和 app-level noindex；不可信分支/fork 不获得数据库 secret。
 6. 在固定域 staging 使用独立数据库和 provider 完成品牌、认证、询价、RBAC、文章/SEO、outbox、日志脱敏与 noindex；独立 `CRON_SECRET` 只用于人工验证 handler/重复调用。受 Deployment Protection 时，受控请求同时发送 `x-vercel-protection-bypass` 和应用 Authorization header；不宣称已验证外部 scheduler 自动运行。
 7. 使用带 release/QA ID 的合成 staging 数据；测试后按责任表清理或归档，撤销临时 secret，保留无凭据证据。
@@ -252,7 +261,7 @@ Hobby 原生 Cron 只允许每天一次，且可能在指定小时内任意时�
 
 1. 冻结发布版本，记录 Vercel Hobby 使用资格确认人、数据库/域名/外部 scheduler/其他服务负责人、回滚决策人和允许的生产目标摘要。
 2. 记录自动备份/PITR 快照 ID，确认在隔离恢复库达到约定 RPO/RTO；核对 migration 为向后兼容变更。
-3. 从受控 release runner 同时注入同一 Production 的 `DATABASE_URL` 与 `DIRECT_URL`。执行人展示脱敏 provider/project/region/database/user，运行 `pnpm exec prisma migrate status`；第二人和数据库负责人核对目标/备份后，再执行 `pnpm exec prisma migrate deploy`。不得使用 `db push`。
+3. 从受控 release runner 同时注入同一 Production 的 `DATABASE_URL`、`DIRECT_URL` 和第 6.3 节目标元数据。执行人运行 `pnpm migration:status` 展示脱敏 provider/target/region/database/user；第二人和数据库负责人核对目标/备份后，短期设置精确生产确认并执行 `pnpm migration:deploy`。不得使用 `db push`。
 4. 在任何 Production deployment 对公网开放前，发布与冻结 source revision 对应的 Corresponding Source URL/归档，包含安装/构建脚本和适用 notices；从未登录会话验证约定入口可取得。若不能先完成，后续 Production 必须一直受 Deployment Protection 保护。
 5. 在 Production Deployment Protection 保持开启的状态下触发 deployment；检查 Build Logs 的 Node/pnpm 版本、Prisma generate、Next build、环境作用域，并把 deployment ID 绑定到第 4 步的 source revision。
 6. 绑定/切换 canonical 域名，仍保持保护；核对 HTTPS、apex/`www`、生产 `.vercel.app` 永久重定向、metadata、robots/sitemap。
@@ -266,7 +275,7 @@ Hobby 原生 Cron 只允许每天一次，且可能在指定小时内任意时�
 9. 使用公司控制的合成 smoke 账户和统一 `SMOKE-<release-id>` 标记完成下节检查；凡需邮件的步骤继续使用第 8 步双 header 受控人工 drain，不能提前启用 scheduler。由发布负责人关闭/归档/清理可删除记录，保留安全/权限/变更审计所需证据，不加载自动化 fixtures。
 10. “解除保护/公开门”全部签字后才解除 Production Deployment Protection；立即从公网匿名验证站点与源码入口，启用外部 scheduler，并等待首个自动周期，确认 Bearer、200 summary、Runtime Logs 和 outbox 无异常积压。任一失败立即暂停 scheduler、恢复保护/回滚，不能宣布上线；全部通过后记录 deployment ID、migration、scheduler、管理员、数据清理、源码 URL、备份、监控和回滚负责人。
 
-`admin:promote` 只提升已存在且已验证的账户，不创建用户或密码。每个环境分别执行；命令前必须核对目标环境，禁止演示账户和共享管理员凭据。
+`admin:promote` 只提升已存在且已验证的账户，不创建用户或密码。它强制使用 `DIRECT_URL`，显示与 migration 相同的脱敏目标摘要，并在 Production 要求相同格式的显式生产确认；每个环境分别执行，禁止演示账户和共享管理员凭据。
 
 ## 11. 生产 Smoke 清单
 

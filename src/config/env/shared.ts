@@ -32,10 +32,24 @@ export function validateSiteUrl(
   value: string | undefined,
   environment: string | undefined
 ): string {
-  const normalized = requireEnvironmentValue(
+  return validateOrigin(
     "NEXT_PUBLIC_SITE_URL",
     value,
-    "Site metadata"
+    "Site metadata",
+    environment,
+  );
+}
+
+export function validateOrigin(
+  name: string,
+  value: string | undefined,
+  service: string,
+  environment: string | undefined,
+): string {
+  const normalized = requireEnvironmentValue(
+    name,
+    value,
+    service,
   );
 
   let url: URL;
@@ -44,7 +58,7 @@ export function validateSiteUrl(
     url = new URL(normalized);
   } catch {
     throw new EnvironmentConfigurationError(
-      "NEXT_PUBLIC_SITE_URL must be an absolute URL."
+      `${name} must be an absolute URL.`
     );
   }
 
@@ -56,25 +70,25 @@ export function validateSiteUrl(
     url.hash
   ) {
     throw new EnvironmentConfigurationError(
-      "NEXT_PUBLIC_SITE_URL must be an origin without credentials, a path, a query, or a fragment."
+      `${name} must be an origin without credentials, a path, a query, or a fragment.`
     );
   }
 
   if (environment === "production" && url.protocol !== "https:") {
     throw new EnvironmentConfigurationError(
-      "NEXT_PUBLIC_SITE_URL must use HTTPS in production."
+      `${name} must use HTTPS in production.`
     );
   }
 
   if (url.protocol === "http:" && !isLocalHostname(url.hostname)) {
     throw new EnvironmentConfigurationError(
-      "NEXT_PUBLIC_SITE_URL may use HTTP only for localhost development."
+      `${name} may use HTTP only for localhost development.`
     );
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new EnvironmentConfigurationError(
-      "NEXT_PUBLIC_SITE_URL must use HTTP or HTTPS."
+      `${name} must use HTTP or HTTPS.`
     );
   }
 

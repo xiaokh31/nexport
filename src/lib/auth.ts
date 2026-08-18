@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import {
   getGoogleOAuthConfig,
-  getTrustedProxyHops,
+  getClientIpTrustPolicy,
   serverEnv,
 } from "@/config/env/server";
 import { EnvironmentConfigurationError } from "@/config/env/shared";
@@ -24,7 +24,7 @@ const googleOAuthConfig = getGoogleOAuthConfig();
 async function getClientIP(): Promise<string | null> {
   try {
     const headersList = await headers();
-    return resolveTrustedClientIp(headersList, getTrustedProxyHops());
+    return resolveTrustedClientIp(headersList, getClientIpTrustPolicy());
   } catch {
     return null;
   }

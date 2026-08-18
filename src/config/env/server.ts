@@ -4,12 +4,16 @@ import {
   EnvironmentConfigurationError,
   optionalEnvironmentValue,
   requireEnvironmentValue,
+  validateOrigin,
   validateSiteUrl,
 } from "@/config/env/shared";
+import { getDeploymentPolicy } from "@/config/deployment";
+import type { ClientIpTrustPolicy } from "@/lib/security/client-ip";
 
 const values = Object.freeze({
   databaseUrl: optionalEnvironmentValue(process.env.DATABASE_URL),
   siteUrl: optionalEnvironmentValue(process.env.NEXT_PUBLIC_SITE_URL),
+  nextAuthUrl: optionalEnvironmentValue(process.env.NEXTAUTH_URL),
   nextAuthSecret: optionalEnvironmentValue(process.env.NEXTAUTH_SECRET),
   googleClientId: optionalEnvironmentValue(process.env.GOOGLE_CLIENT_ID),
   googleClientSecret: optionalEnvironmentValue(process.env.GOOGLE_CLIENT_SECRET),
@@ -56,7 +60,7 @@ export function getGoogleOAuthConfig(): {
   return { clientId: googleClientId, clientSecret: googleClientSecret };
 }
 
-export function requireAuthRuntimeConfig(): { secret: string } {
+export function requireAuthRuntimeConfig(): { secret: string; nextAuthUrl: string } {
   const secret = requireEnvironmentValue(
     "NEXTAUTH_SECRET",
     values.nextAuthSecret,
@@ -67,7 +71,19 @@ export function requireAuthRuntimeConfig(): { secret: string } {
       "NEXTAUTH_SECRET must contain at least 32 bytes.",
     );
   }
-  return { secret };
+  const siteUrl = validateSiteUrl(values.siteUrl, process.env.NODE_ENV);
+  const nextAuthUrl = validateOrigin(
+    "NEXTAUTH_URL",
+    values.nextAuthUrl,
+    "Authentication",
+    process.env.NODE_ENV,
+  );
+  if (nextAuthUrl !== siteUrl) {
+    throw new EnvironmentConfigurationError(
+      "NEXTAUTH_URL must match NEXT_PUBLIC_SITE_URL for this deployment.",
+    );
+  }
+  return { secret, nextAuthUrl };
 }
 
 export function requireSiteRuntimeConfig(): { siteUrl: string } {
@@ -110,7 +126,7 @@ export function requireEmailRuntimeConfig(): {
 
 export function requireRateLimitRuntimeConfig(): {
   secret: string;
-  trustedProxyHops: number;
+  clientIpPolicy: ClientIpTrustPolicy;
 } {
   const secret = requireEnvironmentValue(
     "RATE_LIMIT_SECRET",
@@ -124,7 +140,7 @@ export function requireRateLimitRuntimeConfig(): {
     );
   }
 
-  return { secret, trustedProxyHops: getTrustedProxyHops() };
+  return { secret, clientIpPolicy: getClientIpTrustPolicy() };
 }
 
 export function requireCronRuntimeConfig(): { secret: string } {
@@ -154,4 +170,18 @@ export function getTrustedProxyHops(): number {
   }
 
   return trustedProxyHops;
+}
+
+export function getClientIpTrustPolicy(): ClientIpTrustPolicy {
+  if (getDeploymentPolicy().isVercelRuntime) {
+    return { source: "vercel" };
+  }
+
+  const trustedProxyHops = getTrustedProxyHops();
+  if (process.env.NODE_ENV === "production" && trustedProxyHops === 0) {
+    throw new EnvironmentConfigurationError(
+      "Production outside Vercel requires an explicitly verified TRUSTED_PROXY_HOPS value.",
+    );
+  }
+  return { source: "trusted-proxy", trustedProxyHops };
 }
