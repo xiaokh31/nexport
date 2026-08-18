@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PrismaClient } from "@prisma/client";
+import sitemap from "../../src/app/sitemap";
 import {
   findPublishedArticleBySlug,
   listPublishedArticles,
@@ -117,5 +118,31 @@ describe("SEO publication reads", () => {
 
     const entries = await listPublishedArticleSitemapEntries(prisma);
     expect(entries).toContainEqual({ slug: `${slugPrefix}sitemap`, updatedAt });
+  });
+
+  it("exposes the sitemap route only for explicitly enabled Vercel Production", async () => {
+    const updatedAt = new Date("2026-08-21T18:30:00.000Z");
+    await createArticle({
+      slug: `${slugPrefix}production-sitemap`,
+      status: "PUBLISHED",
+      publishedAt: new Date("2026-08-20T12:00:00.000Z"),
+      updatedAt,
+    });
+
+    await expect(sitemap()).resolves.toEqual([]);
+
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("SITE_INDEXING_ENABLED", "true");
+    try {
+      const productionSitemap = await sitemap();
+      expect(productionSitemap).toContainEqual(expect.objectContaining({
+        url: expect.stringContaining(`/news/${slugPrefix}production-sitemap`),
+        lastModified: updatedAt,
+      }));
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

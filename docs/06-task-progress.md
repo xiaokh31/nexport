@@ -4,8 +4,9 @@
 
 - 已完成：29 / 31。
 - 执行中：无。
-- 待执行：`QA-004`、`RELEASE-001`。
-- 当前可领取：`QA-004`；其本地门禁可执行，外部 Preview/staging 部分须先由项目方 provision 或授权资源。
+- 被外部资源阻塞：`QA-004`（本地全量门禁已通过；真实 Vercel Preview/固定 staging 尚未 provision）。
+- 待执行：`RELEASE-001`。
+- 当前可领取：无；须由项目方提供或授权 Vercel project、隔离 staging 数据库与测试 provider 后继续 `QA-004`。
 - 唯一执行顺序：`BRAND-001 → VERCEL-001 → QA-004 → 人工生产变更授权门（Go/No-Go） → RELEASE-001`，不得并行越级。
 
 ## 已完成基线
@@ -32,7 +33,7 @@ QA-003 的最后一次已记录验收结果：lint/typecheck 退出码为 0；�
 |---|---|---|---|
 | `BRAND-001` | 已完成 | 精准接入 `ZNB Logistics Inc.` / `ZNB`，未知事实继续隐藏 | lint/typecheck、35 文件/192 单元用例、10 文件/29 集成用例及隔离迁移后 build 均通过 |
 | `VERCEL-001` | 已完成 | Node/pnpm、Prisma direct/pool、受控迁移、Preview noindex、可信 IP、受保护 GET 和外部调度契约已落地 | 36 文件/202 单元用例、10 文件/29 集成用例、隔离迁移与无 `DIRECT_URL` Preview build 通过 |
-| `QA-004` | 可执行；外部阶段有条件 | frozen install、全量本地门禁、普通 Preview 与固定 staging 验收 | 前两项已完成；外部阶段还需项目方 provision/授权 staging、数据库和测试 provider |
+| `QA-004` | 本地通过；外部阻塞 | frozen install、静态门禁、隔离迁移、unit/integration/E2E、无 `DIRECT_URL` Preview build 与本地 production smoke 已通过 | 仍需项目方 provision/授权真实 Vercel Preview、固定 staging、隔离托管数据库和测试 provider |
 | `RELEASE-001` | 未授权 | 首次生产迁移、部署、域名和运维移交 | `QA-004` 通过且生产变更授权门签字、明确生产授权 |
 
 完整文件范围和验收标准见 [`05-agent-backlog.md`](05-agent-backlog.md)。本地执行见 [`07-testing.md`](07-testing.md)，生产流程见 [`08-vercel-production-deployment.md`](08-vercel-production-deployment.md)。
@@ -45,6 +46,20 @@ QA-003 的最后一次已记录验收结果：lint/typecheck 退出码为 0；�
 - 生产数据库供应商、区域、连接上限、备份/PITR/RPO/RTO、外部 scheduler provider 与责任人仍须在 QA-004 准入和 RELEASE-001 Go/No-Go 中填写，未被代码硬编码。
 - `pnpm test:all` 只覆盖 unit/integration/E2E，不包含 lint、typecheck 或 build；QA-004 必须分别执行。
 - Vercel、数据库、域名、DNS、Resend、OAuth、CAPTCHA 和生产 secret 均属于外部状态，不能在无权限时由开发 Agent 假定已经配置。
+
+## QA-004 当前执行证据
+
+本地门禁环境：Node `v24.18.0`、pnpm `10.27.0`、Docker Engine Client/Server `29.5.3`、Docker Compose `v5.1.4`、PostgreSQL `16.15`。`pnpm install --frozen-lockfile` 确认 lockfile 无漂移并完成 postinstall Prisma generate；随后 Prisma generate/validate、lint、typecheck 和 AGPL-3.0 `LICENSE` SHA-256 检查均退出 0。
+
+首次 `pnpm test:all` 暴露一项测试建模回归：旧 SEO E2E 在非 Production 环境仍期待可抓取 sitemap，与 VERCEL-001 的 fail-safe 空 sitemap 契约冲突。修正后，E2E 明确验证非 Production HTML robots/noindex、HTTP `X-Robots-Tag` 和空 sitemap；集成测试新增“只有显式启用的 Vercel Production 才生成含已发布文章的 sitemap”。从空 tmpfs 数据库完整重跑后，unit 36 文件/202 用例、integration 10 文件/30 用例、Chromium E2E 14 文件/53 用例全部通过且零跳过。
+
+本地 `staging:qa004-local-preview` 隔离目标经受控 migration runner 显示脱敏摘要、先发现 pending `0_init`、deploy 后复查 up to date。随后明确移除 `DIRECT_URL`、Google OAuth、reCAPTCHA、Resend 和 `CRON_SECRET`，只用池化测试 URL 完成 Vercel Preview 环境模型的 production build，共生成 58 个路由/页面。
+
+按 `webapp-testing` server-lifecycle 规范执行的独立无头 Chromium smoke 确认 `/`、`/solutions`、`/news`、`/login`、`/contact` 均为 200；HTML meta 与所有响应为 noindex/nofollow、robots 全拒绝、sitemap 空、manifest 为 `ZNB Logistics Inc.` / `ZNB`，浏览器 console/page error 均为 0。无 Preview worker secret 时真实 route 返回 503；临时注入测试专用 worker 配置后，缺失/错误 Bearer 均为 401，合法 GET 与重复 GET 均为 200、claimed 为 0，没有访问 Resend。首页截图已人工复核品牌、布局和占位隐藏，随后与一次性 Python 环境一并删除。
+
+`test:all` 和最后的 production smoke 均已清理 `nexport-test` 容器、网络、fixtures 与 tmpfs；当前 Docker 无运行容器。未读取或接触生产/托管数据库、真实客户数据、Vercel、DNS 或真实 provider，未执行 Git 操作。
+
+外部阶段无法执行的客观证据：仓库没有 `.vercel` project link，进程环境没有 Vercel、托管 `DATABASE_URL` / `DIRECT_URL`、Resend、reCAPTCHA 或 `CRON_SECRET` 配置，也没有项目方 provision/授权记录。因此不能验证 Vercel Build Logs 的实际 Node/pnpm、Deployment Protection 与 bypass 双 header、真实普通 Preview noindex、固定 staging 的独立数据库/provider、测试邮件投递和资源所有者/撤销结果；这些本地结果不得冒充真实 Preview/staging 证据。真实 Production scheduler 仍明确留给 `RELEASE-001`。
 
 ## 最近已修复问题
 

@@ -73,6 +73,10 @@ test("published Article HTML includes canonical metadata and parseable JSON-LD",
     new URL(`/news/${slugs.published}`, baseURL).toString(),
   );
   await expect(page.locator('meta[property="og:type"]')).toHaveAttribute("content", "article");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex.*nofollow/,
+  );
 
   const articleJson = JSON.parse(await page.locator("script#article-schema").textContent() || "null");
   expect(articleJson).toMatchObject({
@@ -87,7 +91,7 @@ test("published Article HTML includes canonical metadata and parseable JSON-LD",
   expect((await request.get(`/news/${slugs.archived}`)).status()).toBe(404);
 });
 
-test("news, home, sitemap, and solution pages expose crawlable published links", async ({ page, request }) => {
+test("news, home, and solution pages expose published links while non-production sitemap stays empty", async ({ page, request }) => {
   const newsHtml = await (await request.get("/news")).text();
   expect(newsHtml).toContain("SEO-001 published warehouse article");
   expect(newsHtml).toContain("Published excerpt available in server HTML.");
@@ -101,9 +105,11 @@ test("news, home, sitemap, and solution pages expose crawlable published links",
   const rootSchemas = await page.locator('script[type="application/ld+json"]').allTextContents();
   expect(rootSchemas.join("\n")).not.toMatch(/LocalBusiness|Company Name|contact@example\.com/i);
 
-  const sitemap = await (await request.get("/sitemap.xml")).text();
-  expect(sitemap).toContain(`/news/${slugs.published}`);
-  expect(sitemap).toContain("2026-08-16T18:30:00.000Z");
+  const sitemapResponse = await request.get("/sitemap.xml");
+  expect(sitemapResponse.headers()["x-robots-tag"]).toBe("noindex, nofollow");
+  const sitemap = await sitemapResponse.text();
+  expect(sitemap).toContain("<urlset");
+  expect(sitemap).not.toContain(`/news/${slugs.published}`);
   expect(sitemap).not.toContain(`/news/${slugs.draft}`);
   expect(sitemap).not.toContain(`/news/${slugs.archived}`);
 
